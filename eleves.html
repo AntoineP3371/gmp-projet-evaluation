@@ -95,7 +95,7 @@ function computeScores(project, semestres){
 /* ---------------- data loading ---------------- */
 async function loadReferentiel(){
   try{
-    const rec = await pb.collection("config").getFirstListItem('key="referentiel"');
+    const rec = await pb.collection("sae_config").getFirstListItem('key="referentiel"');
     referentiel = rec.value;
     allItems = allItemsFromReferentiel(referentiel);
   }catch(e){ referentiel = null; allItems = []; }
@@ -103,7 +103,7 @@ async function loadReferentiel(){
 }
 async function loadProjects(){
   try{
-    const list = await pb.collection("projects").getFullList({ sort: "nom" });
+    const list = await pb.collection("sae_projects").getFullList({ sort: "nom" });
     projects.clear();
     for(const r of list) projects.set(r.id, r);
     showConnError(false);
@@ -111,12 +111,12 @@ async function loadProjects(){
   renderAll();
 }
 function subscribeRealtime(){
-  pb.collection("projects").subscribe("*", (e) => {
+  pb.collection("sae_projects").subscribe("*", (e) => {
     if(e.action === "delete") projects.delete(e.record.id);
     else projects.set(e.record.id, e.record);
     renderAll();
   }).catch(()=>{});
-  pb.collection("config").subscribe("*", (e) => {
+  pb.collection("sae_config").subscribe("*", (e) => {
     if(e.record.key === "referentiel"){ referentiel = e.record.value; allItems = allItemsFromReferentiel(referentiel); renderAll(); }
   }).catch(()=>{});
 }

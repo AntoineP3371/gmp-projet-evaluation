@@ -229,7 +229,7 @@ function saveSession(){
 /* ---------------- data loading (PocketBase) ---------------- */
 async function loadReferentiel(){
   try{
-    const rec = await pb.collection("config").getFirstListItem('key="referentiel"');
+    const rec = await pb.collection("sae_config").getFirstListItem('key="referentiel"');
     referentiel = rec.value; referentielRecordId = rec.id;
     allItems = allItemsFromReferentiel(referentiel);
   }catch(e){ referentiel = null; referentielRecordId = null; allItems = []; }
@@ -237,13 +237,13 @@ async function loadReferentiel(){
 }
 async function loadAdminConfig(){
   try{
-    const rec = await pb.collection("config").getFirstListItem('key="admin"');
+    const rec = await pb.collection("sae_config").getFirstListItem('key="admin"');
     adminConfigCache = rec.value; adminRecordId = rec.id;
   }catch(e){ adminConfigCache = null; adminRecordId = null; }
 }
 async function loadProjects(){
   try{
-    const list = await pb.collection("projects").getFullList({ sort: "nom" });
+    const list = await pb.collection("sae_projects").getFullList({ sort: "nom" });
     projects.clear();
     for(const r of list) projects.set(r.slug, r);
     showConnError(false);
@@ -251,13 +251,13 @@ async function loadProjects(){
   renderAll();
 }
 function subscribeRealtime(){
-  pb.collection("projects").subscribe("*", (e) => {
+  pb.collection("sae_projects").subscribe("*", (e) => {
     if(e.action === "delete") projects.delete(e.record.slug);
     else projects.set(e.record.slug, e.record);
     if(pendingTimer) return;
     renderAll();
   }).catch(()=>{});
-  pb.collection("config").subscribe("*", (e) => {
+  pb.collection("sae_config").subscribe("*", (e) => {
     if(e.record.key === "referentiel"){
       if(refPendingTimer) return;
       referentiel = e.record.value; referentielRecordId = e.record.id;
@@ -344,7 +344,7 @@ function renderEmpty(){
 function renderReferentielView(){
   const main = document.getElementById("main");
   if(!referentiel){
-    main.innerHTML = `<div class="empty-state"><h2>Référentiel non configuré</h2><p>Importez <code>seed-referentiel.json</code> dans la collection <code>config</code> de PocketBase (voir le guide d'installation).</p></div>`;
+    main.innerHTML = `<div class="empty-state"><h2>Référentiel non configuré</h2><p>Importez <code>seed-referentiel.json</code> dans la collection <code>sae_config</code> de PocketBase (voir le guide d'installation).</p></div>`;
     return;
   }
   if(!adminUnlocked){
@@ -416,9 +416,9 @@ function saveReferentielDraft(){
   refPendingTimer = setTimeout(async () => {
     try{
       if(referentielRecordId){
-        await pb.collection("config").update(referentielRecordId, { value: refDraft });
+        await pb.collection("sae_config").update(referentielRecordId, { value: refDraft });
       } else {
-        const rec = await pb.collection("config").create({ key: "referentiel", value: refDraft });
+        const rec = await pb.collection("sae_config").create({ key: "referentiel", value: refDraft });
         referentielRecordId = rec.id;
       }
       showToast("Référentiel enregistré");
@@ -487,7 +487,7 @@ function renderProjectView(){
     resetBtn.addEventListener("click", async () => {
       if(!confirm("Réinitialiser tous les codes d'écriture de ce projet ?")) return;
       p.codes = [];
-      await pb.collection("projects").update(p.id, {codes: []});
+      await pb.collection("sae_projects").update(p.id, {codes: []});
       showToast("Codes réinitialisés");
     });
     banner.appendChild(resetBtn);
@@ -619,7 +619,7 @@ function flushPendingPatch(){
     pendingTimer = null;
     if(!p) return;
     try{
-      await pb.collection("projects").update(p.id, { evals: p.evals, individualisation: p.individualisation });
+      await pb.collection("sae_projects").update(p.id, { evals: p.evals, individualisation: p.individualisation });
       showToast("Enregistré");
     }catch(e){ showToast("Échec de l'enregistrement"); }
   }, 400);
@@ -687,7 +687,7 @@ document.getElementById("unlock-submit").addEventListener("click", async () => {
     const hash = await sha256Hex(code);
     const codes = (p.codes||[]).concat([{label:labelInput.value.trim(), hash, createdAt:new Date().toISOString()}]);
     p.codes = codes;
-    await pb.collection("projects").update(p.id, {codes});
+    await pb.collection("sae_projects").update(p.id, {codes});
     unlockedProjects.set(unlockTargetId, labelInput.value.trim());
     saveSession();
     document.getElementById("modal-unlock").classList.remove("open");
@@ -731,9 +731,9 @@ document.getElementById("admin-modal-submit").addEventListener("click", async ()
     const hash = await sha256Hex(code);
     try{
       if(adminRecordId){
-        await pb.collection("config").update(adminRecordId, {value:{code_hash:hash, createdAt:new Date().toISOString()}});
+        await pb.collection("sae_config").update(adminRecordId, {value:{code_hash:hash, createdAt:new Date().toISOString()}});
       } else {
-        const rec = await pb.collection("config").create({key:"admin", value:{code_hash:hash, createdAt:new Date().toISOString()}});
+        const rec = await pb.collection("sae_config").create({key:"admin", value:{code_hash:hash, createdAt:new Date().toISOString()}});
         adminRecordId = rec.id;
       }
       adminConfigCache = {code_hash: hash};
@@ -810,13 +810,13 @@ document.getElementById("pe-save").addEventListener("click", async () => {
         patch.encadrants = Array.from(document.querySelectorAll("#pe-encadrant-rows input")).map(i=>i.value.trim()).filter(Boolean);
       }
       Object.assign(p, patch);
-      await pb.collection("projects").update(p.id, patch);
+      await pb.collection("sae_projects").update(p.id, patch);
     } else {
       const sujet = document.getElementById("pe-sujet").value.trim();
       const formation = document.getElementById("pe-formation").value.trim();
       const encadrants = Array.from(document.querySelectorAll("#pe-encadrant-rows input")).map(i=>i.value.trim()).filter(Boolean);
       const slug = slugify(nom);
-      const rec = await pb.collection("projects").create({
+      const rec = await pb.collection("sae_projects").create({
         slug, nom,sujet,formation,parcours,etudiants,encadrants,codes:[],archived:false,
         evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}
       });
@@ -911,7 +911,7 @@ document.getElementById("diff-confirm").addEventListener("click", async () => {
   try{
     for(const g of importDiff.toCreate){
       const {id,...rest} = g;
-      const rec = await pb.collection("projects").create({slug:id, ...rest, codes:[], archived:false, evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}});
+      const rec = await pb.collection("sae_projects").create({slug:id, ...rest, codes:[], archived:false, evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}});
       projects.set(id, rec);
     }
     for(const g of importDiff.toUpdate){
@@ -919,12 +919,12 @@ document.getElementById("diff-confirm").addEventListener("click", async () => {
       const existing = projects.get(id);
       const patch = {...rest, archived:false};
       Object.assign(existing, patch);
-      await pb.collection("projects").update(existing.id, patch);
+      await pb.collection("sae_projects").update(existing.id, patch);
     }
     for(const g of importDiff.toArchive){
       const existing = projects.get(g.id);
       existing.archived = true;
-      await pb.collection("projects").update(existing.id, {archived:true});
+      await pb.collection("sae_projects").update(existing.id, {archived:true});
     }
     document.getElementById("modal-import-diff").classList.remove("open");
     showToast("Import terminé");
