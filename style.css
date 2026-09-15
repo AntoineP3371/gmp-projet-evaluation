@@ -46,6 +46,8 @@ h1,h2,h3{ text-wrap:balance; }
 .brand{ display:flex; flex-direction:column; gap:2px; }
 .brand-tag{ font-family:var(--font-mono); font-size:11px; letter-spacing:.04em; color:var(--accent); font-weight:600; }
 .brand-title{ font-size:19px; font-weight:700; line-height:1.2; }
+.brand-title-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.brand-logo{ height:24px; width:auto; display:block; }
 .brand-sub{ color:var(--ink-muted); font-size:12.5px; }
 .version-tag{ font-weight:400; color:var(--ink-faint); }
 
@@ -164,7 +166,8 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .livrable-field input[type=number]{ width:68px; padding:7px; border:1px solid var(--rule-strong); border-radius:var(--radius); font-family:var(--font-mono); font-variant-numeric:tabular-nums; text-align:right; background:var(--surface); font-size:14px; }
 .livrable-field input[type=date]{ width:136px; padding:7px; border:1px solid var(--rule-strong); border-radius:var(--radius); font-family:var(--font-mono); background:var(--surface); }
 .livrable-comment{ flex:1; min-width:180px; }
-.livrable-comment textarea{ width:100%; min-height:36px; padding:7px 8px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface); resize:vertical; font-family:inherit; font-size:12.5px; }
+.livrable-comment label{ display:block; font-size:10px; color:var(--ink-faint); font-weight:600; margin-bottom:3px; }
+.livrable-comment textarea{ width:100%; min-height:36px; padding:7px 8px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface); resize:vertical; font-family:inherit; font-size:12.5px; box-sizing:border-box; }
 
 .indiv-panel{ margin-top:32px; }
 .indiv-table{ width:100%; border-collapse:collapse; margin-top:10px; }

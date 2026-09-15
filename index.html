@@ -18,8 +18,11 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.4</span></span>
-      <span class="brand-title">Carnet d'évaluation</span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.5</span></span>
+      <div class="brand-title-row">
+        <span class="brand-title">Carnet d'évaluation</span>
+        <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
+      </div>
       <span class="brand-sub">Espace encadrants</span>
     </div>
 
@@ -140,6 +143,7 @@ let adminRecordId = null;
 let adminConfigCache = null;
 let allItems = [];
 let projects = new Map(); // keyed by slug
+let encadrantCodes = new Map(); // keyed by nom -> sae_encadrants record
 let currentProjectId = null; // slug
 let currentSemestre = "S3";
 let baremeVisible = true;
@@ -277,6 +281,13 @@ async function loadProjects(){
   }catch(e){ showConnError(true); return; }
   renderAll();
 }
+async function loadEncadrantCodes(){
+  try{
+    const list = await pb.collection("sae_encadrants").getFullList({ sort: "nom" });
+    encadrantCodes.clear();
+    for(const r of list) encadrantCodes.set(r.nom, r);
+  }catch(e){}
+}
 function subscribeRealtime(){
   pb.collection("sae_projects").subscribe("*", (e) => {
     if(e.action === "delete") projects.delete(e.record.slug);
@@ -293,6 +304,11 @@ function subscribeRealtime(){
     } else if(e.record.key === "admin"){
       adminConfigCache = e.record.value; adminRecordId = e.record.id;
     }
+  }).catch(()=>{});
+  pb.collection("sae_encadrants").subscribe("*", (e) => {
+    if(e.action === "delete") encadrantCodes.delete(e.record.nom);
+    else encadrantCodes.set(e.record.nom, e.record);
+    renderAll();
   }).catch(()=>{});
 }
 
@@ -336,7 +352,7 @@ function renderSidebar(){
   const ul = document.getElementById("team-list");
   ul.innerHTML = "";
   const entries = Array.from(projects.entries())
-    .filter(([id,p]) => (showArchived || !p.archived) && matchesFilter(p))
+    .filter(([id,p]) => (showArchived || !p.archived) && (adminUnlocked || p.visible_eleves !== false) && matchesFilter(p))
     .sort((a,b) => a[1].nom.localeCompare(b[1].nom, "fr", {sensitivity:"base"}));
   if(entries.length === 0){
     const li = document.createElement("li");
@@ -420,7 +436,7 @@ function renderProjectsManagementView(){
   tableWrap.className = "ref-table-wrap";
   const table = document.createElement("table");
   table.className = "ref-table";
-  table.innerHTML = `<thead><tr><th>Projet</th><th>Formation</th><th>Parcours</th><th>Étudiants</th><th>Encadrants</th><th>Visible étudiants</th></tr></thead><tbody></tbody>`;
+  table.innerHTML = `<thead><tr><th>Projet</th><th>Formation</th><th>Parcours</th><th>Étudiants</th><th>Encadrants</th><th>Visible étudiants</th><th></th></tr></thead><tbody></tbody>`;
   const tbody = table.querySelector("tbody");
   for(const p of list){
     const tr = document.createElement("tr");
@@ -431,7 +447,8 @@ function renderProjectsManagementView(){
       <td>${escapeHtml(p.parcours||"—")}</td>
       <td>${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : "—"}</td>
       <td>${p.encadrants && p.encadrants.length ? escapeHtml(p.encadrants.join(", ")) : "—"}</td>
-      <td style="text-align:center;"><input type="checkbox" ${p.visible_eleves !== false ? "checked" : ""}></td>`;
+      <td style="text-align:center;"><input type="checkbox" ${p.visible_eleves !== false ? "checked" : ""}></td>
+      <td class="ref-row-actions"><button class="btn-ghost btn-sm" type="button">✎ Modifier</button></td>`;
     tr.addEventListener("click", () => selectProject(p.slug));
     const checkbox = tr.querySelector('input[type=checkbox]');
     checkbox.addEventListener("click", e => e.stopPropagation());
@@ -441,6 +458,8 @@ function renderProjectsManagementView(){
       try{ await pb.collection("sae_projects").update(p.id, {visible_eleves: visible}); showToast(visible ? "Visible pour les étudiants" : "Masqué aux étudiants"); }
       catch(err){ showToast("Échec de l'enregistrement"); }
     });
+    const editBtn = tr.querySelector(".btn-ghost");
+    editBtn.addEventListener("click", e => { e.stopPropagation(); openProjectEditModal(p.slug, "admin"); });
     tbody.appendChild(tr);
   }
   tableWrap.appendChild(table);
@@ -627,6 +646,7 @@ function renderProjectView(){
   const main = document.getElementById("main");
   const p = projects.get(currentProjectId);
   if(!p){ view="empty"; renderEmpty(); return; }
+  if(!adminUnlocked && p.visible_eleves === false){ currentProjectId = null; view="empty"; renderEmpty(); return; }
   if(!referentiel){ main.innerHTML = `<div class="empty-state"><h2>Référentiel non configuré</h2></div>`; return; }
 
   const unlocked = unlockedProjects.get(currentProjectId);
@@ -670,7 +690,8 @@ function renderProjectView(){
 
   const banner = document.createElement("div");
   banner.className = "lock-banner" + (unlocked ? " rw" : "");
-  banner.innerHTML = `<span class="lock-banner-label">${lockIconSvg(unlocked ? true : (p.codes||[]).length === 0)} ${unlocked ? "Modification activée — " + escapeHtml(unlocked) : "Lecture seule — cliquez votre nom ci-dessus pour débloquer l'écriture"}</span>`;
+  const anyRosterHasCode = (p.encadrants||[]).some(n => { const r = encadrantCodes.get(n); return r && r.hash; });
+  banner.innerHTML = `<span class="lock-banner-label">${lockIconSvg(unlocked ? true : !anyRosterHasCode)} ${unlocked ? "Modification activée — " + escapeHtml(unlocked) : "Lecture seule — cliquez votre nom ci-dessus pour débloquer l'écriture"}</span>`;
   if(unlocked){
     const bannerBtn = document.createElement("button");
     bannerBtn.className = "btn btn-sm";
@@ -711,11 +732,15 @@ function renderEncadrantsAdminPanel(project){
   const wrap = document.createElement("div");
   wrap.className = "section-block";
   wrap.innerHTML = `<div class="section-head"><div class="section-title">Encadrants — codes d'accès (admin)</div></div>`;
-  const codes = project.codes || (project.codes = []);
-  if(codes.length === 0){
+  const hint = document.createElement("p");
+  hint.style.cssText = "color:var(--ink-muted); font-size:12.5px; margin-bottom:10px;";
+  hint.textContent = `Le code de chaque encadrant est partagé sur tous ses projets. Pour ajouter ou retirer un encadrant de "${escapeHtml(project.nom)}", utilisez "Modifier les infos".`;
+  wrap.appendChild(hint);
+  const roster = (project.encadrants || []).filter(Boolean);
+  if(roster.length === 0){
     const p2 = document.createElement("p");
-    p2.style.cssText = "color:var(--ink-muted); font-size:12.5px; margin-bottom:10px;";
-    p2.textContent = "Aucun code créé pour l'instant.";
+    p2.style.cssText = "color:var(--ink-muted); font-size:12.5px;";
+    p2.textContent = "Aucun encadrant listé sur ce projet.";
     wrap.appendChild(p2);
   } else {
     const tableWrap = document.createElement("div");
@@ -724,31 +749,26 @@ function renderEncadrantsAdminPanel(project){
     table.className = "ref-table";
     table.innerHTML = `<thead><tr><th>Nom</th><th>Créé le</th><th></th><th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
-    codes.forEach((c, idx) => renderEncadrantCodeRow(tbody, project, codes, idx, renderProjectView));
+    roster.forEach(nom => renderEncadrantCodeRow(tbody, nom, renderProjectView));
     tableWrap.appendChild(table);
     wrap.appendChild(tableWrap);
   }
-  const addBtn = document.createElement("button");
-  addBtn.className = "btn btn-sm";
-  addBtn.style.marginTop = "10px";
-  addBtn.textContent = "+ Ajouter un encadrant";
-  addBtn.addEventListener("click", () => openAddEncadrantCodeFlow(project));
-  wrap.appendChild(addBtn);
   return wrap;
 }
-function renderEncadrantCodeRow(tbody, project, codes, idx, onChange, showProjectCol){
-  const c = codes[idx];
+function renderEncadrantCodeRow(tbody, nom, onChange, projectsList){
+  const rec = encadrantCodes.get(nom);
+  const hasCode = !!(rec && rec.hash);
   const row = document.createElement("tr");
   row.className = "ref-row";
-  const created = c.createdAt ? new Date(c.createdAt).toLocaleDateString("fr-FR") : "—";
-  const projectCell = showProjectCol ? `<td>${escapeHtml(project.nom)}</td>` : "";
+  const created = hasCode && rec.created ? new Date(rec.created).toLocaleDateString("fr-FR") : "—";
+  const projectsCell = projectsList ? `<td>${escapeHtml(projectsList.join(", ") || "—")}</td>` : "";
   row.innerHTML = `
-    ${projectCell}
-    <td><input type="text" class="ref-titre-input" value="${escapeHtml(c.label)}"></td>
-    <td style="white-space:nowrap; color:var(--ink-faint); font-size:11.5px;">${created}</td>
-    <td class="ref-row-actions"><button class="btn-ghost btn-sm" type="button">Changer le code</button></td>
-    <td class="ref-row-actions"><button class="btn-ghost btn-sm btn-danger" type="button">Supprimer</button></td>`;
-  const colspan = showProjectCol ? 5 : 4;
+    <td><b>${escapeHtml(nom)}</b></td>
+    ${projectsCell}
+    <td style="white-space:nowrap; color:var(--ink-faint); font-size:11.5px;">${hasCode ? created : "Aucun code"}</td>
+    <td class="ref-row-actions"><button class="btn-ghost btn-sm" type="button">${hasCode ? "Changer le code" : "Créer un code"}</button></td>
+    <td class="ref-row-actions">${hasCode ? `<button class="btn-ghost btn-sm btn-danger" type="button">Réinitialiser</button>` : ""}</td>`;
+  const colspan = projectsList ? 5 : 4;
   const detailRow = document.createElement("tr");
   detailRow.className = "ref-detail-row";
   detailRow.hidden = true;
@@ -757,46 +777,28 @@ function renderEncadrantCodeRow(tbody, project, codes, idx, onChange, showProjec
     <input type="password" placeholder="Confirmer le code">
     <button class="btn btn-sm btn-accent" type="button">Enregistrer le code</button>
   </div></td>`;
-  row.querySelector('input[type=text]').addEventListener("change", async e => {
-    c.label = e.target.value.trim() || c.label;
-    await saveProjectCodes(project, codes);
-  });
   row.querySelector(".btn-ghost:not(.btn-danger)").addEventListener("click", () => { detailRow.hidden = !detailRow.hidden; });
-  row.querySelector(".btn-danger").addEventListener("click", async () => {
-    if(!confirm(`Supprimer l'accès de "${c.label}" sur "${project.nom}" ?`)) return;
-    codes.splice(idx, 1);
-    await saveProjectCodes(project, codes);
-    if(onChange) onChange();
-  });
+  const dangerBtn = row.querySelector(".btn-danger");
+  if(dangerBtn){
+    dangerBtn.addEventListener("click", async () => {
+      if(!confirm(`Réinitialiser le code de "${nom}" ? La personne devra en recréer un (sur n'importe lequel de ses projets).`)) return;
+      await upsertEncadrantCode(nom, "");
+      showToast("Code réinitialisé");
+      if(onChange) onChange();
+    });
+  }
   const [newInput, confirmInput] = detailRow.querySelectorAll("input");
   detailRow.querySelector("button").addEventListener("click", async () => {
     const a = newInput.value, b = confirmInput.value;
     if(!a){ alert("Code requis."); return; }
     if(a !== b){ alert("Les codes ne correspondent pas."); return; }
-    c.hash = await sha256Hex(a);
-    await saveProjectCodes(project, codes);
+    await upsertEncadrantCode(nom, await sha256Hex(a));
     detailRow.hidden = true;
     showToast("Code mis à jour");
+    if(onChange) onChange();
   });
   tbody.appendChild(row);
   tbody.appendChild(detailRow);
-}
-async function saveProjectCodes(project, codes){
-  project.codes = codes;
-  await pb.collection("sae_projects").update(project.id, {codes});
-}
-function openAddEncadrantCodeFlow(project, onDone){
-  const name = prompt("Nom de l'encadrant :");
-  if(!name || !name.trim()) return;
-  const code = prompt(`Code d'écriture pour "${name.trim()}" :`);
-  if(!code) return;
-  sha256Hex(code).then(async hash => {
-    const codes = project.codes || (project.codes = []);
-    codes.push({label: name.trim(), hash, createdAt: new Date().toISOString()});
-    await saveProjectCodes(project, codes);
-    showToast("Encadrant ajouté");
-    (onDone || renderProjectView)();
-  });
 }
 function renderEncadrantsManagementView(){
   const main = document.getElementById("main");
@@ -815,30 +817,34 @@ function renderEncadrantsManagementView(){
   const hint = document.createElement("p");
   hint.className = "hint";
   hint.style.marginBottom = "16px";
-  hint.textContent = "Tous les codes d'écriture, tous projets confondus. Chaque ligne correspond à un accès sur un projet donné (un même encadrant peut apparaître sur plusieurs lignes s'il encadre plusieurs projets).";
+  hint.textContent = "Chaque encadrant n'a qu'un seul code d'écriture, valable sur tous ses projets.";
   main.appendChild(hint);
 
-  const list = Array.from(projects.values()).sort((a,b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
-  const rows = [];
-  for(const p of list){
-    (p.codes||[]).forEach((c, idx) => rows.push({project: p, idx}));
+  const projectsByName = new Map();
+  for(const p of projects.values()){
+    for(const n of (p.encadrants||[])){
+      if(!n) continue;
+      if(!projectsByName.has(n)) projectsByName.set(n, []);
+      projectsByName.get(n).push(p.nom);
+    }
   }
+  const names = new Set([...encadrantCodes.keys(), ...projectsByName.keys()]);
+  const sorted = Array.from(names).sort((a,b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
 
-  if(rows.length === 0){
+  if(sorted.length === 0){
     const p2 = document.createElement("p");
     p2.style.cssText = "color:var(--ink-muted); font-size:12.5px;";
-    p2.textContent = "Aucun code créé pour l'instant.";
+    p2.textContent = "Aucun encadrant pour l'instant.";
     main.appendChild(p2);
   } else {
     const tableWrap = document.createElement("div");
     tableWrap.className = "ref-table-wrap";
     const table = document.createElement("table");
     table.className = "ref-table";
-    table.innerHTML = `<thead><tr><th>Projet</th><th>Nom</th><th>Créé le</th><th></th><th></th></tr></thead><tbody></tbody>`;
+    table.innerHTML = `<thead><tr><th>Nom</th><th>Projets</th><th>Créé le</th><th></th><th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
-    rows.sort((a,b) => a.project.nom.localeCompare(b.project.nom, "fr", {sensitivity:"base"}));
-    for(const {project, idx} of rows){
-      renderEncadrantCodeRow(tbody, project, project.codes, idx, renderEncadrantsManagementView, true);
+    for(const nom of sorted){
+      renderEncadrantCodeRow(tbody, nom, renderEncadrantsManagementView, projectsByName.get(nom) || []);
     }
     tableWrap.appendChild(table);
     main.appendChild(tableWrap);
@@ -847,14 +853,17 @@ function renderEncadrantsManagementView(){
   const addBtn = document.createElement("button");
   addBtn.className = "btn btn-sm";
   addBtn.style.marginTop = "10px";
-  addBtn.textContent = "+ Ajouter un encadrant à un projet";
+  addBtn.textContent = "+ Ajouter un encadrant";
   addBtn.addEventListener("click", () => {
-    const options = list.map(p => p.nom).join("\n");
-    const projectName = prompt(`Nom exact du projet concerné :\n\n${options}`);
-    if(!projectName) return;
-    const target = list.find(p => p.nom.toLowerCase() === projectName.trim().toLowerCase());
-    if(!target){ alert("Projet introuvable (vérifiez l'orthographe exacte)."); return; }
-    openAddEncadrantCodeFlow(target, renderEncadrantsManagementView);
+    const name = prompt("Nom de l'encadrant :");
+    if(!name || !name.trim()) return;
+    const code = prompt(`Code d'écriture pour "${name.trim()}" :`);
+    if(!code) return;
+    sha256Hex(code).then(async hash => {
+      await upsertEncadrantCode(name.trim(), hash);
+      showToast("Encadrant ajouté");
+      renderEncadrantsManagementView();
+    });
   });
   main.appendChild(addBtn);
 }
@@ -995,13 +1004,27 @@ function updateIndiv(etuIdx, comp, value){
 }
 function selectProject(id){ currentProjectId = id; view = "project"; renderAll(); }
 
+/* ---------------- encadrant codes (global, shared across all projects) ---------------- */
+async function upsertEncadrantCode(nom, hash){
+  const existing = encadrantCodes.get(nom);
+  let rec;
+  if(existing){
+    rec = await pb.collection("sae_encadrants").update(existing.id, {hash});
+  } else {
+    rec = await pb.collection("sae_encadrants").create({nom, hash});
+  }
+  encadrantCodes.set(nom, rec);
+  return rec;
+}
+
 /* ---------------- unlock modal ---------------- */
 function openUnlockModal(id, presetLabel){
   unlockTargetId = id;
   unlockPresetLabel = presetLabel;
   const p = projects.get(id);
   const backdrop = document.getElementById("modal-unlock");
-  const existing = (p.codes||[]).find(c => c.label === presetLabel);
+  const rec = encadrantCodes.get(presetLabel);
+  const existing = rec && rec.hash;
   document.getElementById("unlock-error").hidden = true;
   document.getElementById("unlock-title").textContent = existing ? `Débloquer l'écriture — ${presetLabel}` : `Créer un code — ${presetLabel}`;
   document.getElementById("unlock-hint").textContent = existing
@@ -1045,9 +1068,7 @@ document.getElementById("unlock-submit").addEventListener("click", async () => {
   if(confirmInput){
     if(code !== confirmInput.value){ errEl.textContent = "Les codes ne correspondent pas."; errEl.hidden = false; return; }
     const hash = await sha256Hex(code);
-    const codes = (p.codes||[]).filter(c => c.label !== unlockPresetLabel).concat([{label:unlockPresetLabel, hash, createdAt:new Date().toISOString()}]);
-    p.codes = codes;
-    await pb.collection("sae_projects").update(p.id, {codes});
+    await upsertEncadrantCode(unlockPresetLabel, hash);
     unlockedProjects.set(unlockTargetId, unlockPresetLabel);
     saveSession();
     document.getElementById("modal-unlock").classList.remove("open");
@@ -1055,9 +1076,9 @@ document.getElementById("unlock-submit").addEventListener("click", async () => {
     renderAll();
   } else {
     const hash = await sha256Hex(code);
-    const match = (p.codes||[]).find(c => c.label === unlockPresetLabel && c.hash === hash);
-    if(!match){ errEl.textContent = "Code incorrect."; errEl.hidden = false; return; }
-    unlockedProjects.set(unlockTargetId, match.label);
+    const rec = encadrantCodes.get(unlockPresetLabel);
+    if(!rec || rec.hash !== hash){ errEl.textContent = "Code incorrect."; errEl.hidden = false; return; }
+    unlockedProjects.set(unlockTargetId, unlockPresetLabel);
     saveSession();
     document.getElementById("modal-unlock").classList.remove("open");
     showToast("Écriture activée");
@@ -1179,7 +1200,7 @@ document.getElementById("pe-save").addEventListener("click", async () => {
       const encadrants = Array.from(document.querySelectorAll("#pe-encadrant-rows input")).map(i=>i.value.trim()).filter(Boolean);
       const slug = slugify(nom);
       const rec = await pb.collection("sae_projects").create({
-        slug, nom,sujet,formation,parcours,etudiants,encadrants,codes:[],archived:false,visible_eleves:true,
+        slug, nom,sujet,formation,parcours,etudiants,encadrants,archived:false,visible_eleves:true,
         evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}
       });
       projects.set(slug, rec);
@@ -1270,7 +1291,7 @@ document.getElementById("diff-confirm").addEventListener("click", async () => {
   try{
     for(const g of importDiff.toCreate){
       const {id,...rest} = g;
-      const rec = await pb.collection("sae_projects").create({slug:id, ...rest, codes:[], archived:false, visible_eleves:true, evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}});
+      const rec = await pb.collection("sae_projects").create({slug:id, ...rest, archived:false, visible_eleves:true, evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}});
       projects.set(id, rec);
     }
     for(const g of importDiff.toUpdate){
@@ -1306,7 +1327,7 @@ function exportJsonBackup(){
 async function init(){
   loadSession();
   renderAll();
-  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects()]);
+  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects(), loadEncadrantCodes()]);
   subscribeRealtime();
 }
 init();
