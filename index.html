@@ -533,33 +533,26 @@ function renderSection(section, project, readOnly){
 function renderItem(item, idx, project, readOnly){
   const evals = (project.evals && project.evals[currentSemestre]) || {};
   const ev = evals[item.id] || {};
-  const row = document.createElement("div");
-  row.className = "item-row";
+  const card = document.createElement("div");
+  card.className = "livrable-card";
   const chips = Object.keys(item.coef||{}).map(c => `<span class="chip" style="background:${COMPETENCES[c].couleur}">${c}·${item.coef[c]}</span>`).join("");
   const hasBareme = !item.editable;
-  const commentHasText = ev.commentaire && ev.commentaire.trim();
-  row.innerHTML = `
-    <div class="item-top">
-      <div class="item-idx">${idx}.</div>
-      <div class="item-main">
-        <div class="item-title-edit"><span class="item-title">${escapeHtml(item.titre)}</span>${item.duree ? `<span class="item-duration">${escapeHtml(item.duree)}</span>` : ""}</div>
-        <div class="item-chips">${chips}</div>
-        ${hasBareme ? `<button class="item-bareme-toggle" type="button">Voir le barème</button>` : `<div style="font-size:12px; color:var(--ink-muted); margin-top:6px;">${escapeHtml(item.desc||"")}</div>`}
-        ${hasBareme ? `<div class="item-bareme"><div><b>Faible</b>${escapeHtml(item.faible||"")}</div><div><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
-        <div class="item-comment"><textarea id="comment-${item.id}" placeholder="Commentaire pour l'équipe…" ${readOnly?"disabled":""}>${escapeHtml(ev.commentaire||"")}</textarea></div>
-      </div>
-      <div class="item-inputs">
-        <div class="field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}></div>
-        <div class="field"><label for="date-${item.id}">Date</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
-        <button class="item-comment-toggle ${commentHasText?'has-text':''}" type="button" title="Commentaire">✎</button>
-      </div>
+  card.innerHTML = `
+    <div class="livrable-head">
+      <span class="livrable-title">${idx}. ${escapeHtml(item.titre)}${item.duree ? `<span class="livrable-duration">${escapeHtml(item.duree)}</span>` : ""}</span>
+      <div class="item-chips">${chips}</div>
+    </div>
+    ${item.desc ? `<div class="livrable-desc">${escapeHtml(item.desc)}</div>` : ""}
+    ${hasBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
+    <div class="livrable-foot">
+      <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}></div>
+      <div class="livrable-field"><label for="date-${item.id}">Date</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
+      <div class="livrable-comment"><label for="comment-${item.id}">Commentaire</label><textarea id="comment-${item.id}" placeholder="Commentaire pour l'équipe…" ${readOnly?"disabled":""}>${escapeHtml(ev.commentaire||"")}</textarea></div>
     </div>`;
-  row.querySelector('input[type=number]').addEventListener("change", e => updateEval(item.id, "note", e.target.value));
-  row.querySelector('input[type=date]').addEventListener("change", e => updateEval(item.id, "date", e.target.value));
-  row.querySelector('.item-comment textarea').addEventListener("change", e => updateEval(item.id, "commentaire", e.target.value));
-  row.querySelector(".item-comment-toggle").addEventListener("click", () => row.querySelector(".item-comment").classList.toggle("open"));
-  if(hasBareme) row.querySelector(".item-bareme-toggle").addEventListener("click", () => row.querySelector(".item-bareme").classList.toggle("open"));
-  return row;
+  card.querySelector('input[type=number]').addEventListener("change", e => updateEval(item.id, "note", e.target.value));
+  card.querySelector('input[type=date]').addEventListener("change", e => updateEval(item.id, "date", e.target.value));
+  card.querySelector('.livrable-comment textarea').addEventListener("change", e => updateEval(item.id, "commentaire", e.target.value));
+  return card;
 }
 function renderIndividualisation(project, readOnly){
   const etuIdx = (project.etudiants||[]).map((n,i)=>({n,i}));
