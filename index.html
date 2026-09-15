@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnet SAE GMP — encadrants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+
+<div class="conn-banner" id="conn-banner">Connexion au serveur impossible — vérifiez votre réseau ou réessayez plus tard.</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-tag">SAE · BUT GMP</span>
+      <span class="brand-title">Carnet d'évaluation</span>
+      <span class="brand-sub">Espace encadrants</span>
+    </div>
+
+    <input class="side-search" id="side-search" type="text" placeholder="Filtrer les projets…">
+    <div class="side-filters">
+      <select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select>
+      <select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select>
+    </div>
+
+    <ul class="team-list" id="team-list"></ul>
+
+    <button class="nav-item" id="nav-referentiel">Référentiel — livrables &amp; barème (admin)</button>
+
+    <div class="sidebar-admin">
+      <label class="archived-toggle" id="archived-toggle-wrap" hidden>
+        <input type="checkbox" id="archived-toggle"> Afficher les projets archivés
+      </label>
+      <div class="admin-tools" id="admin-tools" hidden>
+        <button class="btn btn-sm btn-block" id="btn-import">Importer un Excel</button>
+        <input type="file" id="file-import" accept=".xlsx,.xls" style="display:none">
+        <button class="btn btn-sm btn-block" id="btn-add-project">+ Ajouter un projet</button>
+        <button class="btn btn-sm btn-block" id="btn-export-json">Exporter (sauvegarde JSON)</button>
+      </div>
+      <div class="admin-status" id="admin-status">
+        <span>Mode administrateur</span>
+        <button class="btn btn-ghost btn-sm" id="btn-admin-toggle">Activer</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<div class="modal-backdrop" id="modal-unlock">
+  <div class="modal">
+    <h2 id="unlock-title">Débloquer l'écriture</h2>
+    <p class="hint" id="unlock-hint"></p>
+    <div id="unlock-body"></div>
+    <p class="modal-error" id="unlock-error" hidden></p>
+    <div class="modal-actions">
+      <button class="btn" id="unlock-cancel">Annuler</button>
+      <button class="btn btn-accent" id="unlock-submit">Débloquer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-admin">
+  <div class="modal">
+    <h2 id="admin-modal-title">Mode administrateur</h2>
+    <p class="hint" id="admin-modal-hint"></p>
+    <div class="field-full">
+      <label for="admin-code-input">Code administrateur</label>
+      <input type="password" id="admin-code-input">
+    </div>
+    <div class="field-full" id="admin-code-confirm-wrap" hidden>
+      <label for="admin-code-confirm">Confirmer le code</label>
+      <input type="password" id="admin-code-confirm">
+    </div>
+    <p class="modal-error" id="admin-modal-error" hidden></p>
+    <div class="modal-actions">
+      <button class="btn" id="admin-modal-cancel">Annuler</button>
+      <button class="btn btn-accent" id="admin-modal-submit">Valider</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-project-edit">
+  <div class="modal">
+    <h2 id="pe-title">Modifier le projet</h2>
+    <p class="hint" id="pe-hint">Ces informations sont normalement issues de l'import Excel. Ne les modifiez ici qu'en cas d'exception.</p>
+    <div class="field-full"><label for="pe-nom">Nom du projet</label><input type="text" id="pe-nom"></div>
+    <div class="field-full" id="pe-sujet-wrap"><label for="pe-sujet">Sujet</label><input type="text" id="pe-sujet"></div>
+    <div class="field-full" id="pe-formation-wrap"><label for="pe-formation">Formation</label><input type="text" id="pe-formation"></div>
+    <div class="field-full"><label for="pe-parcours">Parcours</label><input type="text" id="pe-parcours"></div>
+    <div class="field-full">
+      <label>Étudiants</label>
+      <div id="pe-student-rows"></div>
+      <button class="btn btn-ghost btn-sm" id="pe-add-student" type="button">+ Ajouter un étudiant</button>
+    </div>
+    <div class="field-full" id="pe-encadrants-wrap">
+      <label>Encadrants</label>
+      <div id="pe-encadrant-rows"></div>
+      <button class="btn btn-ghost btn-sm" id="pe-add-encadrant" type="button">+ Ajouter un encadrant</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="pe-cancel">Annuler</button>
+      <button class="btn btn-accent" id="pe-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-import-diff">
+  <div class="modal wide">
+    <h2>Import Excel — confirmation</h2>
+    <p class="hint">Vérifiez le résumé avant d'appliquer les changements. Les notes déjà saisies ne sont jamais touchées par un import.</p>
+    <div class="diff-summary" id="diff-summary"></div>
+    <div class="modal-actions">
+      <button class="btn" id="diff-cancel">Annuler</button>
+      <button class="btn btn-accent" id="diff-confirm">Confirmer l'import</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COMPETENCES = {
+  C1: { nom: "Spécifier",  couleur: "var(--c1)" },
+  C2: { nom: "Développer", couleur: "var(--c2)" },
+  C3: { nom: "Réaliser",   couleur: "var(--c3)" },
+  C4: { nom: "Exploiter",  couleur: "var(--c4)" },
+  C5: { nom: "Parcours",   couleur: "var(--c5)" },
+};
+
+const pb = new PocketBase(PB_URL);
+let referentiel = null;
+let referentielRecordId = null;
+let adminRecordId = null;
+let adminConfigCache = null;
+let allItems = [];
+let projects = new Map(); // keyed by slug
+let currentProjectId = null; // slug
+let currentSemestre = "S3";
+let view = "empty";
+let adminUnlocked = false;
+let unlockedProjects = new Map();
+let showArchived = false;
+let searchFilter = "";
+let filterFormation = "";
+let filterParcours = "";
+let pendingTimer = null;
+let refPendingTimer = null;
+let refDraft = null;
+let importDiff = null;
+let projectEditId = null;
+let projectEditScope = "admin";
+let unlockTargetId = null;
+
+function slugify(s){
+  const base = String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+  return base || ("projet-" + Date.now().toString(36));
+}
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+let toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), 1500);
+}
+function showConnError(show){ document.getElementById("conn-banner").classList.toggle("show", !!show); }
+
+function lockIconSvg(state){
+  const open = state === "rw" || state === "nocode";
+  return `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="11" width="16" height="10" rx="2"></rect>
+    ${open ? '<path d="M8 11V8a4 4 0 0 1 7.6-1.8"></path>' : '<path d="M8 11V8a4 4 0 0 1 8 0v3"></path>'}
+  </svg>`;
+}
+function allItemsFromReferentiel(ref){
+  if(!ref || !ref.sections) return [];
+  return ref.sections.flatMap(s => s.items.map(it => ({...it, sectionId: s.id})));
+}
+function computeScores(project, semestres){
+  const totals = { C1:{n:0,d:0}, C2:{n:0,d:0}, C3:{n:0,d:0}, C4:{n:0,d:0}, C5:{n:0,d:0} };
+  for(const sem of semestres){
+    const evals = (project.evals && project.evals[sem]) || {};
+    for(const item of allItems){
+      const ev = evals[item.id];
+      if(!ev || ev.note === undefined || ev.note === null || ev.note === "") continue;
+      const note = parseFloat(ev.note);
+      if(isNaN(note)) continue;
+      for(const c of Object.keys(item.coef||{})){
+        totals[c].n += note * item.coef[c];
+        totals[c].d += item.coef[c];
+      }
+    }
+  }
+  const out = {};
+  for(const c of Object.keys(totals)) out[c] = totals[c].d > 0 ? Math.round((totals[c].n/totals[c].d)*100)/100 : null;
+  return out;
+}
+
+/* ---------------- session persistence ---------------- */
+function loadSession(){
+  try{
+    adminUnlocked = sessionStorage.getItem("sae-admin") === "1";
+    const raw = sessionStorage.getItem("sae-unlocked");
+    if(raw){ unlockedProjects = new Map(JSON.parse(raw)); }
+  }catch(e){}
+}
+function saveSession(){
+  try{
+    sessionStorage.setItem("sae-admin", adminUnlocked ? "1" : "0");
+    sessionStorage.setItem("sae-unlocked", JSON.stringify(Array.from(unlockedProjects.entries())));
+  }catch(e){}
+}
+
+/* ---------------- data loading (PocketBase) ---------------- */
+async function loadReferentiel(){
+  try{
+    const rec = await pb.collection("config").getFirstListItem('key="referentiel"');
+    referentiel = rec.value; referentielRecordId = rec.id;
+    allItems = allItemsFromReferentiel(referentiel);
+  }catch(e){ referentiel = null; referentielRecordId = null; allItems = []; }
+  renderAll();
+}
+async function loadAdminConfig(){
+  try{
+    const rec = await pb.collection("config").getFirstListItem('key="admin"');
+    adminConfigCache = rec.value; adminRecordId = rec.id;
+  }catch(e){ adminConfigCache = null; adminRecordId = null; }
+}
+async function loadProjects(){
+  try{
+    const list = await pb.collection("projects").getFullList({ sort: "nom" });
+    projects.clear();
+    for(const r of list) projects.set(r.slug, r);
+    showConnError(false);
+  }catch(e){ showConnError(true); return; }
+  renderAll();
+}
+function subscribeRealtime(){
+  pb.collection("projects").subscribe("*", (e) => {
+    if(e.action === "delete") projects.delete(e.record.slug);
+    else projects.set(e.record.slug, e.record);
+    if(pendingTimer) return;
+    renderAll();
+  }).catch(()=>{});
+  pb.collection("config").subscribe("*", (e) => {
+    if(e.record.key === "referentiel"){
+      if(refPendingTimer) return;
+      referentiel = e.record.value; referentielRecordId = e.record.id;
+      allItems = allItemsFromReferentiel(referentiel);
+      renderAll();
+    } else if(e.record.key === "admin"){
+      adminConfigCache = e.record.value; adminRecordId = e.record.id;
+    }
+  }).catch(()=>{});
+}
+
+/* ---------------- rendering ---------------- */
+function renderAll(){
+  renderSidebar();
+  if(view === "project") renderProjectView();
+  else if(view === "referentiel") renderReferentielView();
+  else renderEmpty();
+}
+function matchesFilter(p){
+  if(filterFormation && p.formation !== filterFormation) return false;
+  if(filterParcours && p.parcours !== filterParcours) return false;
+  if(!searchFilter) return true;
+  const q = searchFilter.toLowerCase();
+  return (p.nom||"").toLowerCase().includes(q) || (p.sujet||"").toLowerCase().includes(q) || (p.parcours||"").toLowerCase().includes(q);
+}
+function populateFilterOptions(){
+  const formations = new Set(), parcoursSet = new Set();
+  for(const p of projects.values()){
+    if(p.formation) formations.add(p.formation);
+    if(p.parcours) parcoursSet.add(p.parcours);
+  }
+  fillSelect("filter-formation", formations, "Toutes formations", filterFormation);
+  fillSelect("filter-parcours", parcoursSet, "Tous parcours", filterParcours);
+}
+function fillSelect(id, values, allLabel, current){
+  const sel = document.getElementById(id);
+  const sorted = Array.from(values).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+  sel.innerHTML = `<option value="">${allLabel}</option>` + sorted.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+  sel.value = current;
+}
+function renderSidebar(){
+  populateFilterOptions();
+  const ul = document.getElementById("team-list");
+  ul.innerHTML = "";
+  const entries = Array.from(projects.entries())
+    .filter(([id,p]) => (showArchived || !p.archived) && matchesFilter(p))
+    .sort((a,b) => a[1].nom.localeCompare(b[1].nom, "fr", {sensitivity:"base"}));
+  if(entries.length === 0){
+    const li = document.createElement("li");
+    li.style.cssText = "color:var(--ink-faint); font-size:12.5px; padding:6px 2px;";
+    li.textContent = projects.size === 0 ? "Aucun projet — importez un Excel." : "Aucun projet ne correspond.";
+    ul.appendChild(li);
+  } else {
+    for(const [id,p] of entries){
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      const lockState = unlockedProjects.has(id) ? "rw" : ((p.codes||[]).length === 0 ? "nocode" : "ro");
+      btn.className = "team-item" + (view==="project" && currentProjectId===id ? " active" : "") + (p.archived ? " is-archived" : "");
+      btn.innerHTML = `<span class="team-item-lock ${lockState}">${lockIconSvg(lockState)}</span>
+        <div class="team-item-main">
+          <div class="team-item-name">${escapeHtml(p.nom)}${p.archived ? " (archivé)" : ""}</div>
+          <div class="team-item-sujet">${escapeHtml(p.sujet || p.parcours || "—")}</div>
+        </div>`;
+      btn.addEventListener("click", () => selectProject(id));
+      li.appendChild(btn);
+      ul.appendChild(li);
+    }
+  }
+  document.getElementById("nav-referentiel").classList.toggle("active", view==="referentiel");
+  document.getElementById("archived-toggle-wrap").hidden = !adminUnlocked;
+  document.getElementById("admin-tools").hidden = !adminUnlocked;
+  const st = document.getElementById("admin-status");
+  st.classList.toggle("on", adminUnlocked);
+  st.querySelector("span").textContent = adminUnlocked ? "Administrateur actif" : "Mode administrateur";
+  document.getElementById("btn-admin-toggle").textContent = adminUnlocked ? "Quitter" : "Activer";
+}
+function renderEmpty(){
+  document.getElementById("main").innerHTML = `<div class="empty-state">
+    <h2>Aucun projet sélectionné</h2>
+    <p>Choisissez un projet à gauche${projects.size===0 ? ", ou importez le fichier Excel des projets (mode administrateur)" : ""}.</p>
+  </div>`;
+}
+
+function renderReferentielView(){
+  const main = document.getElementById("main");
+  if(!referentiel){
+    main.innerHTML = `<div class="empty-state"><h2>Référentiel non configuré</h2><p>Importez <code>seed-referentiel.json</code> dans la collection <code>config</code> de PocketBase (voir le guide d'installation).</p></div>`;
+    return;
+  }
+  if(!adminUnlocked){
+    main.innerHTML = `<div class="empty-state"><h2>Référentiel</h2><p>La modification du référentiel (livrables, barèmes, coefficients) est réservée au mode administrateur.</p>
+      <button class="btn btn-accent" id="ref-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
+    main.querySelector("#ref-unlock-admin").addEventListener("click", openAdminModal);
+    return;
+  }
+  if(!refDraft) refDraft = deepClone(referentiel);
+  main.innerHTML = `<div class="team-head"><div><h1>Référentiel d'évaluation</h1><div class="tags"><span class="tag">Admin</span></div></div></div>`;
+  for(const section of refDraft.sections){
+    const wrap = document.createElement("div");
+    wrap.className = "section-block";
+    wrap.innerHTML = `<div class="section-head"><div class="section-title">${escapeHtml(section.titre)}</div></div>`;
+    section.items.forEach(item => wrap.appendChild(renderRefItemEditor(section, item)));
+    const addBtn = document.createElement("button");
+    addBtn.className = "btn btn-sm";
+    addBtn.textContent = "+ Ajouter un livrable";
+    addBtn.addEventListener("click", () => {
+      const nid = section.id + "-c" + Math.random().toString(36).slice(2,7);
+      section.items.push({ id:nid, titre:"Nouveau livrable", coef:{}, desc:"", faible:"", moyen:"", bon:"" });
+      renderReferentielView();
+      saveReferentielDraft();
+    });
+    wrap.appendChild(addBtn);
+    main.appendChild(wrap);
+  }
+}
+function renderRefItemEditor(section, item){
+  const row = document.createElement("div");
+  row.className = "ref-item";
+  const coefInputs = Object.keys(COMPETENCES).map(c => `
+    <label for="ref-${item.id}-coef-${c}">${c}<input id="ref-${item.id}-coef-${c}" type="number" min="0" step="1" data-coef="${c}" value="${item.coef && item.coef[c] ? item.coef[c] : ""}"></label>`).join("");
+  row.innerHTML = `
+    <div class="ref-item-row">
+      <input id="ref-${item.id}-titre" type="text" data-field="titre" value="${escapeHtml(item.titre)}" placeholder="Titre du livrable">
+      ${item.editable ? "" : `<input id="ref-${item.id}-duree" type="text" data-field="duree" value="${escapeHtml(item.duree||"")}" placeholder="Durée (optionnel)" style="max-width:160px;">`}
+    </div>
+    <textarea id="ref-${item.id}-desc" data-field="desc" placeholder="Description">${escapeHtml(item.desc||"")}</textarea>
+    ${item.editable ? "" : `
+    <textarea id="ref-${item.id}-faible" data-field="faible" placeholder="Barème — niveau faible">${escapeHtml(item.faible||"")}</textarea>
+    <textarea id="ref-${item.id}-moyen" data-field="moyen" placeholder="Barème — niveau moyen">${escapeHtml(item.moyen||"")}</textarea>
+    <textarea id="ref-${item.id}-bon" data-field="bon" placeholder="Barème — niveau bon">${escapeHtml(item.bon||"")}</textarea>`}
+    <div class="ref-item-foot">
+      <div class="ref-coefs">${coefInputs}</div>
+      <button class="btn btn-ghost btn-sm btn-danger" type="button">Supprimer</button>
+    </div>`;
+  row.querySelectorAll("[data-field]").forEach(el => {
+    el.addEventListener("change", () => { item[el.dataset.field] = el.value; saveReferentielDraft(); });
+  });
+  row.querySelectorAll("[data-coef]").forEach(el => {
+    el.addEventListener("change", () => {
+      item.coef = item.coef || {};
+      const v = parseFloat(el.value);
+      if(!v){ delete item.coef[el.dataset.coef]; } else { item.coef[el.dataset.coef] = v; }
+      saveReferentielDraft();
+    });
+  });
+  row.querySelector(".btn-danger").addEventListener("click", () => {
+    if(!confirm(`Supprimer le livrable "${item.titre}" ? Les notes déjà saisies pour ce livrable resteront dans les projets mais ne seront plus affichées.`)) return;
+    section.items = section.items.filter(i => i !== item);
+    renderReferentielView();
+    saveReferentielDraft();
+  });
+  return row;
+}
+function saveReferentielDraft(){
+  clearTimeout(refPendingTimer);
+  refPendingTimer = setTimeout(async () => {
+    try{
+      if(referentielRecordId){
+        await pb.collection("config").update(referentielRecordId, { value: refDraft });
+      } else {
+        const rec = await pb.collection("config").create({ key: "referentiel", value: refDraft });
+        referentielRecordId = rec.id;
+      }
+      showToast("Référentiel enregistré");
+    }catch(e){ showToast("Échec de l'enregistrement"); }
+    refPendingTimer = null;
+  }, 500);
+}
+
+function renderProjectView(){
+  const main = document.getElementById("main");
+  const p = projects.get(currentProjectId);
+  if(!p){ view="empty"; renderEmpty(); return; }
+  if(!referentiel){ main.innerHTML = `<div class="empty-state"><h2>Référentiel non configuré</h2></div>`; return; }
+
+  const unlocked = unlockedProjects.get(currentProjectId);
+  main.innerHTML = "";
+
+  const head = document.createElement("div");
+  head.className = "team-head";
+  const tags = [p.formation, p.parcours].filter(Boolean).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join("");
+  head.innerHTML = `
+    <div>
+      <h1>${escapeHtml(p.nom)}${p.archived ? " <span style='color:var(--ink-faint);font-weight:400;font-size:16px;'>(archivé)</span>" : ""}</h1>
+      ${p.sujet ? `<div style="color:var(--ink-muted); font-size:13.5px;">${escapeHtml(p.sujet)}</div>` : ""}
+      <div class="tags">${tags}</div>
+      <div class="people">
+        <b>Étudiants —</b> ${p.etudiants && p.etudiants.length ? p.etudiants.map(escapeHtml).join(", ") : "aucun"}<br>
+        <b>Encadrants —</b> ${p.encadrants && p.encadrants.length ? p.encadrants.map(escapeHtml).join(", ") : "aucun"}
+      </div>
+    </div>
+    <div class="team-head-actions">
+      ${adminUnlocked ? `<button class="btn btn-sm" id="btn-edit-project">Modifier les infos</button>` : ""}
+      <div class="tabs">
+        <button class="tab ${currentSemestre==='S3'?'active':''}" data-sem="S3">Semestre 3</button>
+        <button class="tab ${currentSemestre==='S4'?'active':''}" data-sem="S4">Semestre 4</button>
+      </div>
+    </div>`;
+  main.appendChild(head);
+  if(adminUnlocked){
+    head.querySelector("#btn-edit-project").addEventListener("click", () => openProjectEditModal(currentProjectId, "admin"));
+  }
+  head.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { currentSemestre = b.dataset.sem; renderProjectView(); }));
+
+  const banner = document.createElement("div");
+  banner.className = "lock-banner" + (unlocked ? " rw" : "");
+  banner.innerHTML = `<span class="lock-banner-label">${lockIconSvg(unlocked?"rw":((p.codes||[]).length?"ro":"nocode"))} ${unlocked ? "Modification activée — " + escapeHtml(unlocked) : "Lecture seule"}</span>`;
+  const bannerBtn = document.createElement("button");
+  bannerBtn.className = "btn btn-sm" + (unlocked ? "" : " btn-accent");
+  bannerBtn.textContent = unlocked ? "Verrouiller" : "Débloquer l'écriture";
+  bannerBtn.addEventListener("click", () => {
+    if(unlocked){ unlockedProjects.delete(currentProjectId); saveSession(); renderAll(); }
+    else openUnlockModal(currentProjectId);
+  });
+  banner.appendChild(bannerBtn);
+  if(unlocked && !adminUnlocked){
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn btn-sm";
+    editBtn.textContent = "Modifier nom / parcours / étudiants";
+    editBtn.addEventListener("click", () => openProjectEditModal(currentProjectId, "encadrant"));
+    banner.appendChild(editBtn);
+  }
+  if(adminUnlocked && (p.codes||[]).length){
+    const resetBtn = document.createElement("button");
+    resetBtn.className = "btn btn-ghost btn-sm btn-danger";
+    resetBtn.textContent = "Réinitialiser les codes (admin)";
+    resetBtn.addEventListener("click", async () => {
+      if(!confirm("Réinitialiser tous les codes d'écriture de ce projet ?")) return;
+      p.codes = [];
+      await pb.collection("projects").update(p.id, {codes: []});
+      showToast("Codes réinitialisés");
+    });
+    banner.appendChild(resetBtn);
+  }
+  main.appendChild(banner);
+
+  const readOnly = !unlocked;
+  main.appendChild(renderScorecard(p, [currentSemestre], `Scores — semestre ${currentSemestre==='S3'?'3':'4'}`));
+  main.appendChild(renderScorecard(p, ["S3","S4"], "Scores — cumul annuel (S3 + S4)"));
+
+  for(const section of referentiel.sections) main.appendChild(renderSection(section, p, readOnly));
+  main.appendChild(renderIndividualisation(p, readOnly));
+}
+function renderScorecard(project, semestres, titre){
+  const scores = computeScores(project, semestres);
+  const card = document.createElement("div");
+  card.className = "scorecard";
+  let rows = "";
+  for(const c of Object.keys(COMPETENCES)){
+    const info = COMPETENCES[c];
+    const v = scores[c];
+    const pct = v === null ? 0 : Math.min(100, (v/20)*100);
+    rows += `<div class="score-row">
+      <div class="score-label">${c} · ${info.nom}</div>
+      <div class="score-track"><div class="score-fill" style="width:${pct}%; background:${info.couleur};"></div></div>
+      <div class="score-value ${v===null?'na':''}">${v===null ? "—" : v.toFixed(2)}</div>
+    </div>`;
+  }
+  card.innerHTML = `<div class="scorecard-title">${titre}</div>${rows}`;
+  return card;
+}
+function renderSection(section, project, readOnly){
+  const totalCoef = {};
+  for(const item of section.items) for(const c of Object.keys(item.coef||{})) totalCoef[c] = (totalCoef[c]||0) + item.coef[c];
+  const coefLabel = Object.keys(totalCoef).map(c => `${c}·${totalCoef[c]}`).join("  ");
+  const wrap = document.createElement("div");
+  wrap.className = "section-block";
+  wrap.innerHTML = `<div class="section-head"><div class="section-title">${escapeHtml(section.titre)}</div><div class="section-meta">${coefLabel}</div></div>
+    ${section.sousTitre ? `<div class="section-sub">${escapeHtml(section.sousTitre)}</div>` : ""}`;
+  section.items.forEach((item,i) => wrap.appendChild(renderItem(item, i+1, project, readOnly)));
+  return wrap;
+}
+function renderItem(item, idx, project, readOnly){
+  const evals = (project.evals && project.evals[currentSemestre]) || {};
+  const ev = evals[item.id] || {};
+  const row = document.createElement("div");
+  row.className = "item-row";
+  const chips = Object.keys(item.coef||{}).map(c => `<span class="chip" style="background:${COMPETENCES[c].couleur}">${c}·${item.coef[c]}</span>`).join("");
+  const hasBareme = !item.editable;
+  const commentHasText = ev.commentaire && ev.commentaire.trim();
+  row.innerHTML = `
+    <div class="item-top">
+      <div class="item-idx">${idx}.</div>
+      <div class="item-main">
+        <div class="item-title-edit"><span class="item-title">${escapeHtml(item.titre)}</span>${item.duree ? `<span class="item-duration">${escapeHtml(item.duree)}</span>` : ""}</div>
+        <div class="item-chips">${chips}</div>
+        ${hasBareme ? `<button class="item-bareme-toggle" type="button">Voir le barème</button>` : `<div style="font-size:12px; color:var(--ink-muted); margin-top:6px;">${escapeHtml(item.desc||"")}</div>`}
+        ${hasBareme ? `<div class="item-bareme"><div><b>Faible</b>${escapeHtml(item.faible||"")}</div><div><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
+        <div class="item-comment"><textarea id="comment-${item.id}" placeholder="Commentaire pour l'équipe…" ${readOnly?"disabled":""}>${escapeHtml(ev.commentaire||"")}</textarea></div>
+      </div>
+      <div class="item-inputs">
+        <div class="field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}></div>
+        <div class="field"><label for="date-${item.id}">Date</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
+        <button class="item-comment-toggle ${commentHasText?'has-text':''}" type="button" title="Commentaire">✎</button>
+      </div>
+    </div>`;
+  row.querySelector('input[type=number]').addEventListener("change", e => updateEval(item.id, "note", e.target.value));
+  row.querySelector('input[type=date]').addEventListener("change", e => updateEval(item.id, "date", e.target.value));
+  row.querySelector('.item-comment textarea').addEventListener("change", e => updateEval(item.id, "commentaire", e.target.value));
+  row.querySelector(".item-comment-toggle").addEventListener("click", () => row.querySelector(".item-comment").classList.toggle("open"));
+  if(hasBareme) row.querySelector(".item-bareme-toggle").addEventListener("click", () => row.querySelector(".item-bareme").classList.toggle("open"));
+  return row;
+}
+function renderIndividualisation(project, readOnly){
+  const etuIdx = (project.etudiants||[]).map((n,i)=>({n,i}));
+  const scores = computeScores(project, [currentSemestre]);
+  const wrap = document.createElement("div");
+  wrap.className = "indiv-panel";
+  wrap.innerHTML = `<div class="disclosure closed"><span class="chev">▾</span> Individualisation des notes (semestre ${currentSemestre==='S3'?'3':'4'})</div>`;
+  const body = document.createElement("div");
+  body.className = "indiv-body closed";
+  if(etuIdx.length === 0){
+    body.innerHTML = `<p style="color:var(--ink-muted); font-size:12.5px;">Aucun étudiant renseigné pour ce projet.</p>`;
+  } else {
+    let thead = "<tr><th>Étudiant</th>" + Object.keys(COMPETENCES).map(c=>`<th>${c}</th>`).join("") + "</tr>";
+    let rows = "";
+    const indiv = (project.individualisation && project.individualisation[currentSemestre]) || {};
+    for(const {n,i} of etuIdx){
+      const ov = indiv[i] || {};
+      rows += `<tr><td>${escapeHtml(n)}</td>`;
+      for(const c of Object.keys(COMPETENCES)){
+        const def = scores[c];
+        const val = ov[c] !== undefined && ov[c] !== null ? ov[c] : "";
+        rows += `<td class="num"><input id="indiv-${i}-${c}" type="number" min="0" max="20" step="0.5" placeholder="${def===null?'—':def.toFixed(1)}" data-etu="${i}" data-comp="${c}" value="${val}" ${readOnly?"disabled":""}></td>`;
+      }
+      rows += "</tr>";
+    }
+    body.innerHTML = `<table class="indiv-table"><thead>${thead}</thead><tbody>${rows}</tbody></table><p class="indiv-default">Champ vide = note d'équipe reprise automatiquement.</p>`;
+    body.querySelectorAll("input").forEach(inp => {
+      inp.addEventListener("change", e => {
+        const etu = e.target.dataset.etu, comp = e.target.dataset.comp;
+        const v = e.target.value === "" ? null : parseFloat(e.target.value);
+        updateIndiv(etu, comp, v);
+      });
+    });
+  }
+  wrap.appendChild(body);
+  wrap.querySelector(".disclosure").addEventListener("click", () => {
+    wrap.querySelector(".disclosure").classList.toggle("closed");
+    body.classList.toggle("closed");
+  });
+  return wrap;
+}
+
+/* ---------------- mutations ---------------- */
+function refreshScoresOnly(){
+  const main = document.getElementById("main");
+  const p = projects.get(currentProjectId);
+  const cards = main.querySelectorAll(".scorecard");
+  if(cards.length === 2 && p){
+    cards[0].replaceWith(renderScorecard(p, [currentSemestre], `Scores — semestre ${currentSemestre==='S3'?'3':'4'}`));
+    main.querySelectorAll(".scorecard")[1].replaceWith(renderScorecard(p, ["S3","S4"], "Scores — cumul annuel (S3 + S4)"));
+  }
+}
+function flushPendingPatch(){
+  clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(async () => {
+    const p = projects.get(currentProjectId);
+    pendingTimer = null;
+    if(!p) return;
+    try{
+      await pb.collection("projects").update(p.id, { evals: p.evals, individualisation: p.individualisation });
+      showToast("Enregistré");
+    }catch(e){ showToast("Échec de l'enregistrement"); }
+  }, 400);
+}
+function updateEval(itemId, field, value){
+  const p = projects.get(currentProjectId);
+  if(!p.evals) p.evals = {S3:{},S4:{}};
+  if(!p.evals[currentSemestre][itemId]) p.evals[currentSemestre][itemId] = {};
+  p.evals[currentSemestre][itemId][field] = value;
+  refreshScoresOnly();
+  flushPendingPatch();
+}
+function updateIndiv(etuIdx, comp, value){
+  const p = projects.get(currentProjectId);
+  if(!p.individualisation) p.individualisation = {S3:{},S4:{}};
+  if(!p.individualisation[currentSemestre][etuIdx]) p.individualisation[currentSemestre][etuIdx] = {};
+  p.individualisation[currentSemestre][etuIdx][comp] = value;
+  flushPendingPatch();
+}
+function selectProject(id){ currentProjectId = id; view = "project"; renderAll(); }
+
+/* ---------------- unlock modal ---------------- */
+function openUnlockModal(id){
+  unlockTargetId = id;
+  const p = projects.get(id);
+  const backdrop = document.getElementById("modal-unlock");
+  const hasCodes = (p.codes||[]).length > 0;
+  document.getElementById("unlock-error").hidden = true;
+  document.getElementById("unlock-title").textContent = hasCodes ? "Débloquer l'écriture" : "Créer un code d'écriture";
+  document.getElementById("unlock-hint").textContent = hasCodes
+    ? `Saisissez le code d'écriture pour "${p.nom}".`
+    : `Aucun code n'existe encore pour "${p.nom}". Créez le vôtre.`;
+  const body = document.getElementById("unlock-body");
+  if(hasCodes){
+    body.innerHTML = `
+      <div class="field-full"><label for="unlock-code">Code</label><input type="password" id="unlock-code"></div>
+      <button class="modal-link" id="unlock-switch-create" type="button">Je n'ai pas de code → en créer un</button>`;
+    body.querySelector("#unlock-switch-create").addEventListener("click", () => renderCreateCodeForm(body, p));
+  } else {
+    renderCreateCodeForm(body, p);
+  }
+  backdrop.classList.add("open");
+}
+function renderCreateCodeForm(body, p){
+  document.getElementById("unlock-title").textContent = "Créer un code d'écriture";
+  document.getElementById("unlock-hint").textContent = `Choisissez un code pour "${p.nom}". Chaque encadrant peut créer le sien.`;
+  body.innerHTML = `
+    <div class="field-full"><label for="unlock-label">Votre nom (affiché aux autres encadrants)</label><input type="text" id="unlock-label"></div>
+    <div class="field-full"><label for="unlock-code">Nouveau code</label><input type="password" id="unlock-code"></div>
+    <div class="field-full"><label for="unlock-code-confirm">Confirmer le code</label><input type="password" id="unlock-code-confirm"></div>`;
+}
+document.getElementById("unlock-cancel").addEventListener("click", () => document.getElementById("modal-unlock").classList.remove("open"));
+document.getElementById("unlock-submit").addEventListener("click", async () => {
+  const p = projects.get(unlockTargetId);
+  const errEl = document.getElementById("unlock-error");
+  errEl.hidden = true;
+  const labelInput = document.getElementById("unlock-label");
+  const codeInput = document.getElementById("unlock-code");
+  const confirmInput = document.getElementById("unlock-code-confirm");
+  const code = codeInput ? codeInput.value : "";
+  if(!code){ errEl.textContent = "Code requis."; errEl.hidden = false; return; }
+  if(labelInput){
+    if(!labelInput.value.trim()){ errEl.textContent = "Votre nom est requis."; errEl.hidden = false; return; }
+    if(code !== confirmInput.value){ errEl.textContent = "Les codes ne correspondent pas."; errEl.hidden = false; return; }
+    const hash = await sha256Hex(code);
+    const codes = (p.codes||[]).concat([{label:labelInput.value.trim(), hash, createdAt:new Date().toISOString()}]);
+    p.codes = codes;
+    await pb.collection("projects").update(p.id, {codes});
+    unlockedProjects.set(unlockTargetId, labelInput.value.trim());
+    saveSession();
+    document.getElementById("modal-unlock").classList.remove("open");
+    showToast("Écriture activée");
+    renderAll();
+  } else {
+    const hash = await sha256Hex(code);
+    const match = (p.codes||[]).find(c => c.hash === hash);
+    if(!match){ errEl.textContent = "Code incorrect."; errEl.hidden = false; return; }
+    unlockedProjects.set(unlockTargetId, match.label);
+    saveSession();
+    document.getElementById("modal-unlock").classList.remove("open");
+    showToast("Écriture activée");
+    renderAll();
+  }
+});
+
+/* ---------------- admin modal ---------------- */
+function openAdminModal(){
+  const backdrop = document.getElementById("modal-admin");
+  document.getElementById("admin-modal-error").hidden = true;
+  document.getElementById("admin-code-input").value = "";
+  const exists = adminConfigCache && adminConfigCache.code_hash;
+  document.getElementById("admin-modal-title").textContent = exists ? "Mode administrateur" : "Créer le code administrateur";
+  document.getElementById("admin-modal-hint").textContent = exists
+    ? "Saisissez le code administrateur pour gérer le référentiel et l'import Excel."
+    : "Aucun code administrateur n'existe encore. Choisissez-en un.";
+  document.getElementById("admin-code-confirm-wrap").hidden = !!exists;
+  backdrop.classList.add("open");
+}
+document.getElementById("admin-modal-cancel").addEventListener("click", () => document.getElementById("modal-admin").classList.remove("open"));
+document.getElementById("admin-modal-submit").addEventListener("click", async () => {
+  const errEl = document.getElementById("admin-modal-error");
+  errEl.hidden = true;
+  const code = document.getElementById("admin-code-input").value;
+  if(!code){ errEl.textContent = "Code requis."; errEl.hidden = false; return; }
+  const exists = adminConfigCache && adminConfigCache.code_hash;
+  if(!exists){
+    const confirm2 = document.getElementById("admin-code-confirm").value;
+    if(code !== confirm2){ errEl.textContent = "Les codes ne correspondent pas."; errEl.hidden = false; return; }
+    const hash = await sha256Hex(code);
+    try{
+      if(adminRecordId){
+        await pb.collection("config").update(adminRecordId, {value:{code_hash:hash, createdAt:new Date().toISOString()}});
+      } else {
+        const rec = await pb.collection("config").create({key:"admin", value:{code_hash:hash, createdAt:new Date().toISOString()}});
+        adminRecordId = rec.id;
+      }
+      adminConfigCache = {code_hash: hash};
+      adminUnlocked = true; saveSession();
+      document.getElementById("modal-admin").classList.remove("open");
+      showToast("Code administrateur créé");
+      renderAll();
+    }catch(e){ errEl.textContent = "Échec de la création du code."; errEl.hidden = false; }
+  } else {
+    const hash = await sha256Hex(code);
+    if(hash !== adminConfigCache.code_hash){ errEl.textContent = "Code incorrect."; errEl.hidden = false; return; }
+    adminUnlocked = true; saveSession();
+    document.getElementById("modal-admin").classList.remove("open");
+    showToast("Mode administrateur activé");
+    renderAll();
+  }
+});
+document.getElementById("btn-admin-toggle").addEventListener("click", () => {
+  if(adminUnlocked){ adminUnlocked = false; saveSession(); renderAll(); }
+  else openAdminModal();
+});
+document.getElementById("nav-referentiel").addEventListener("click", () => { view = "referentiel"; refDraft = null; renderAll(); });
+document.getElementById("archived-toggle").addEventListener("change", e => { showArchived = e.target.checked; renderAll(); });
+document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
+document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
+document.getElementById("filter-parcours").addEventListener("change", e => { filterParcours = e.target.value; renderSidebar(); });
+
+/* ---------------- project edit modal (admin / encadrant) ---------------- */
+function openProjectEditModal(id, scope){
+  projectEditId = id;
+  projectEditScope = scope || "admin";
+  const p = id ? projects.get(id) : {nom:"",sujet:"",formation:"",parcours:"",etudiants:[],encadrants:[]};
+  const isAdmin = projectEditScope === "admin";
+  document.getElementById("pe-title").textContent = id ? "Modifier le projet" : "Ajouter un projet";
+  document.getElementById("pe-hint").textContent = isAdmin
+    ? "Ces informations sont normalement issues de l'import Excel. Ne les modifiez ici qu'en cas d'exception."
+    : "En tant qu'encadrant de ce projet, vous pouvez corriger le nom, le parcours et la liste des étudiants.";
+  document.getElementById("pe-sujet-wrap").hidden = !isAdmin;
+  document.getElementById("pe-formation-wrap").hidden = !isAdmin;
+  document.getElementById("pe-encadrants-wrap").hidden = !isAdmin;
+  document.getElementById("pe-nom").value = p.nom || "";
+  document.getElementById("pe-sujet").value = p.sujet || "";
+  document.getElementById("pe-formation").value = p.formation || "";
+  document.getElementById("pe-parcours").value = p.parcours || "";
+  const srows = document.getElementById("pe-student-rows"); srows.innerHTML = "";
+  (p.etudiants && p.etudiants.length ? p.etudiants : [""]).forEach(v => addPeRow(srows, v));
+  const erows = document.getElementById("pe-encadrant-rows"); erows.innerHTML = "";
+  (p.encadrants && p.encadrants.length ? p.encadrants : [""]).forEach(v => addPeRow(erows, v));
+  document.getElementById("modal-project-edit").classList.add("open");
+}
+function addPeRow(container, value){
+  const row = document.createElement("div");
+  row.className = "student-row";
+  row.innerHTML = `<input type="text" value="${escapeHtml(value||"")}"><button class="btn-ghost btn-sm" type="button">✕</button>`;
+  row.querySelector("button").addEventListener("click", () => row.remove());
+  container.appendChild(row);
+}
+document.getElementById("pe-add-student").addEventListener("click", () => addPeRow(document.getElementById("pe-student-rows"), ""));
+document.getElementById("pe-add-encadrant").addEventListener("click", () => addPeRow(document.getElementById("pe-encadrant-rows"), ""));
+document.getElementById("pe-cancel").addEventListener("click", () => document.getElementById("modal-project-edit").classList.remove("open"));
+document.getElementById("pe-save").addEventListener("click", async () => {
+  const nom = document.getElementById("pe-nom").value.trim();
+  if(!nom){ alert("Le nom du projet est obligatoire."); return; }
+  const parcours = document.getElementById("pe-parcours").value.trim();
+  const etudiants = Array.from(document.querySelectorAll("#pe-student-rows input")).map(i=>i.value.trim()).filter(Boolean);
+  const isAdmin = projectEditScope === "admin";
+  try{
+    if(projectEditId){
+      const p = projects.get(projectEditId);
+      const patch = {nom, parcours, etudiants};
+      if(isAdmin){
+        patch.sujet = document.getElementById("pe-sujet").value.trim();
+        patch.formation = document.getElementById("pe-formation").value.trim();
+        patch.encadrants = Array.from(document.querySelectorAll("#pe-encadrant-rows input")).map(i=>i.value.trim()).filter(Boolean);
+      }
+      Object.assign(p, patch);
+      await pb.collection("projects").update(p.id, patch);
+    } else {
+      const sujet = document.getElementById("pe-sujet").value.trim();
+      const formation = document.getElementById("pe-formation").value.trim();
+      const encadrants = Array.from(document.querySelectorAll("#pe-encadrant-rows input")).map(i=>i.value.trim()).filter(Boolean);
+      const slug = slugify(nom);
+      const rec = await pb.collection("projects").create({
+        slug, nom,sujet,formation,parcours,etudiants,encadrants,codes:[],archived:false,
+        evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}
+      });
+      projects.set(slug, rec);
+      currentProjectId = slug; view = "project";
+    }
+    document.getElementById("modal-project-edit").classList.remove("open");
+    showToast("Projet enregistré");
+    renderAll();
+  }catch(e){ alert("Échec de l'enregistrement : " + (e && e.message ? e.message : "erreur inconnue")); }
+});
+document.getElementById("btn-add-project").addEventListener("click", () => openProjectEditModal(null, "admin"));
+
+/* ---------------- Excel import (admin) ---------------- */
+function normalizeHeader(h){ return String(h||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]/g,""); }
+document.getElementById("btn-import").addEventListener("click", () => document.getElementById("file-import").click());
+document.getElementById("file-import").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if(!file) return;
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, {type:"array"});
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(sheet, {defval:""});
+  if(rows.length === 0){ alert("Le fichier ne contient aucune ligne exploitable."); return; }
+  const keyMap = {};
+  for(const h of Object.keys(rows[0])){
+    const n = normalizeHeader(h);
+    if(n === "nom") keyMap[h] = "nom";
+    else if(n === "prenom") keyMap[h] = "prenom";
+    else if(n === "projet") keyMap[h] = "projet";
+    else if(n === "formation") keyMap[h] = "formation";
+    else if(n === "parcours") keyMap[h] = "parcours";
+    else { const m = n.match(/^encadrant(\d+)$/); if(m) keyMap[h] = "encadrant"+m[1]; }
+  }
+  if(!Object.values(keyMap).includes("projet")){ alert('Colonne "Projet" introuvable dans le fichier.'); return; }
+  const groups = {};
+  for(const r of rows){
+    const rr = {}; for(const [orig,k] of Object.entries(keyMap)) rr[k] = String(r[orig]||"").trim();
+    const projet = rr.projet;
+    if(!projet) continue;
+    const id = slugify(projet);
+    if(!groups[id]) groups[id] = { nom:projet, formation:rr.formation||"", parcours:rr.parcours||"", etudiants:[], encadrants:[] };
+    const g = groups[id];
+    const nomPrenom = `${rr.nom||""} ${rr.prenom||""}`.trim();
+    if(nomPrenom && !g.etudiants.includes(nomPrenom)) g.etudiants.push(nomPrenom);
+    for(const k of Object.keys(rr)){
+      if(k.startsWith("encadrant") && rr[k] && !g.encadrants.includes(rr[k])) g.encadrants.push(rr[k]);
+    }
+  }
+  importDiff = computeImportDiff(groups);
+  renderImportDiff();
+  document.getElementById("modal-import-diff").classList.add("open");
+});
+function sameRoster(existing, g){
+  return existing.formation === g.formation && existing.parcours === g.parcours &&
+    JSON.stringify(existing.etudiants||[]) === JSON.stringify(g.etudiants) &&
+    JSON.stringify(existing.encadrants||[]) === JSON.stringify(g.encadrants);
+}
+function computeImportDiff(groups){
+  const toCreate = [], toUpdate = [], toArchive = [], toReactivate = [];
+  const newIds = new Set(Object.keys(groups));
+  for(const [id,g] of Object.entries(groups)){
+    const existing = projects.get(id);
+    if(!existing){ toCreate.push({id,...g}); }
+    else {
+      if(existing.archived) toReactivate.push({id,nom:g.nom});
+      if(existing.archived || !sameRoster(existing,g)) toUpdate.push({id,...g});
+    }
+  }
+  for(const [id,data] of projects.entries()){
+    if(!newIds.has(id) && !data.archived) toArchive.push({id,nom:data.nom});
+  }
+  return {toCreate,toUpdate,toArchive,toReactivate};
+}
+function renderImportDiff(){
+  const el = document.getElementById("diff-summary");
+  const rows = [
+    ["Nouveaux projets", importDiff.toCreate],
+    ["Projets mis à jour", importDiff.toUpdate],
+    ["Projets réactivés (revenus dans l'Excel)", importDiff.toReactivate],
+    ["Projets absents du fichier → archivés (notes conservées)", importDiff.toArchive],
+  ];
+  el.innerHTML = rows.map(([label,list]) => `
+    <div class="diff-row">
+      <div><div>${label}</div>${list.length ? `<div class="diff-names">${list.map(x=>escapeHtml(x.nom)).join(", ")}</div>` : ""}</div>
+      <b>${list.length}</b>
+    </div>`).join("");
+}
+document.getElementById("diff-cancel").addEventListener("click", () => document.getElementById("modal-import-diff").classList.remove("open"));
+document.getElementById("diff-confirm").addEventListener("click", async () => {
+  try{
+    for(const g of importDiff.toCreate){
+      const {id,...rest} = g;
+      const rec = await pb.collection("projects").create({slug:id, ...rest, codes:[], archived:false, evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}});
+      projects.set(id, rec);
+    }
+    for(const g of importDiff.toUpdate){
+      const {id,...rest} = g;
+      const existing = projects.get(id);
+      const patch = {...rest, archived:false};
+      Object.assign(existing, patch);
+      await pb.collection("projects").update(existing.id, patch);
+    }
+    for(const g of importDiff.toArchive){
+      const existing = projects.get(g.id);
+      existing.archived = true;
+      await pb.collection("projects").update(existing.id, {archived:true});
+    }
+    document.getElementById("modal-import-diff").classList.remove("open");
+    showToast("Import terminé");
+    renderAll();
+  }catch(e){ alert("Échec de l'import : " + (e && e.message ? e.message : "erreur inconnue")); }
+});
+
+/* ---------------- export backup ---------------- */
+document.getElementById("btn-export-json").addEventListener("click", () => {
+  const bundle = { referentiel, projects: Object.fromEntries(projects) };
+  const blob = new Blob([JSON.stringify(bundle, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "carnet-sae-sauvegarde.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+
+/* ---------------- init ---------------- */
+async function init(){
+  loadSession();
+  renderAll();
+  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects()]);
+  subscribeRealtime();
+}
+init();
+</script>
+</body>
+</html>

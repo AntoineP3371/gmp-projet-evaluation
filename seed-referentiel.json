@@ -1,0 +1,397 @@
+[
+  {
+    "key": "referentiel",
+    "value": {
+      "sections": [
+        {
+          "id": "mdp",
+          "titre": "Management de projet",
+          "items": [
+            {
+              "id": "mp1",
+              "titre": "Cahier des charges du projet",
+              "duree": "4 à 6 h",
+              "coef": {
+                "C1": 4
+              },
+              "desc": "Réaliser le cahier des charges du projet à partir de la trame du cours de Gestion de projet (Moodle OPI S2).",
+              "faible": "Les contraintes du projet ne sont pas comprises et/ou absentes. Les objectifs sont mal définis. Les jalons ne sont pas posés.",
+              "moyen": "Les contraintes sont partiellement comprises et/ou formalisées. Les objectifs sont incomplets.",
+              "bon": "Les contraintes sont complètement comprises et formalisées. Les objectifs sont définis et atteignables. Les jalons sont posés."
+            },
+            {
+              "id": "mp2",
+              "titre": "Objectifs SMART",
+              "coef": {
+                "C1": 1
+              },
+              "desc": "Reformuler complètement l'objectif du projet à partir de la méthode SMART (Spécifique, Mesurable, Atteignable et réaliste, Temporel).",
+              "faible": "Plus d'un critère n'est pas suffisamment spécifié.",
+              "moyen": "Un critère n'est pas suffisamment spécifié.",
+              "bon": "Tous les critères sont définis."
+            },
+            {
+              "id": "mp3",
+              "titre": "Analyse fonctionnelle",
+              "duree": "4 h max",
+              "coef": {
+                "C1": 4
+              },
+              "desc": "Réaliser une analyse fonctionnelle faisant apparaître l'énoncé du besoin, les diagrammes des interacteurs et la caractérisation des fonctions.",
+              "faible": "Les attentes du client sont insuffisamment comprises et/ou mal formulées. Les interacteurs sont incomplets et/ou la critérisation est très incomplète.",
+              "moyen": "Les attentes du client sont comprises mais mal formulées. Les interacteurs sont partiellement identifiés et/ou la critérisation est incomplète mais utilisable.",
+              "bon": "Les attentes du client sont comprises et correctement formalisées (bête à cornes). Les interacteurs sont tous identifiés et les fonctions sont suffisamment critérisées."
+            },
+            {
+              "id": "mp4",
+              "titre": "Organigramme des tâches",
+              "duree": "2 h max",
+              "coef": {
+                "C1": 2
+              },
+              "desc": "À partir de la liste des livrables attendus, établir un organigramme des tâches.",
+              "faible": "L'organigramme est très incomplet ou ne peut pas être utilisé en l'état.",
+              "moyen": "L'organigramme est incomplet.",
+              "bon": "L'organigramme est complet (disponibilités, évaluation, périodes des tâches)."
+            },
+            {
+              "id": "mp5",
+              "titre": "Suivi de l'organigramme",
+              "coef": {
+                "C1": 2
+              },
+              "desc": "Compléter et/ou détailler l'organigramme des tâches au cours du projet et assurer un suivi des réalisations (maintien à jour du Gantt).",
+              "faible": "Le gantt n'est pas suivi régulièrement et/ou n'est pas présenté régulièrement.",
+              "moyen": "Le gantt est complété et/ou présenté de manière irrégulière.",
+              "bon": "Le gantt est complété et présenté régulièrement."
+            },
+            {
+              "id": "mp6",
+              "titre": "Gantt prévisionnel",
+              "duree": "2 h max",
+              "coef": {
+                "C1": 1,
+                "C4": 1
+              },
+              "desc": "Établir un gantt prévisionnel en fonction des tâches du projet à l'échelle macro et des contraintes du planning annuel GMP (évaluations, stage…) sur MindView.",
+              "faible": "Le gantt est très incomplet (manque des tâches ou des contraintes) et/ou il n'est pas réalisé avec un outil adapté.",
+              "moyen": "Le gantt est incomplet mais présenté avec un outil adapté.",
+              "bon": "Le gantt est suffisamment complet pour être utilisé et réalisé avec un outil adapté."
+            },
+            {
+              "id": "mp7",
+              "titre": "Suivi du Gantt",
+              "coef": {
+                "C1": 1,
+                "C4": 1
+              },
+              "desc": "Assurer le suivi et la mise à jour régulière du Gantt sur MindView.",
+              "faible": "Le gantt n'est pas mis à jour.",
+              "moyen": "Le gantt est mis à jour mais pas régulièrement (uniquement lors des soutenances par exemple).",
+              "bon": "Le gantt est mis à jour à toutes les séances."
+            }
+          ]
+        },
+        {
+          "id": "con",
+          "titre": "Conception",
+          "items": [
+            {
+              "id": "co1",
+              "titre": "FAST de niveau 1",
+              "coef": {
+                "C1": 2,
+                "C4": 1
+              },
+              "desc": "Réaliser un diagramme FAST des fonctions (principales et contraintes) de la phase d'utilisation, sans les solutions.",
+              "faible": "Le FAST est insuffisamment complété et/ou ne respecte pas les standards et/ou l'outil n'est pas adapté.",
+              "moyen": "Le FAST est partiellement complet et/ou les standards sont en partie respectés. L'outil est adapté.",
+              "bon": "Le FAST est complet et réalisé avec un outil adapté. Les standards de mise en œuvre sont complètement respectés."
+            },
+            {
+              "id": "co2",
+              "titre": "Recherche de solutions",
+              "coef": {
+                "C2": 2
+              },
+              "desc": "Réaliser une bibliographie des principes de solutions existants et créés en prenant en compte les fonctions techniques énoncées (au moins une fonction technique).",
+              "faible": "La bibliographie est insuffisante et/ou mal réalisée. Les principes de solutions ne répondent pas tous aux fonctions recherchées.",
+              "moyen": "La bibliographie est partiellement réalisée et/ou incomplète et/ou les principes de solutions répondent partiellement aux fonctions.",
+              "bon": "La bibliographie est complète. Les principes de solutions énoncés répondent correctement aux fonctions."
+            },
+            {
+              "id": "co3",
+              "titre": "Critères de choix",
+              "coef": {
+                "C1": 1,
+                "C2": 2
+              },
+              "desc": "Déterminer les critères de choix en fonction du cahier des charges fonctionnel (fabrication possible à l'IUT…) et du produit (masse…).",
+              "faible": "Les critères de choix ne sont pas ou insuffisamment définis et/ou sont inappropriés.",
+              "moyen": "Les critères de choix sont partiellement définis. Ils sont en lien avec le cahier des charges.",
+              "bon": "Les critères de choix sont appropriés et complètement définis. Ils sont en lien avec le cahier des charges."
+            },
+            {
+              "id": "co4",
+              "titre": "Argumentation du choix",
+              "coef": {
+                "C4": 2
+              },
+              "desc": "Argumenter le choix d'un principe de solution parmi d'autres.",
+              "faible": "Les choix sont insuffisamment argumentés à l'écrit et/ou à l'oral.",
+              "moyen": "Les choix sont partiellement argumentés et/ou les arguments manquent de pertinence vis-à-vis des critères.",
+              "bon": "Les choix sont suffisamment argumentés et les arguments sont pertinents vis-à-vis des critères de choix."
+            },
+            {
+              "id": "co5",
+              "titre": "Schéma d'architecture",
+              "coef": {
+                "C3": 2,
+                "C4": 1
+              },
+              "desc": "Établir un schéma d'architecture de la solution choisie (schéma cinématique avec modélisation des actions mécaniques), augmenté des détails des liaisons et de la structure.",
+              "faible": "Le schéma est difficilement lisible et/ou les éléments ne sont pas identifiables et/ou l'orientation est mal choisie et/ou le dessin est fait sans soin.",
+              "moyen": "Le schéma est lisible mais les éléments sont difficilement identifiables et/ou les dessins manquent de soin.",
+              "bon": "Le schéma est lisible, les éléments sont identifiés et l'orientation est judicieuse. Les dessins sont réalisés avec soin."
+            },
+            {
+              "id": "co6",
+              "titre": "Schéma technologique",
+              "coef": {
+                "C3": 2,
+                "C4": 1
+              },
+              "desc": "Établir un schéma technologique des solutions (schéma avec les premières surfaces fonctionnelles).",
+              "faible": "Le schéma est difficilement lisible et/ou les éléments ne sont pas identifiables et/ou l'orientation est mal choisie et/ou le dessin est fait sans soin.",
+              "moyen": "Le schéma est lisible mais les éléments sont difficilement identifiables et/ou les dessins manquent de soin.",
+              "bon": "Le schéma est lisible, les éléments sont identifiés et l'orientation est judicieuse. Les dessins sont réalisés avec soin."
+            },
+            {
+              "id": "co7",
+              "titre": "Note de calcul — paramétrage",
+              "coef": {
+                "C2": 2
+              },
+              "desc": "Établir un paramétrage du problème.",
+              "faible": "Le paramétrage est absent et/ou inapproprié (paramètres mal choisis).",
+              "moyen": "Le paramétrage est partiellement utilisable (manque de paramètres).",
+              "bon": "Le paramétrage est complet et utile."
+            },
+            {
+              "id": "co8",
+              "titre": "Étude de dimensionnement",
+              "coef": {
+                "C2": 2,
+                "C4": 2
+              },
+              "desc": "Établir une étude de dimensionnement (cinématique et/ou actions mécaniques et/ou RDM…) et présenter les résultats obtenus.",
+              "faible": "Les calculs sont faux et/ou la méthode ne permet pas d'aboutir aux résultats recherchés. Les résultats sont faux et/ou ne sont pas présentés.",
+              "moyen": "Les calculs sont partiellement justes et/ou les méthodes sont judicieuses. La présentation des résultats est incomplète et la conclusion est bâclée.",
+              "bon": "Les méthodes sont judicieusement choisies et les calculs aboutissent à des résultats. Les résultats sont présentés distinctement et une conclusion est faite."
+            },
+            {
+              "id": "co9",
+              "titre": "Maquette numérique",
+              "coef": {
+                "C3": 2,
+                "C4": 1
+              },
+              "desc": "Réaliser une maquette numérique de l'assemblage sur base d'un squelette.",
+              "faible": "La maquette numérique n'est pas réalisée à partir d'un squelette de position et/ou de forme. Les standards de mise en forme ne sont pas suffisamment respectés.",
+              "moyen": "La maquette numérique est imparfaite et/ou partiellement utilisable : arborescence désordonnée et/ou squelette non identifié ou incomplet.",
+              "bon": "La maquette numérique est correctement réalisée : arborescence propre, squelette présent, identifié et indépendant, modélisation des pièces issues du squelette."
+            },
+            {
+              "id": "co10",
+              "titre": "Modélisation 3D des pièces",
+              "coef": {
+                "C3": 2
+              },
+              "desc": "Réaliser la modélisation 3D des pièces en respectant les contraintes de réalisation (procédé, matière, disponibilités…).",
+              "faible": "Les pièces ne respectent pas les contraintes de réalisation.",
+              "moyen": "Les pièces ne respectent que partiellement les contraintes de réalisation.",
+              "bon": "Les pièces tiennent compte des contraintes de réalisation et sont attachées au squelette."
+            },
+            {
+              "id": "co11",
+              "titre": "Dessin de définition",
+              "coef": {
+                "C2": 1,
+                "C3": 2
+              },
+              "desc": "Réaliser le dessin de définition d'au moins une pièce avec la cotation tolérancée.",
+              "faible": "Le dessin de définition est partiellement réalisé et la cotation est insuffisante.",
+              "moyen": "Le dessin de définition ne permet que partiellement de comprendre la pièce et/ou la cotation est incomplète.",
+              "bon": "Le dessin de définition permet de comprendre la pièce complètement et la cotation est complète et justifiée."
+            },
+            {
+              "id": "co12",
+              "titre": "Dessin d'ensemble",
+              "coef": {
+                "C3": 2
+              },
+              "desc": "Réaliser un dessin d'ensemble avec une nomenclature associée (numérotation sur plan + tableau de nomenclature).",
+              "faible": "Le dessin d'ensemble est partiellement réalisé et/ou la nomenclature est absente.",
+              "moyen": "Le dessin d'ensemble est incomplet et/ou la nomenclature est incomplète.",
+              "bon": "Le dessin d'ensemble est complet (vues et numérotation des pièces) et la nomenclature est complète."
+            }
+          ]
+        },
+        {
+          "id": "ind",
+          "titre": "Industrialisation",
+          "items": [
+            {
+              "id": "in1",
+              "titre": "Gamme préparatoire",
+              "coef": {
+                "C1": 1,
+                "C2": 1
+              },
+              "desc": "Définir le procédé, la machine utilisée et la (macro)gamme d'usinage (phases et mise en position). La validation de cette partie est un go/no-go pour la suite.",
+              "faible": "La macrogamme ne prend pas en compte toutes les contraintes de la pièce ou est irréalisable.",
+              "moyen": "La macrogamme est incomplète mais le procédé ne sera pas remis en cause.",
+              "bon": "La macrogamme est complète et valide le procédé choisi."
+            },
+            {
+              "id": "in2",
+              "titre": "Documentation technique de fabrication",
+              "coef": {
+                "C1": 1,
+                "C2": 1
+              },
+              "desc": "Réaliser la mise en plan des éléments détaillés des pièces avec cotation tolérancée. Définir la liste des matières premières, éléments standards et outils à commander.",
+              "faible": "Les documents sont bâclés et ne donnent pas les informations nécessaires.",
+              "moyen": "Les documents sont établis mais il manque quelques informations.",
+              "bon": "La documentation est complète et utilisable pour la fabrication."
+            },
+            {
+              "id": "in3",
+              "titre": "Préparation avec les outils métiers",
+              "duree": "FAO, tôlerie, choix d'outils…",
+              "coef": {
+                "C2": 1,
+                "C3": 2
+              },
+              "desc": "À partir des documents de fabrication, réaliser la préparation des procédés choisis et définir tous les paramètres nécessaires (APEF, gammes d'usinage, choix d'outils, programmes FAO, calculs…).",
+              "faible": "Les outils ne sont pas maîtrisés et nécessitent de nombreuses corrections pour une mise en œuvre.",
+              "moyen": "Les outils sont utilisés avec assistance et nécessitent quelques corrections non critiques.",
+              "bon": "Les outils sont utilisés de façon autonome et correctement remplis."
+            },
+            {
+              "id": "in4",
+              "titre": "Mise en œuvre des moyens de l'atelier",
+              "coef": {
+                "C3": 4
+              },
+              "desc": "Mettre en œuvre les machines en autonomie ou sous l'assistance d'experts, toujours avec un encadrement, en respectant les règles vues en cours.",
+              "faible": "Les moyens ne sont pas maîtrisés et nécessitent une assistance élevée.",
+              "moyen": "Les moyens sont mis en œuvre avec assistance et nécessitent des corrections avant réalisation.",
+              "bon": "Les moyens sont correctement mis en œuvre et le résultat correspond aux attentes."
+            },
+            {
+              "id": "in5",
+              "titre": "Documentation finale — contrat de phase",
+              "coef": {
+                "C3": 2,
+                "C4": 1
+              },
+              "desc": "Rédiger la documentation définitive de la réalisation des pièces pour une reproduction ultérieure (contrat de phase, notice de mise en position, consignes). Rendre un dossier technique et les éléments informatiques nécessaires.",
+              "faible": "La documentation n'est pas finalisée et ne prend pas en compte la mise en œuvre réelle.",
+              "moyen": "La documentation est incomplète. Seule une partie est correctement réalisée.",
+              "bon": "La documentation est complète, exhaustive et permet une réutilisation."
+            },
+            {
+              "id": "in6",
+              "titre": "Validation des fabrications par contrôle",
+              "coef": {
+                "C3": 2,
+                "C4": 2
+              },
+              "desc": "Réaliser un procès-verbal de contrôle de la pièce ou de l'assemblage réalisé. Mettre en œuvre les moyens de métrologie.",
+              "faible": "Le PV est incomplet : il manque la majorité des cotes et/ou spécifications à observer et/ou les limites d'acceptation.",
+              "moyen": "Le PV est partiellement complet. Il manque une minorité des cotes et/ou spécifications à observer.",
+              "bon": "Le PV est complet."
+            },
+            {
+              "id": "in7",
+              "titre": "Assemblages et notices",
+              "coef": {
+                "C2": 1,
+                "C3": 2,
+                "C4": 1
+              },
+              "desc": "Assembler le produit et, le cas échéant, rédiger la notice associée.",
+              "faible": "L'assemblage n'est pas fait. La notice est incomplète et/ou l'ordre n'est pas bon et/ou les indications ne permettent pas le montage.",
+              "moyen": "L'assemblage est partiellement fait. La notice est complète mais manque de détails (dimensions d'outils, typologie de visserie…).",
+              "bon": "L'assemblage est fait. La notice est complète et permet le montage."
+            }
+          ]
+        },
+        {
+          "id": "ana",
+          "titre": "Analyse",
+          "items": [
+            {
+              "id": "an1",
+              "titre": "Analyse critique et amélioration",
+              "coef": {
+                "C4": 4
+              },
+              "desc": "Réaliser une analyse critique vis-à-vis du cahier des charges des pièces et/ou assemblages réalisés, en sélectionnant des critères d'observation, en les définissant et en les quantifiant. Proposer des améliorations.",
+              "faible": "L'analyse critique est incomplète, il manque des critères et/ou leur définition et/ou leur évaluation.",
+              "moyen": "L'analyse critique est partiellement complète. Les critères sont présents mais pas tous définis et/ou évalués.",
+              "bon": "L'analyse critique est complète : les critères sont présents, définis et évalués."
+            },
+            {
+              "id": "an2",
+              "titre": "Validité des pièces et assemblages",
+              "coef": {
+                "C3": 4,
+                "C4": 2
+              },
+              "desc": "Soumettre la pièce ou l'assemblage réalisé à l'évaluation par l'analyse critique.",
+              "faible": "La pièce ou l'assemblage ne répond pas aux critères du cahier des charges.",
+              "moyen": "La pièce ou l'assemblage répond partiellement aux critères du cahier des charges.",
+              "bon": "La pièce ou l'assemblage répond complètement aux critères du cahier des charges."
+            }
+          ]
+        },
+        {
+          "id": "par",
+          "titre": "Parcours",
+          "sousTitre": "Proposition libre d'au moins un critère d'évaluation par les responsables de parcours — titres et descriptions modifiables dans le panneau Référentiel (admin).",
+          "items": [
+            {
+              "id": "pa1",
+              "titre": "Critère 1",
+              "coef": {
+                "C5": 1
+              },
+              "desc": "",
+              "editable": true
+            },
+            {
+              "id": "pa2",
+              "titre": "Critère 2",
+              "coef": {
+                "C5": 1
+              },
+              "desc": "",
+              "editable": true
+            },
+            {
+              "id": "pa3",
+              "titre": "Critère 3",
+              "coef": {
+                "C5": 1
+              },
+              "desc": "",
+              "editable": true
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnet SAE GMP — consultation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+
+<div class="conn-banner" id="conn-banner">Connexion au serveur impossible — vérifiez votre réseau ou réessayez plus tard.</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-tag">SAE · BUT GMP</span>
+      <span class="brand-title">Carnet d'évaluation</span>
+      <span class="brand-sub">Consultation — lecture seule</span>
+    </div>
+
+    <input class="side-search" id="side-search" type="text" placeholder="Filtrer les projets…">
+    <div class="side-filters">
+      <select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select>
+      <select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select>
+    </div>
+
+    <ul class="team-list" id="team-list"></ul>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COMPETENCES = {
+  C1: { nom: "Spécifier",  couleur: "var(--c1)" },
+  C2: { nom: "Développer", couleur: "var(--c2)" },
+  C3: { nom: "Réaliser",   couleur: "var(--c3)" },
+  C4: { nom: "Exploiter",  couleur: "var(--c4)" },
+  C5: { nom: "Parcours",   couleur: "var(--c5)" },
+};
+
+const pb = new PocketBase(PB_URL);
+let referentiel = null;
+let allItems = [];
+let projects = new Map();
+let currentProjectId = null;
+let currentSemestre = "S3";
+let showArchived = false;
+let searchFilter = "";
+let filterFormation = "";
+let filterParcours = "";
+
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+let toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), 1500);
+}
+function showConnError(show){ document.getElementById("conn-banner").classList.toggle("show", !!show); }
+
+function allItemsFromReferentiel(ref){
+  if(!ref || !ref.sections) return [];
+  return ref.sections.flatMap(s => s.items.map(it => ({...it, sectionId: s.id})));
+}
+function computeScores(project, semestres){
+  const totals = { C1:{n:0,d:0}, C2:{n:0,d:0}, C3:{n:0,d:0}, C4:{n:0,d:0}, C5:{n:0,d:0} };
+  for(const sem of semestres){
+    const evals = (project.evals && project.evals[sem]) || {};
+    for(const item of allItems){
+      const ev = evals[item.id];
+      if(!ev || ev.note === undefined || ev.note === null || ev.note === "") continue;
+      const note = parseFloat(ev.note);
+      if(isNaN(note)) continue;
+      for(const c of Object.keys(item.coef||{})){
+        totals[c].n += note * item.coef[c];
+        totals[c].d += item.coef[c];
+      }
+    }
+  }
+  const out = {};
+  for(const c of Object.keys(totals)) out[c] = totals[c].d > 0 ? Math.round((totals[c].n/totals[c].d)*100)/100 : null;
+  return out;
+}
+
+/* ---------------- data loading ---------------- */
+async function loadReferentiel(){
+  try{
+    const rec = await pb.collection("config").getFirstListItem('key="referentiel"');
+    referentiel = rec.value;
+    allItems = allItemsFromReferentiel(referentiel);
+  }catch(e){ referentiel = null; allItems = []; }
+  renderAll();
+}
+async function loadProjects(){
+  try{
+    const list = await pb.collection("projects").getFullList({ sort: "nom" });
+    projects.clear();
+    for(const r of list) projects.set(r.id, r);
+    showConnError(false);
+  }catch(e){ showConnError(true); return; }
+  renderAll();
+}
+function subscribeRealtime(){
+  pb.collection("projects").subscribe("*", (e) => {
+    if(e.action === "delete") projects.delete(e.record.id);
+    else projects.set(e.record.id, e.record);
+    renderAll();
+  }).catch(()=>{});
+  pb.collection("config").subscribe("*", (e) => {
+    if(e.record.key === "referentiel"){ referentiel = e.record.value; allItems = allItemsFromReferentiel(referentiel); renderAll(); }
+  }).catch(()=>{});
+}
+
+/* ---------------- rendering (read-only) ---------------- */
+function renderAll(){
+  renderSidebar();
+  if(currentProjectId) renderProjectView(); else renderEmpty();
+}
+function matchesFilter(p){
+  if(filterFormation && p.formation !== filterFormation) return false;
+  if(filterParcours && p.parcours !== filterParcours) return false;
+  if(!searchFilter) return true;
+  const q = searchFilter.toLowerCase();
+  return (p.nom||"").toLowerCase().includes(q) || (p.sujet||"").toLowerCase().includes(q) || (p.parcours||"").toLowerCase().includes(q);
+}
+function populateFilterOptions(){
+  const formations = new Set(), parcoursSet = new Set();
+  for(const p of projects.values()){
+    if(p.formation) formations.add(p.formation);
+    if(p.parcours) parcoursSet.add(p.parcours);
+  }
+  fillSelect("filter-formation", formations, "Toutes formations", filterFormation);
+  fillSelect("filter-parcours", parcoursSet, "Tous parcours", filterParcours);
+}
+function fillSelect(id, values, allLabel, current){
+  const sel = document.getElementById(id);
+  const sorted = Array.from(values).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+  sel.innerHTML = `<option value="">${allLabel}</option>` + sorted.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+  sel.value = current;
+}
+function renderSidebar(){
+  populateFilterOptions();
+  const ul = document.getElementById("team-list");
+  ul.innerHTML = "";
+  const entries = Array.from(projects.entries())
+    .filter(([id,p]) => !p.archived && matchesFilter(p))
+    .sort((a,b) => a[1].nom.localeCompare(b[1].nom, "fr", {sensitivity:"base"}));
+  if(entries.length === 0){
+    const li = document.createElement("li");
+    li.style.cssText = "color:var(--ink-faint); font-size:12.5px; padding:6px 2px;";
+    li.textContent = "Aucun projet ne correspond.";
+    ul.appendChild(li);
+  } else {
+    for(const [id,p] of entries){
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.className = "team-item" + (currentProjectId===id ? " active" : "");
+      btn.innerHTML = `<div class="team-item-main">
+          <div class="team-item-name">${escapeHtml(p.nom)}</div>
+          <div class="team-item-sujet">${escapeHtml(p.sujet || p.parcours || "—")}</div>
+        </div>`;
+      btn.addEventListener("click", () => { currentProjectId = id; renderAll(); });
+      li.appendChild(btn);
+      ul.appendChild(li);
+    }
+  }
+}
+function renderEmpty(){
+  document.getElementById("main").innerHTML = `<div class="empty-state">
+    <h2>Aucun projet sélectionné</h2>
+    <p>Choisissez un projet à gauche pour consulter son évaluation.</p>
+  </div>`;
+}
+function renderProjectView(){
+  const main = document.getElementById("main");
+  const p = projects.get(currentProjectId);
+  if(!p){ currentProjectId = null; renderEmpty(); return; }
+  if(!referentiel){ main.innerHTML = `<div class="empty-state"><h2>Référentiel indisponible</h2></div>`; return; }
+  main.innerHTML = "";
+
+  const head = document.createElement("div");
+  head.className = "team-head";
+  const tags = [p.formation, p.parcours].filter(Boolean).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join("");
+  head.innerHTML = `
+    <div>
+      <h1>${escapeHtml(p.nom)}</h1>
+      ${p.sujet ? `<div style="color:var(--ink-muted); font-size:13.5px;">${escapeHtml(p.sujet)}</div>` : ""}
+      <div class="tags">${tags}</div>
+      <div class="people"><b>Étudiants —</b> ${p.etudiants && p.etudiants.length ? p.etudiants.map(escapeHtml).join(", ") : "aucun"}</div>
+    </div>
+    <div class="tabs">
+      <button class="tab ${currentSemestre==='S3'?'active':''}" data-sem="S3">Semestre 3</button>
+      <button class="tab ${currentSemestre==='S4'?'active':''}" data-sem="S4">Semestre 4</button>
+    </div>`;
+  main.appendChild(head);
+  head.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { currentSemestre = b.dataset.sem; renderProjectView(); }));
+
+  const banner = document.createElement("div");
+  banner.className = "banner-info";
+  banner.textContent = "Consultation en lecture seule. Seuls les encadrants peuvent modifier les notes.";
+  main.appendChild(banner);
+
+  main.appendChild(renderScorecard(p, [currentSemestre], `Scores — semestre ${currentSemestre==='S3'?'3':'4'}`));
+  main.appendChild(renderScorecard(p, ["S3","S4"], "Scores — cumul annuel (S3 + S4)"));
+
+  for(const section of referentiel.sections) main.appendChild(renderSection(section, p));
+  main.appendChild(renderIndividualisation(p));
+}
+function renderScorecard(project, semestres, titre){
+  const scores = computeScores(project, semestres);
+  const card = document.createElement("div");
+  card.className = "scorecard";
+  let rows = "";
+  for(const c of Object.keys(COMPETENCES)){
+    const info = COMPETENCES[c];
+    const v = scores[c];
+    const pct = v === null ? 0 : Math.min(100, (v/20)*100);
+    rows += `<div class="score-row">
+      <div class="score-label">${c} · ${info.nom}</div>
+      <div class="score-track"><div class="score-fill" style="width:${pct}%; background:${info.couleur};"></div></div>
+      <div class="score-value ${v===null?'na':''}">${v===null ? "—" : v.toFixed(2)}</div>
+    </div>`;
+  }
+  card.innerHTML = `<div class="scorecard-title">${titre}</div>${rows}`;
+  return card;
+}
+function renderSection(section, project){
+  const totalCoef = {};
+  for(const item of section.items) for(const c of Object.keys(item.coef||{})) totalCoef[c] = (totalCoef[c]||0) + item.coef[c];
+  const coefLabel = Object.keys(totalCoef).map(c => `${c}·${totalCoef[c]}`).join("  ");
+  const wrap = document.createElement("div");
+  wrap.className = "section-block";
+  wrap.innerHTML = `<div class="section-head"><div class="section-title">${escapeHtml(section.titre)}</div><div class="section-meta">${coefLabel}</div></div>
+    ${section.sousTitre ? `<div class="section-sub">${escapeHtml(section.sousTitre)}</div>` : ""}`;
+  section.items.forEach((item,i) => wrap.appendChild(renderItem(item, i+1, project)));
+  return wrap;
+}
+function renderItem(item, idx, project){
+  const evals = (project.evals && project.evals[currentSemestre]) || {};
+  const ev = evals[item.id] || {};
+  const row = document.createElement("div");
+  row.className = "item-row";
+  const chips = Object.keys(item.coef||{}).map(c => `<span class="chip" style="background:${COMPETENCES[c].couleur}">${c}·${item.coef[c]}</span>`).join("");
+  const hasBareme = !item.editable;
+  row.innerHTML = `
+    <div class="item-top">
+      <div class="item-idx">${idx}.</div>
+      <div class="item-main">
+        <div class="item-title-edit"><span class="item-title">${escapeHtml(item.titre)}</span>${item.duree ? `<span class="item-duration">${escapeHtml(item.duree)}</span>` : ""}</div>
+        <div class="item-chips">${chips}</div>
+        ${hasBareme ? `<button class="item-bareme-toggle" type="button">Voir le barème</button>` : `<div style="font-size:12px; color:var(--ink-muted); margin-top:6px;">${escapeHtml(item.desc||"")}</div>`}
+        ${hasBareme ? `<div class="item-bareme"><div><b>Faible</b>${escapeHtml(item.faible||"")}</div><div><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
+        ${ev.commentaire ? `<div style="margin-top:8px; font-size:12.5px; color:var(--ink-muted); background:var(--surface-2); border-radius:var(--radius); padding:8px 10px;">${escapeHtml(ev.commentaire)}</div>` : ""}
+      </div>
+      <div class="item-inputs">
+        <div class="field"><label>Note /20</label><input type="number" value="${ev.note ?? ""}" disabled></div>
+        <div class="field"><label>Date</label><input type="date" value="${ev.date||""}" disabled></div>
+      </div>
+    </div>`;
+  if(hasBareme) row.querySelector(".item-bareme-toggle").addEventListener("click", () => row.querySelector(".item-bareme").classList.toggle("open"));
+  return row;
+}
+function renderIndividualisation(project){
+  const etuIdx = (project.etudiants||[]).map((n,i)=>({n,i}));
+  const scores = computeScores(project, [currentSemestre]);
+  const wrap = document.createElement("div");
+  wrap.className = "indiv-panel";
+  wrap.innerHTML = `<div class="disclosure closed"><span class="chev">▾</span> Individualisation des notes (semestre ${currentSemestre==='S3'?'3':'4'})</div>`;
+  const body = document.createElement("div");
+  body.className = "indiv-body closed";
+  if(etuIdx.length === 0){
+    body.innerHTML = `<p style="color:var(--ink-muted); font-size:12.5px;">Aucun étudiant renseigné pour ce projet.</p>`;
+  } else {
+    let thead = "<tr><th>Étudiant</th>" + Object.keys(COMPETENCES).map(c=>`<th>${c}</th>`).join("") + "</tr>";
+    let rows = "";
+    const indiv = (project.individualisation && project.individualisation[currentSemestre]) || {};
+    for(const {n,i} of etuIdx){
+      const ov = indiv[i] || {};
+      rows += `<tr><td>${escapeHtml(n)}</td>`;
+      for(const c of Object.keys(COMPETENCES)){
+        const def = scores[c];
+        const val = ov[c] !== undefined && ov[c] !== null ? ov[c] : "";
+        rows += `<td class="num"><input type="number" placeholder="${def===null?'—':def.toFixed(1)}" value="${val}" disabled></td>`;
+      }
+      rows += "</tr>";
+    }
+    body.innerHTML = `<table class="indiv-table"><thead>${thead}</thead><tbody>${rows}</tbody></table><p class="indiv-default">Champ vide = note d'équipe reprise automatiquement.</p>`;
+  }
+  wrap.appendChild(body);
+  wrap.querySelector(".disclosure").addEventListener("click", () => {
+    wrap.querySelector(".disclosure").classList.toggle("closed");
+    body.classList.toggle("closed");
+  });
+  return wrap;
+}
+
+document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
+document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
+document.getElementById("filter-parcours").addEventListener("change", e => { filterParcours = e.target.value; renderSidebar(); });
+
+async function init(){
+  renderEmpty();
+  await Promise.all([loadReferentiel(), loadProjects()]);
+  subscribeRealtime();
+}
+init();
+</script>
+</body>
+</html>

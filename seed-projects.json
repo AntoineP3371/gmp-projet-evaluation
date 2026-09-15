@@ -1,0 +1,644 @@
+[
+  {
+    "slug": "4l-trophy",
+    "nom": "4L Trophy",
+    "sujet": "",
+    "formation": "2A",
+    "parcours": "II",
+    "etudiants": [
+      "BORIE Thomas",
+      "BRUNEAU Kelyan",
+      "CABANETOS Tao",
+      "CAZALIS Gabi"
+    ],
+    "encadrants": [
+      "BLANCHARD Vincent",
+      "KLEPACZ Philippe",
+      "RENAUD Stephanie"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "canontigre",
+    "nom": "CanonTigre",
+    "sujet": "",
+    "formation": "2A",
+    "parcours": "SNRV",
+    "etudiants": [
+      "BEAU Mathis",
+      "LEGRAND Benjamin",
+      "MONTANT Pierre",
+      "RIGAL Lauris"
+    ],
+    "encadrants": [
+      "PIETRI Antoine",
+      "LAHEURTE Raynald"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "commandes-reculees-moto",
+    "nom": "Commandes reculées moto",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "II",
+    "etudiants": [
+      "GARZARO Jules",
+      "HENNION Elliott",
+      "MERCIER Tony",
+      "SUBRINI Hugo"
+    ],
+    "encadrants": [
+      "RENAUD Stephanie",
+      "VULLIEZ Margaux",
+      "BLANCHARD Vincent"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "derrick-arb",
+    "nom": "Derrick ARB",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "SNRV",
+    "etudiants": [
+      "BREJOUX Quentin",
+      "DECROIX Maxime",
+      "QUERE Antone"
+    ],
+    "encadrants": [
+      "PIETRI Antoine",
+      "LAHEURTE Raynald"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "distibonbon",
+    "nom": "distibonbon",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "SNRV",
+    "etudiants": [
+      "BIAGI Andrea",
+      "LEROY Flavien",
+      "TRELY Axel"
+    ],
+    "encadrants": [
+      "PIETRI Antoine",
+      "CASTAGNETTI Cedric"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "driftbike",
+    "nom": "DriftBike",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "II",
+    "etudiants": [
+      "JOFROIX Dorian",
+      "LABOUYERIE Matteo",
+      "VAN ASSEL Thomas",
+      "VAREILLES Mathis"
+    ],
+    "encadrants": [
+      "GRAYA Adel",
+      "GILLET Arnaud"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "enrouleur-pla",
+    "nom": "Enrouleur PLA",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "II",
+    "etudiants": [
+      "GARRIGOU Tristan",
+      "KARRASCH Elora",
+      "LAHON Louis",
+      "SOULE Leo"
+    ],
+    "encadrants": [
+      "RENAUD Stephanie",
+      "VULLIEZ Margaux"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "epcore-1",
+    "nom": "EpCore 1",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "SNRV",
+    "etudiants": [
+      "COURBES Faustin",
+      "GRIMAUD Lucas",
+      "ROQUENCOURT--RIOS Sacha",
+      "SIMONNET Sully"
+    ],
+    "encadrants": [
+      "PIETRI Antoine",
+      "LAHEURTE Raynald"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "epcore-2",
+    "nom": "EpCore 2",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "SNRV",
+    "etudiants": [
+      "BALTARDIVE Joachim",
+      "LAFAYE Vincent",
+      "NAIVIN Noa",
+      "PENNEÇOT Hugo"
+    ],
+    "encadrants": [
+      "PIETRI Antoine",
+      "LAHEURTE Raynald"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "fougamagister",
+    "nom": "FougaMagister",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "II",
+    "etudiants": [
+      "BERGEZ Raphael",
+      "DUVAL Timothe",
+      "ETCHART Oihane",
+      "MARTIN Aurelien"
+    ],
+    "encadrants": [
+      "BLANCHARD Vincent",
+      "KLEPACZ Philippe"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "horloge",
+    "nom": "horloge",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "SNRV",
+    "etudiants": [
+      "CHEVALLIER Adrien",
+      "DARRIET Nathan",
+      "ELUI Yohan",
+      "HOUDEBERT Titouan"
+    ],
+    "encadrants": [
+      "PIETRI Antoine",
+      "CASTAGNETTI Cedric"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "impression-perso-antoine",
+    "nom": "IMPRESSION PERSO ANTOINE",
+    "sujet": "",
+    "formation": "",
+    "parcours": "SNRV",
+    "etudiants": [
+      "PIETRI Antoine"
+    ],
+    "encadrants": [],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "interface-pour-sac",
+    "nom": "Interface pour sac",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "CPD",
+    "etudiants": [
+      "DELON PERRIN Simon",
+      "FLAMENT Martin",
+      "HERAUD Gabriel",
+      "NUNEZ OLIVIEROS Axel"
+    ],
+    "encadrants": [
+      "JEULIN Mael",
+      "DARNIS Philippe"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "interfacesacdos",
+    "nom": "InterfaceSacDos",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "CPD",
+    "etudiants": [
+      "LAVIGNE Quentin",
+      "MANGER William",
+      "PERREY Thomas",
+      "VANONI Vincent"
+    ],
+    "encadrants": [
+      "WERDA Sana",
+      "GILLET Arnaud"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "jambe-de-footballeur",
+    "nom": "Jambe de footballeur",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "SNRV",
+    "etudiants": [
+      "GAULIER Jeremy",
+      "RAAKI Anice",
+      "ZEROUKI Adam"
+    ],
+    "encadrants": [
+      "PIETRI Antoine",
+      "LAHEURTE Raynald"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "leve-moto",
+    "nom": "Leve moto",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "II",
+    "etudiants": [
+      "ONER Kaan",
+      "ROUAULT Benjamin",
+      "SO Sangvath",
+      "TRARIEUX Lucas"
+    ],
+    "encadrants": [
+      "RENAUD Stephanie",
+      "VULLIEZ Margaux"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "maqligneprod",
+    "nom": "MaqLigneProd",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "II",
+    "etudiants": [
+      "CASSAGNE Leo",
+      "DESAIVRES Mathilde",
+      "THULLIER Guillaume"
+    ],
+    "encadrants": [
+      "GILLET Arnaud",
+      "GRAYA Adel",
+      "PIETRI Antoine"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "porte-a380",
+    "nom": "Porte A380",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "II",
+    "etudiants": [
+      "BIGOT Louis",
+      "BOURSAUD--ARRO Vincent",
+      "ESSOMBA Matteo",
+      "FINOCIETY Noam"
+    ],
+    "encadrants": [
+      "BLANCHARD Vincent",
+      "KLEPACZ Philippe"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "porte-surf",
+    "nom": "Porte surf",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "CPD",
+    "etudiants": [
+      "BELLEILI Yanis",
+      "CHILOU Hippolyte",
+      "POETTE Julien",
+      "RUMEBE Marius"
+    ],
+    "encadrants": [
+      "JEULIN Mael",
+      "DARNIS Philippe"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "racksurf",
+    "nom": "RackSurf",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "CPD",
+    "etudiants": [
+      "BARREAU Dany",
+      "DESCOUSSE Louis",
+      "LLORCA--CHASSAGNOUX Maxime",
+      "ORGET Dorian"
+    ],
+    "encadrants": [
+      "JEULIN Mael",
+      "DARNIS Philippe"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "radar",
+    "nom": "radar",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "SNRV",
+    "etudiants": [
+      "CAUSSE David",
+      "DAURIAC Gaspar",
+      "FOUGERES Mary-Lou",
+      "MENARD Baptiste",
+      "SCHITTULLI Lucas"
+    ],
+    "encadrants": [
+      "PIETRI Antoine",
+      "CASTAGNETTI Cedric"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "refroidissement-moto",
+    "nom": "Refroidissement moto",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "II",
+    "etudiants": [
+      "ANGORDANS Loan",
+      "LAROCHELLE Victor",
+      "LONCKE--ROUGIER-SAINT-MARTIN Theo",
+      "MONFORT Evan"
+    ],
+    "encadrants": [
+      "WERDA Sana",
+      "GILLET Arnaud"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "shadock",
+    "nom": "Shadock",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "II",
+    "etudiants": [
+      "BAHUAULT--CARIONE Romain",
+      "CHASPOUL Arthur",
+      "PILCH Mathis"
+    ],
+    "encadrants": [
+      "GRAYA Adel",
+      "GILLET Arnaud"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  },
+  {
+    "slug": "ventilmoto",
+    "nom": "VentilMoto",
+    "sujet": "",
+    "formation": "2I",
+    "parcours": "CPD",
+    "etudiants": [
+      "BERNA Ethan",
+      "BULTEAU Antoine",
+      "CHEVALIER Clement",
+      "OROSZ--CLAVERO Geoffrey",
+      "PEAN Nathael"
+    ],
+    "encadrants": [
+      "WERDA Sana",
+      "GILLET Arnaud"
+    ],
+    "codes": [],
+    "archived": false,
+    "evals": {
+      "S3": {},
+      "S4": {}
+    },
+    "individualisation": {
+      "S3": {},
+      "S4": {}
+    }
+  }
+]
