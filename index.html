@@ -18,7 +18,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.5</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.6</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -109,6 +109,25 @@
     <div class="modal-actions">
       <button class="btn" id="pe-cancel">Annuler</button>
       <button class="btn btn-accent" id="pe-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-add-encadrant">
+  <div class="modal wide">
+    <h2>Ajouter un encadrant</h2>
+    <p class="hint">Créez son code d'écriture et cochez les projets sur lesquels il ou elle doit apparaître.</p>
+    <div class="field-full"><label for="ae-nom">Nom</label><input type="text" id="ae-nom"></div>
+    <div class="field-full"><label for="ae-code">Code d'écriture</label><input type="password" id="ae-code"></div>
+    <div class="field-full"><label for="ae-code-confirm">Confirmer le code</label><input type="password" id="ae-code-confirm"></div>
+    <div class="field-full">
+      <label>Projets</label>
+      <div class="ae-project-list" id="ae-project-list"></div>
+    </div>
+    <p class="modal-error" id="ae-error" hidden></p>
+    <div class="modal-actions">
+      <button class="btn" id="ae-cancel">Annuler</button>
+      <button class="btn btn-accent" id="ae-save">Ajouter</button>
     </div>
   </div>
 </div>
@@ -854,19 +873,48 @@ function renderEncadrantsManagementView(){
   addBtn.className = "btn btn-sm";
   addBtn.style.marginTop = "10px";
   addBtn.textContent = "+ Ajouter un encadrant";
-  addBtn.addEventListener("click", () => {
-    const name = prompt("Nom de l'encadrant :");
-    if(!name || !name.trim()) return;
-    const code = prompt(`Code d'écriture pour "${name.trim()}" :`);
-    if(!code) return;
-    sha256Hex(code).then(async hash => {
-      await upsertEncadrantCode(name.trim(), hash);
-      showToast("Encadrant ajouté");
-      renderEncadrantsManagementView();
-    });
-  });
+  addBtn.addEventListener("click", openAddEncadrantModal);
   main.appendChild(addBtn);
 }
+function openAddEncadrantModal(){
+  document.getElementById("ae-nom").value = "";
+  document.getElementById("ae-code").value = "";
+  document.getElementById("ae-code-confirm").value = "";
+  document.getElementById("ae-error").hidden = true;
+  const list = document.getElementById("ae-project-list");
+  const sorted = Array.from(projects.values())
+    .filter(p => !p.archived)
+    .sort((a,b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
+  list.innerHTML = sorted.length
+    ? sorted.map(p => `<label><input type="checkbox" value="${escapeHtml(p.slug)}"> ${escapeHtml(p.nom)}</label>`).join("")
+    : `<p style="color:var(--ink-muted); font-size:12.5px;">Aucun projet.</p>`;
+  document.getElementById("modal-add-encadrant").classList.add("open");
+}
+document.getElementById("ae-cancel").addEventListener("click", () => document.getElementById("modal-add-encadrant").classList.remove("open"));
+document.getElementById("ae-save").addEventListener("click", async () => {
+  const errEl = document.getElementById("ae-error");
+  errEl.hidden = true;
+  const nom = document.getElementById("ae-nom").value.trim();
+  const code = document.getElementById("ae-code").value;
+  const confirmCode = document.getElementById("ae-code-confirm").value;
+  if(!nom){ errEl.textContent = "Le nom est requis."; errEl.hidden = false; return; }
+  if(!code){ errEl.textContent = "Le code est requis."; errEl.hidden = false; return; }
+  if(code !== confirmCode){ errEl.textContent = "Les codes ne correspondent pas."; errEl.hidden = false; return; }
+  const slugs = Array.from(document.querySelectorAll("#ae-project-list input:checked")).map(i => i.value);
+  const hash = await sha256Hex(code);
+  await upsertEncadrantCode(nom, hash);
+  for(const slug of slugs){
+    const p = projects.get(slug);
+    if(!p) continue;
+    if((p.encadrants||[]).includes(nom)) continue;
+    const encadrants = (p.encadrants||[]).concat([nom]);
+    p.encadrants = encadrants;
+    await pb.collection("sae_projects").update(p.id, {encadrants});
+  }
+  document.getElementById("modal-add-encadrant").classList.remove("open");
+  showToast("Encadrant ajouté");
+  renderAll();
+});
 function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
   const card = document.createElement("div");
