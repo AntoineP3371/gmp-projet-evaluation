@@ -18,7 +18,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.3</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.4</span></span>
       <span class="brand-title">Carnet d'évaluation</span>
       <span class="brand-sub">Espace encadrants</span>
     </div>
@@ -35,6 +35,7 @@
     <div class="admin-nav" id="admin-nav" hidden>
       <button class="nav-item" id="nav-referentiel">Gestion des livrables</button>
       <button class="nav-item" id="nav-projets">Gestion des projets</button>
+      <button class="nav-item" id="nav-encadrants">Gestion des encadrants</button>
     </div>
 
     <input type="file" id="file-import" accept=".xlsx,.xls" style="display:none">
@@ -164,6 +165,7 @@ let importDiff = null;
 let projectEditId = null;
 let projectEditScope = "admin";
 let unlockTargetId = null;
+let unlockPresetLabel = null;
 
 function slugify(s){
   const base = String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
@@ -300,6 +302,7 @@ function renderAll(){
   if(view === "project") renderProjectView();
   else if(view === "referentiel") renderReferentielView();
   else if(view === "projets") renderProjectsManagementView();
+  else if(view === "encadrants") renderEncadrantsManagementView();
   else renderEmpty();
   syncPresence();
 }
@@ -359,6 +362,7 @@ function renderSidebar(){
   }
   document.getElementById("nav-referentiel").classList.toggle("active", view==="referentiel");
   document.getElementById("nav-projets").classList.toggle("active", view==="projets");
+  document.getElementById("nav-encadrants").classList.toggle("active", view==="encadrants");
   document.getElementById("admin-nav").hidden = !adminUnlocked;
   const st = document.getElementById("admin-status");
   st.classList.toggle("on", adminUnlocked);
@@ -602,6 +606,22 @@ async function removeOwnPresence(projectId, label){
   p.presence = list;
   try{ await pb.collection("sae_projects").update(p.id, {presence: list}); }catch(e){}
 }
+function removeOwnPresenceOnUnload(){
+  if(!presenceProjectId || !presenceLabel) return;
+  const p = projects.get(presenceProjectId);
+  if(!p) return;
+  const list = (p.presence || []).filter(e => e.label !== presenceLabel);
+  try{
+    fetch(`${PB_URL}/api/collections/sae_projects/records/${p.id}`, {
+      method: "PATCH",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({presence: list}),
+      keepalive: true
+    });
+  }catch(e){}
+}
+window.addEventListener("pagehide", removeOwnPresenceOnUnload);
+window.addEventListener("beforeunload", removeOwnPresenceOnUnload);
 
 function renderProjectView(){
   const main = document.getElementById("main");
@@ -615,6 +635,13 @@ function renderProjectView(){
   const head = document.createElement("div");
   head.className = "team-head";
   const tags = [p.formation, p.parcours].filter(Boolean).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join("");
+  const encadrantsHtml = (p.encadrants && p.encadrants.length)
+    ? p.encadrants.map(name => {
+        const isMine = unlocked === name;
+        const isActive = (p.presence||[]).some(e => e.label === name && (Date.now() - new Date(e.lastSeen).getTime()) < PRESENCE_STALE_MS);
+        return `<button class="encadrant-btn${isMine ? " mine" : ""}" type="button" data-name="${escapeHtml(name)}">${escapeHtml(name)}${isActive ? '<span class="encadrant-dot" title="Connecté en ce moment"></span>' : ""}</button>`;
+      }).join("")
+    : `<span style="color:var(--ink-faint);">aucun</span>`;
   head.innerHTML = `
     <div>
       <h1>${escapeHtml(p.nom)}${p.archived ? " <span style='color:var(--ink-faint);font-weight:400;font-size:16px;'>(archivé)</span>" : ""}</h1>
@@ -622,7 +649,7 @@ function renderProjectView(){
       <div class="tags">${tags}</div>
       <div class="people">
         <b>Étudiants —</b> ${p.etudiants && p.etudiants.length ? p.etudiants.map(escapeHtml).join(", ") : "aucun"}<br>
-        <b>Encadrants —</b> ${p.encadrants && p.encadrants.length ? p.encadrants.map(escapeHtml).join(", ") : "aucun"}
+        <b>Encadrants —</b> <span class="encadrant-btns">${encadrantsHtml}</span>
       </div>
     </div>
     <div class="team-head-actions">
@@ -639,21 +666,21 @@ function renderProjectView(){
   }
   head.querySelector("#btn-toggle-bareme").addEventListener("click", () => { baremeVisible = !baremeVisible; renderProjectView(); });
   head.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { currentSemestre = b.dataset.sem; renderProjectView(); }));
+  head.querySelectorAll(".encadrant-btn").forEach(b => b.addEventListener("click", () => openUnlockModal(currentProjectId, b.dataset.name)));
 
   const banner = document.createElement("div");
   banner.className = "lock-banner" + (unlocked ? " rw" : "");
-  banner.innerHTML = `<span class="lock-banner-label">${lockIconSvg(unlocked ? true : (p.codes||[]).length === 0)} ${unlocked ? "Modification activée — " + escapeHtml(unlocked) : "Lecture seule"}</span>`;
-  const bannerBtn = document.createElement("button");
-  bannerBtn.className = "btn btn-sm" + (unlocked ? "" : " btn-accent");
-  bannerBtn.textContent = unlocked ? "Verrouiller" : "Débloquer l'écriture";
-  bannerBtn.addEventListener("click", () => {
-    if(unlocked){
+  banner.innerHTML = `<span class="lock-banner-label">${lockIconSvg(unlocked ? true : (p.codes||[]).length === 0)} ${unlocked ? "Modification activée — " + escapeHtml(unlocked) : "Lecture seule — cliquez votre nom ci-dessus pour débloquer l'écriture"}</span>`;
+  if(unlocked){
+    const bannerBtn = document.createElement("button");
+    bannerBtn.className = "btn btn-sm";
+    bannerBtn.textContent = "Verrouiller";
+    bannerBtn.addEventListener("click", () => {
       removeOwnPresence(currentProjectId, unlocked);
       unlockedProjects.delete(currentProjectId); saveSession(); renderAll();
-    }
-    else openUnlockModal(currentProjectId);
-  });
-  banner.appendChild(bannerBtn);
+    });
+    banner.appendChild(bannerBtn);
+  }
   if(unlocked && !adminUnlocked){
     const editBtn = document.createElement("button");
     editBtn.className = "btn btn-sm";
@@ -697,7 +724,7 @@ function renderEncadrantsAdminPanel(project){
     table.className = "ref-table";
     table.innerHTML = `<thead><tr><th>Nom</th><th>Créé le</th><th></th><th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
-    codes.forEach((c, idx) => renderEncadrantCodeRow(tbody, project, codes, idx));
+    codes.forEach((c, idx) => renderEncadrantCodeRow(tbody, project, codes, idx, renderProjectView));
     tableWrap.appendChild(table);
     wrap.appendChild(tableWrap);
   }
@@ -709,20 +736,23 @@ function renderEncadrantsAdminPanel(project){
   wrap.appendChild(addBtn);
   return wrap;
 }
-function renderEncadrantCodeRow(tbody, project, codes, idx){
+function renderEncadrantCodeRow(tbody, project, codes, idx, onChange, showProjectCol){
   const c = codes[idx];
   const row = document.createElement("tr");
   row.className = "ref-row";
   const created = c.createdAt ? new Date(c.createdAt).toLocaleDateString("fr-FR") : "—";
+  const projectCell = showProjectCol ? `<td>${escapeHtml(project.nom)}</td>` : "";
   row.innerHTML = `
+    ${projectCell}
     <td><input type="text" class="ref-titre-input" value="${escapeHtml(c.label)}"></td>
     <td style="white-space:nowrap; color:var(--ink-faint); font-size:11.5px;">${created}</td>
     <td class="ref-row-actions"><button class="btn-ghost btn-sm" type="button">Changer le code</button></td>
     <td class="ref-row-actions"><button class="btn-ghost btn-sm btn-danger" type="button">Supprimer</button></td>`;
+  const colspan = showProjectCol ? 5 : 4;
   const detailRow = document.createElement("tr");
   detailRow.className = "ref-detail-row";
   detailRow.hidden = true;
-  detailRow.innerHTML = `<td colspan="4"><div class="ref-detail-body">
+  detailRow.innerHTML = `<td colspan="${colspan}"><div class="ref-detail-body">
     <input type="password" placeholder="Nouveau code">
     <input type="password" placeholder="Confirmer le code">
     <button class="btn btn-sm btn-accent" type="button">Enregistrer le code</button>
@@ -733,10 +763,10 @@ function renderEncadrantCodeRow(tbody, project, codes, idx){
   });
   row.querySelector(".btn-ghost:not(.btn-danger)").addEventListener("click", () => { detailRow.hidden = !detailRow.hidden; });
   row.querySelector(".btn-danger").addEventListener("click", async () => {
-    if(!confirm(`Supprimer l'accès de "${c.label}" ?`)) return;
+    if(!confirm(`Supprimer l'accès de "${c.label}" sur "${project.nom}" ?`)) return;
     codes.splice(idx, 1);
     await saveProjectCodes(project, codes);
-    renderProjectView();
+    if(onChange) onChange();
   });
   const [newInput, confirmInput] = detailRow.querySelectorAll("input");
   detailRow.querySelector("button").addEventListener("click", async () => {
@@ -755,7 +785,7 @@ async function saveProjectCodes(project, codes){
   project.codes = codes;
   await pb.collection("sae_projects").update(project.id, {codes});
 }
-function openAddEncadrantCodeFlow(project){
+function openAddEncadrantCodeFlow(project, onDone){
   const name = prompt("Nom de l'encadrant :");
   if(!name || !name.trim()) return;
   const code = prompt(`Code d'écriture pour "${name.trim()}" :`);
@@ -765,8 +795,68 @@ function openAddEncadrantCodeFlow(project){
     codes.push({label: name.trim(), hash, createdAt: new Date().toISOString()});
     await saveProjectCodes(project, codes);
     showToast("Encadrant ajouté");
-    renderProjectView();
+    (onDone || renderProjectView)();
   });
+}
+function renderEncadrantsManagementView(){
+  const main = document.getElementById("main");
+  if(!adminUnlocked){
+    main.innerHTML = `<div class="empty-state"><h2>Gestion des encadrants</h2><p>Réservée au mode administrateur.</p>
+      <button class="btn btn-accent" id="enc-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
+    main.querySelector("#enc-unlock-admin").addEventListener("click", openAdminModal);
+    return;
+  }
+  main.innerHTML = "";
+  const head = document.createElement("div");
+  head.className = "team-head";
+  head.innerHTML = `<div><h1>Gestion des encadrants</h1><div class="tags"><span class="tag">Admin</span></div></div>`;
+  main.appendChild(head);
+
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.style.marginBottom = "16px";
+  hint.textContent = "Tous les codes d'écriture, tous projets confondus. Chaque ligne correspond à un accès sur un projet donné (un même encadrant peut apparaître sur plusieurs lignes s'il encadre plusieurs projets).";
+  main.appendChild(hint);
+
+  const list = Array.from(projects.values()).sort((a,b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
+  const rows = [];
+  for(const p of list){
+    (p.codes||[]).forEach((c, idx) => rows.push({project: p, idx}));
+  }
+
+  if(rows.length === 0){
+    const p2 = document.createElement("p");
+    p2.style.cssText = "color:var(--ink-muted); font-size:12.5px;";
+    p2.textContent = "Aucun code créé pour l'instant.";
+    main.appendChild(p2);
+  } else {
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "ref-table-wrap";
+    const table = document.createElement("table");
+    table.className = "ref-table";
+    table.innerHTML = `<thead><tr><th>Projet</th><th>Nom</th><th>Créé le</th><th></th><th></th></tr></thead><tbody></tbody>`;
+    const tbody = table.querySelector("tbody");
+    rows.sort((a,b) => a.project.nom.localeCompare(b.project.nom, "fr", {sensitivity:"base"}));
+    for(const {project, idx} of rows){
+      renderEncadrantCodeRow(tbody, project, project.codes, idx, renderEncadrantsManagementView, true);
+    }
+    tableWrap.appendChild(table);
+    main.appendChild(tableWrap);
+  }
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "btn btn-sm";
+  addBtn.style.marginTop = "10px";
+  addBtn.textContent = "+ Ajouter un encadrant à un projet";
+  addBtn.addEventListener("click", () => {
+    const options = list.map(p => p.nom).join("\n");
+    const projectName = prompt(`Nom exact du projet concerné :\n\n${options}`);
+    if(!projectName) return;
+    const target = list.find(p => p.nom.toLowerCase() === projectName.trim().toLowerCase());
+    if(!target){ alert("Projet introuvable (vérifiez l'orthographe exacte)."); return; }
+    openAddEncadrantCodeFlow(target, renderEncadrantsManagementView);
+  });
+  main.appendChild(addBtn);
 }
 function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
@@ -906,16 +996,17 @@ function updateIndiv(etuIdx, comp, value){
 function selectProject(id){ currentProjectId = id; view = "project"; renderAll(); }
 
 /* ---------------- unlock modal ---------------- */
-function openUnlockModal(id){
+function openUnlockModal(id, presetLabel){
   unlockTargetId = id;
+  unlockPresetLabel = presetLabel;
   const p = projects.get(id);
   const backdrop = document.getElementById("modal-unlock");
-  const hasCodes = (p.codes||[]).length > 0;
+  const existing = (p.codes||[]).find(c => c.label === presetLabel);
   document.getElementById("unlock-error").hidden = true;
-  document.getElementById("unlock-title").textContent = hasCodes ? "Débloquer l'écriture" : "Créer un code d'écriture";
-  document.getElementById("unlock-hint").textContent = hasCodes
-    ? `Saisissez le code d'écriture pour "${p.nom}".`
-    : `Aucun code n'existe encore pour "${p.nom}". Créez le vôtre.`;
+  document.getElementById("unlock-title").textContent = existing ? `Débloquer l'écriture — ${presetLabel}` : `Créer un code — ${presetLabel}`;
+  document.getElementById("unlock-hint").textContent = existing
+    ? `Saisissez le code d'écriture de ${presetLabel} pour "${p.nom}".`
+    : `Aucun code n'existe encore pour ${presetLabel} sur "${p.nom}". Créez-en un.`;
   const activeEditors = getActiveEditors(p, null);
   const warnEl = document.getElementById("unlock-presence-warning");
   if(activeEditors.length){
@@ -925,29 +1016,20 @@ function openUnlockModal(id){
     warnEl.hidden = true;
   }
   const body = document.getElementById("unlock-body");
-  if(hasCodes){
+  if(existing){
     body.innerHTML = `
-      <div class="field-full"><label for="unlock-code">Code</label><input type="password" id="unlock-code"></div>
-      <button class="modal-link" id="unlock-switch-create" type="button">Je n'ai pas de code → en créer un</button>`;
-    body.querySelector("#unlock-switch-create").addEventListener("click", () => renderCreateCodeForm(body, p));
+      <div class="field-full"><label for="unlock-code">Code de ${escapeHtml(presetLabel)}</label><input type="password" id="unlock-code"></div>
+      <button class="modal-link" id="unlock-switch-create" type="button">Code oublié → en créer un nouveau</button>`;
+    body.querySelector("#unlock-switch-create").addEventListener("click", () => renderCreateCodeForm(body, p, presetLabel));
   } else {
-    renderCreateCodeForm(body, p);
+    renderCreateCodeForm(body, p, presetLabel);
   }
   backdrop.classList.add("open");
 }
-function renderCreateCodeForm(body, p){
-  document.getElementById("unlock-title").textContent = "Créer un code d'écriture";
-  const roster = (p.encadrants || []).filter(Boolean);
-  if(roster.length === 0){
-    document.getElementById("unlock-hint").textContent = `Aucun encadrant n'est renseigné pour "${p.nom}". Contactez l'administrateur pour corriger la liste avant de créer un code.`;
-    body.innerHTML = `<div class="field-full"><label for="unlock-label">Votre nom</label><select id="unlock-label" disabled><option value="">— Aucun encadrant listé —</option></select></div>`;
-    return;
-  }
-  document.getElementById("unlock-hint").textContent = `Seul un encadrant listé sur "${p.nom}" peut créer un code. Sélectionnez votre nom.`;
+function renderCreateCodeForm(body, p, presetLabel){
+  document.getElementById("unlock-title").textContent = `Créer un code — ${presetLabel}`;
+  document.getElementById("unlock-hint").textContent = `Choisissez un code d'écriture pour ${presetLabel} sur "${p.nom}".`;
   body.innerHTML = `
-    <div class="field-full"><label for="unlock-label">Votre nom</label>
-      <select id="unlock-label"><option value="">— Sélectionnez votre nom —</option>${roster.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select>
-    </div>
     <div class="field-full"><label for="unlock-code">Nouveau code</label><input type="password" id="unlock-code"></div>
     <div class="field-full"><label for="unlock-code-confirm">Confirmer le code</label><input type="password" id="unlock-code-confirm"></div>`;
 }
@@ -956,26 +1038,24 @@ document.getElementById("unlock-submit").addEventListener("click", async () => {
   const p = projects.get(unlockTargetId);
   const errEl = document.getElementById("unlock-error");
   errEl.hidden = true;
-  const labelInput = document.getElementById("unlock-label");
   const codeInput = document.getElementById("unlock-code");
   const confirmInput = document.getElementById("unlock-code-confirm");
   const code = codeInput ? codeInput.value : "";
   if(!code){ errEl.textContent = "Code requis."; errEl.hidden = false; return; }
-  if(labelInput){
-    if(!labelInput.value.trim()){ errEl.textContent = "Votre nom est requis."; errEl.hidden = false; return; }
+  if(confirmInput){
     if(code !== confirmInput.value){ errEl.textContent = "Les codes ne correspondent pas."; errEl.hidden = false; return; }
     const hash = await sha256Hex(code);
-    const codes = (p.codes||[]).concat([{label:labelInput.value.trim(), hash, createdAt:new Date().toISOString()}]);
+    const codes = (p.codes||[]).filter(c => c.label !== unlockPresetLabel).concat([{label:unlockPresetLabel, hash, createdAt:new Date().toISOString()}]);
     p.codes = codes;
     await pb.collection("sae_projects").update(p.id, {codes});
-    unlockedProjects.set(unlockTargetId, labelInput.value.trim());
+    unlockedProjects.set(unlockTargetId, unlockPresetLabel);
     saveSession();
     document.getElementById("modal-unlock").classList.remove("open");
     showToast("Écriture activée");
     renderAll();
   } else {
     const hash = await sha256Hex(code);
-    const match = (p.codes||[]).find(c => c.hash === hash);
+    const match = (p.codes||[]).find(c => c.label === unlockPresetLabel && c.hash === hash);
     if(!match){ errEl.textContent = "Code incorrect."; errEl.hidden = false; return; }
     unlockedProjects.set(unlockTargetId, match.label);
     saveSession();
@@ -1037,6 +1117,7 @@ document.getElementById("btn-admin-toggle").addEventListener("click", () => {
 });
 document.getElementById("nav-referentiel").addEventListener("click", () => { view = "referentiel"; refDraft = null; renderAll(); });
 document.getElementById("nav-projets").addEventListener("click", () => { view = "projets"; renderAll(); });
+document.getElementById("nav-encadrants").addEventListener("click", () => { view = "encadrants"; renderAll(); });
 document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
 document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
 document.getElementById("filter-parcours").addEventListener("change", e => { filterParcours = e.target.value; renderSidebar(); });
