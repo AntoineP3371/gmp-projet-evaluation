@@ -18,7 +18,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.2</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.3</span></span>
       <span class="brand-title">Carnet d'évaluation</span>
       <span class="brand-sub">Espace encadrants</span>
     </div>
@@ -187,12 +187,15 @@ function showToast(msg){
 }
 function showConnError(show){ document.getElementById("conn-banner").classList.toggle("show", !!show); }
 
-function lockIconSvg(state){
-  const open = state === "rw" || state === "nocode";
+function lockIconSvg(open){
   return `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <rect x="4" y="11" width="16" height="10" rx="2"></rect>
     ${open ? '<path d="M8 11V8a4 4 0 0 1 7.6-1.8"></path>' : '<path d="M8 11V8a4 4 0 0 1 8 0v3"></path>'}
   </svg>`;
+}
+function connectionState(project){
+  const count = getActiveEditors(project, null).length;
+  return count === 0 ? "none" : count === 1 ? "one" : "many";
 }
 function allItemsFromReferentiel(ref){
   if(!ref || !ref.sections) return [];
@@ -341,10 +344,10 @@ function renderSidebar(){
     for(const [id,p] of entries){
       const li = document.createElement("li");
       const btn = document.createElement("button");
-      const lockState = unlockedProjects.has(id) ? "rw" : ((p.codes||[]).length === 0 ? "nocode" : "ro");
+      const lockState = connectionState(p);
       const overdue = getOverdueItemNumbers(p);
       btn.className = "team-item" + (view==="project" && currentProjectId===id ? " active" : "") + (p.archived ? " is-archived" : "");
-      btn.innerHTML = `<span class="team-item-lock ${lockState}">${lockIconSvg(lockState)}</span>
+      btn.innerHTML = `<span class="team-item-lock ${lockState}" title="${lockState==="none"?"Aucun encadrant connecté":lockState==="one"?"Un encadrant connecté":"Plusieurs encadrants connectés"}">${lockIconSvg(lockState!=="none")}</span>
         <div class="team-item-main">
           <div class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}${p.archived ? " (archivé)" : ""}</div>
           <div class="team-item-sujet">${escapeHtml(p.sujet || p.parcours || "—")}</div>
@@ -413,7 +416,7 @@ function renderProjectsManagementView(){
   tableWrap.className = "ref-table-wrap";
   const table = document.createElement("table");
   table.className = "ref-table";
-  table.innerHTML = `<thead><tr><th>Projet</th><th>Formation</th><th>Parcours</th><th>Étudiants</th><th>Encadrants</th></tr></thead><tbody></tbody>`;
+  table.innerHTML = `<thead><tr><th>Projet</th><th>Formation</th><th>Parcours</th><th>Étudiants</th><th>Encadrants</th><th>Visible étudiants</th></tr></thead><tbody></tbody>`;
   const tbody = table.querySelector("tbody");
   for(const p of list){
     const tr = document.createElement("tr");
@@ -423,8 +426,17 @@ function renderProjectsManagementView(){
       <td>${escapeHtml(p.formation||"—")}</td>
       <td>${escapeHtml(p.parcours||"—")}</td>
       <td>${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : "—"}</td>
-      <td>${p.encadrants && p.encadrants.length ? escapeHtml(p.encadrants.join(", ")) : "—"}</td>`;
+      <td>${p.encadrants && p.encadrants.length ? escapeHtml(p.encadrants.join(", ")) : "—"}</td>
+      <td style="text-align:center;"><input type="checkbox" ${p.visible_eleves !== false ? "checked" : ""}></td>`;
     tr.addEventListener("click", () => selectProject(p.slug));
+    const checkbox = tr.querySelector('input[type=checkbox]');
+    checkbox.addEventListener("click", e => e.stopPropagation());
+    checkbox.addEventListener("change", async e => {
+      const visible = e.target.checked;
+      p.visible_eleves = visible;
+      try{ await pb.collection("sae_projects").update(p.id, {visible_eleves: visible}); showToast(visible ? "Visible pour les étudiants" : "Masqué aux étudiants"); }
+      catch(err){ showToast("Échec de l'enregistrement"); }
+    });
     tbody.appendChild(tr);
   }
   tableWrap.appendChild(table);
@@ -630,7 +642,7 @@ function renderProjectView(){
 
   const banner = document.createElement("div");
   banner.className = "lock-banner" + (unlocked ? " rw" : "");
-  banner.innerHTML = `<span class="lock-banner-label">${lockIconSvg(unlocked?"rw":((p.codes||[]).length?"ro":"nocode"))} ${unlocked ? "Modification activée — " + escapeHtml(unlocked) : "Lecture seule"}</span>`;
+  banner.innerHTML = `<span class="lock-banner-label">${lockIconSvg(unlocked ? true : (p.codes||[]).length === 0)} ${unlocked ? "Modification activée — " + escapeHtml(unlocked) : "Lecture seule"}</span>`;
   const bannerBtn = document.createElement("button");
   bannerBtn.className = "btn btn-sm" + (unlocked ? "" : " btn-accent");
   bannerBtn.textContent = unlocked ? "Verrouiller" : "Débloquer l'écriture";
@@ -1086,7 +1098,7 @@ document.getElementById("pe-save").addEventListener("click", async () => {
       const encadrants = Array.from(document.querySelectorAll("#pe-encadrant-rows input")).map(i=>i.value.trim()).filter(Boolean);
       const slug = slugify(nom);
       const rec = await pb.collection("sae_projects").create({
-        slug, nom,sujet,formation,parcours,etudiants,encadrants,codes:[],archived:false,
+        slug, nom,sujet,formation,parcours,etudiants,encadrants,codes:[],archived:false,visible_eleves:true,
         evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}
       });
       projects.set(slug, rec);
@@ -1177,7 +1189,7 @@ document.getElementById("diff-confirm").addEventListener("click", async () => {
   try{
     for(const g of importDiff.toCreate){
       const {id,...rest} = g;
-      const rec = await pb.collection("sae_projects").create({slug:id, ...rest, codes:[], archived:false, evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}});
+      const rec = await pb.collection("sae_projects").create({slug:id, ...rest, codes:[], archived:false, visible_eleves:true, evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}});
       projects.set(id, rec);
     }
     for(const g of importDiff.toUpdate){

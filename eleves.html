@@ -17,7 +17,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.2</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.3</span></span>
       <span class="brand-title">Carnet d'évaluation</span>
       <span class="brand-sub">Consultation — lecture seule</span>
     </div>
@@ -86,6 +86,23 @@ function getOverdueItemNumbers(project){
     }
   });
   return nums;
+}
+const PRESENCE_STALE_MS = 45000;
+function getActiveEditors(project, excludeLabel){
+  const now = Date.now();
+  return (project.presence || []).filter(e =>
+    e.label !== excludeLabel && (now - new Date(e.lastSeen).getTime()) < PRESENCE_STALE_MS
+  );
+}
+function connectionState(project){
+  const count = getActiveEditors(project, null).length;
+  return count === 0 ? "none" : count === 1 ? "one" : "many";
+}
+function lockIconSvg(open){
+  return `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="11" width="16" height="10" rx="2"></rect>
+    ${open ? '<path d="M8 11V8a4 4 0 0 1 7.6-1.8"></path>' : '<path d="M8 11V8a4 4 0 0 1 8 0v3"></path>'}
+  </svg>`;
 }
 function computeScores(project, semestres){
   const totals = { C1:{n:0,d:0}, C2:{n:0,d:0}, C3:{n:0,d:0}, C4:{n:0,d:0}, C5:{n:0,d:0} };
@@ -168,7 +185,7 @@ function renderSidebar(){
   const ul = document.getElementById("team-list");
   ul.innerHTML = "";
   const entries = Array.from(projects.entries())
-    .filter(([id,p]) => !p.archived && matchesFilter(p))
+    .filter(([id,p]) => !p.archived && p.visible_eleves !== false && matchesFilter(p))
     .sort((a,b) => a[1].nom.localeCompare(b[1].nom, "fr", {sensitivity:"base"}));
   if(entries.length === 0){
     const li = document.createElement("li");
@@ -180,8 +197,10 @@ function renderSidebar(){
       const li = document.createElement("li");
       const btn = document.createElement("button");
       const overdue = getOverdueItemNumbers(p);
+      const lockState = connectionState(p);
       btn.className = "team-item" + (currentProjectId===id ? " active" : "");
-      btn.innerHTML = `<div class="team-item-main">
+      btn.innerHTML = `<span class="team-item-lock ${lockState}" title="${lockState==="none"?"Aucun encadrant connecté":lockState==="one"?"Un encadrant connecté":"Plusieurs encadrants connectés"}">${lockIconSvg(lockState!=="none")}</span>
+        <div class="team-item-main">
           <div class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}</div>
           <div class="team-item-sujet">${escapeHtml(p.sujet || p.parcours || "—")}</div>
         </div>`;
@@ -200,7 +219,7 @@ function renderEmpty(){
 function renderProjectView(){
   const main = document.getElementById("main");
   const p = projects.get(currentProjectId);
-  if(!p){ currentProjectId = null; renderEmpty(); return; }
+  if(!p || p.visible_eleves === false){ currentProjectId = null; renderEmpty(); return; }
   if(!referentiel){ main.innerHTML = `<div class="empty-state"><h2>Référentiel indisponible</h2></div>`; return; }
   main.innerHTML = "";
 

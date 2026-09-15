@@ -37,7 +37,7 @@ button, input, textarea, select{ font-family:inherit; font-size:inherit; color:i
 @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 h1,h2,h3{ text-wrap:balance; }
 
-.app{ display:grid; grid-template-columns:280px 1fr; min-height:100vh; }
+.app{ display:grid; grid-template-columns:420px 1fr; min-height:100vh; }
 @media (max-width: 860px){ .app{ grid-template-columns:1fr; } }
 
 .sidebar{ background:var(--surface); border-right:1px solid var(--rule); padding:20px 16px 16px; display:flex; flex-direction:column; gap:16px; position:sticky; top:0; height:100vh; overflow-y:auto; }
@@ -63,8 +63,9 @@ h1,h2,h3{ text-wrap:balance; }
 .team-item-name{ font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .team-item-sujet{ color:var(--ink-muted); font-size:11.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .team-item-lock{ flex:none; width:18px; height:18px; color:var(--ink-faint); }
-.team-item-lock.rw{ color:var(--accent); }
-.team-item-lock.nocode{ color:var(--ink-faint); opacity:.5; }
+.team-item-lock.none{ color:var(--danger); }
+.team-item-lock.one{ color:var(--good); }
+.team-item-lock.many{ color:var(--warn); }
 .overdue-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:15px; padding:0 4px; border-radius:99px; background:var(--danger); color:#fff; font-size:9.5px; font-weight:700; font-family:var(--font-mono); vertical-align:middle; animation:overdue-blink 1.1s step-start infinite; }
 @keyframes overdue-blink{ 50%{ opacity:.2; } }
 
