@@ -18,7 +18,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.1</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.2</span></span>
       <span class="brand-title">Carnet d'évaluation</span>
       <span class="brand-sub">Espace encadrants</span>
     </div>
@@ -27,6 +27,7 @@
     <div class="side-filters">
       <select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select>
       <select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select>
+      <select class="side-select" id="filter-encadrant"><option value="">Tous encadrants</option></select>
     </div>
 
     <ul class="team-list" id="team-list"></ul>
@@ -53,6 +54,7 @@
   <div class="modal">
     <h2 id="unlock-title">Débloquer l'écriture</h2>
     <p class="hint" id="unlock-hint"></p>
+    <p class="presence-warning" id="unlock-presence-warning" hidden></p>
     <div id="unlock-body"></div>
     <p class="modal-error" id="unlock-error" hidden></p>
     <div class="modal-actions">
@@ -141,12 +143,20 @@ let currentProjectId = null; // slug
 let currentSemestre = "S3";
 let baremeVisible = true;
 let view = "empty";
+let presenceHeartbeat = null;
+let presenceProjectId = null;
+let presenceLabel = null;
+let projectPollTimer = null;
+const PRESENCE_STALE_MS = 45000;
+const PRESENCE_HEARTBEAT_MS = 12000;
+const PROJECT_POLL_MS = 15000;
 let adminUnlocked = false;
 let unlockedProjects = new Map();
 let showArchived = false;
 let searchFilter = "";
 let filterFormation = "";
 let filterParcours = "";
+let filterEncadrant = "";
 let pendingTimer = null;
 let refPendingTimer = null;
 let refDraft = null;
@@ -187,6 +197,21 @@ function lockIconSvg(state){
 function allItemsFromReferentiel(ref){
   if(!ref || !ref.sections) return [];
   return ref.sections.flatMap(s => s.items.map(it => ({...it, sectionId: s.id})));
+}
+function getOverdueItemNumbers(project){
+  if(!allItems.length) return [];
+  const today = new Date().toISOString().slice(0,10);
+  const nums = [];
+  allItems.forEach((item, idx) => {
+    for(const sem of ["S3","S4"]){
+      const ev = project.evals && project.evals[sem] && project.evals[sem][item.id];
+      if(ev && ev.date && ev.date <= today && (ev.note === undefined || ev.note === null || ev.note === "")){
+        nums.push(idx+1);
+        break;
+      }
+    }
+  });
+  return nums;
 }
 function computeScores(project, semestres){
   const totals = { C1:{n:0,d:0}, C2:{n:0,d:0}, C3:{n:0,d:0}, C4:{n:0,d:0}, C5:{n:0,d:0} };
@@ -273,22 +298,26 @@ function renderAll(){
   else if(view === "referentiel") renderReferentielView();
   else if(view === "projets") renderProjectsManagementView();
   else renderEmpty();
+  syncPresence();
 }
 function matchesFilter(p){
   if(filterFormation && p.formation !== filterFormation) return false;
   if(filterParcours && p.parcours !== filterParcours) return false;
+  if(filterEncadrant && !(p.encadrants||[]).includes(filterEncadrant)) return false;
   if(!searchFilter) return true;
   const q = searchFilter.toLowerCase();
   return (p.nom||"").toLowerCase().includes(q) || (p.sujet||"").toLowerCase().includes(q) || (p.parcours||"").toLowerCase().includes(q);
 }
 function populateFilterOptions(){
-  const formations = new Set(), parcoursSet = new Set();
+  const formations = new Set(), parcoursSet = new Set(), encadrantsSet = new Set();
   for(const p of projects.values()){
     if(p.formation) formations.add(p.formation);
     if(p.parcours) parcoursSet.add(p.parcours);
+    (p.encadrants||[]).forEach(e => e && encadrantsSet.add(e));
   }
   fillSelect("filter-formation", formations, "Toutes formations", filterFormation);
   fillSelect("filter-parcours", parcoursSet, "Tous parcours", filterParcours);
+  fillSelect("filter-encadrant", encadrantsSet, "Tous encadrants", filterEncadrant);
 }
 function fillSelect(id, values, allLabel, current){
   const sel = document.getElementById(id);
@@ -313,10 +342,11 @@ function renderSidebar(){
       const li = document.createElement("li");
       const btn = document.createElement("button");
       const lockState = unlockedProjects.has(id) ? "rw" : ((p.codes||[]).length === 0 ? "nocode" : "ro");
+      const overdue = getOverdueItemNumbers(p);
       btn.className = "team-item" + (view==="project" && currentProjectId===id ? " active" : "") + (p.archived ? " is-archived" : "");
       btn.innerHTML = `<span class="team-item-lock ${lockState}">${lockIconSvg(lockState)}</span>
         <div class="team-item-main">
-          <div class="team-item-name">${escapeHtml(p.nom)}${p.archived ? " (archivé)" : ""}</div>
+          <div class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}${p.archived ? " (archivé)" : ""}</div>
           <div class="team-item-sujet">${escapeHtml(p.sujet || p.parcours || "—")}</div>
         </div>`;
       btn.addEventListener("click", () => selectProject(id));
@@ -508,6 +538,59 @@ function saveReferentielDraft(){
   }, 500);
 }
 
+/* ---------------- presence (multi-encadrant awareness) ---------------- */
+function getActiveEditors(project, excludeLabel){
+  const now = Date.now();
+  return (project.presence || []).filter(e =>
+    e.label !== excludeLabel && (now - new Date(e.lastSeen).getTime()) < PRESENCE_STALE_MS
+  );
+}
+function syncPresence(){
+  const wantHeartbeat = view === "project" && unlockedProjects.has(currentProjectId);
+  if(wantHeartbeat){
+    const label = unlockedProjects.get(currentProjectId);
+    if(presenceProjectId !== currentProjectId || presenceLabel !== label){
+      startPresenceHeartbeat(currentProjectId, label);
+    }
+  } else if(presenceHeartbeat){
+    stopPresenceHeartbeat();
+  }
+  const wantPoll = view === "project" && !!currentProjectId;
+  if(wantPoll && !projectPollTimer){
+    projectPollTimer = setInterval(() => { if(view === "project") renderProjectView(); }, PROJECT_POLL_MS);
+  } else if(!wantPoll && projectPollTimer){
+    clearInterval(projectPollTimer); projectPollTimer = null;
+  }
+}
+function startPresenceHeartbeat(projectId, label){
+  stopPresenceHeartbeat();
+  presenceProjectId = projectId;
+  presenceLabel = label;
+  const beat = async () => {
+    const p = projects.get(projectId);
+    if(!p) return;
+    const now = Date.now();
+    const list = (p.presence || []).filter(e => e.label !== label && (now - new Date(e.lastSeen).getTime()) < PRESENCE_STALE_MS);
+    list.push({label, lastSeen: new Date().toISOString()});
+    p.presence = list;
+    try{ await pb.collection("sae_projects").update(p.id, {presence: list}); }catch(e){}
+  };
+  beat();
+  presenceHeartbeat = setInterval(beat, PRESENCE_HEARTBEAT_MS);
+}
+function stopPresenceHeartbeat(){
+  if(presenceHeartbeat){ clearInterval(presenceHeartbeat); presenceHeartbeat = null; }
+  presenceProjectId = null;
+  presenceLabel = null;
+}
+async function removeOwnPresence(projectId, label){
+  const p = projects.get(projectId);
+  if(!p) return;
+  const list = (p.presence || []).filter(e => e.label !== label);
+  p.presence = list;
+  try{ await pb.collection("sae_projects").update(p.id, {presence: list}); }catch(e){}
+}
+
 function renderProjectView(){
   const main = document.getElementById("main");
   const p = projects.get(currentProjectId);
@@ -552,7 +635,10 @@ function renderProjectView(){
   bannerBtn.className = "btn btn-sm" + (unlocked ? "" : " btn-accent");
   bannerBtn.textContent = unlocked ? "Verrouiller" : "Débloquer l'écriture";
   bannerBtn.addEventListener("click", () => {
-    if(unlocked){ unlockedProjects.delete(currentProjectId); saveSession(); renderAll(); }
+    if(unlocked){
+      removeOwnPresence(currentProjectId, unlocked);
+      unlockedProjects.delete(currentProjectId); saveSession(); renderAll();
+    }
     else openUnlockModal(currentProjectId);
   });
   banner.appendChild(bannerBtn);
@@ -564,6 +650,15 @@ function renderProjectView(){
     banner.appendChild(editBtn);
   }
   main.appendChild(banner);
+
+  const activeEditors = getActiveEditors(p, unlocked || null);
+  if(activeEditors.length){
+    const warn = document.createElement("div");
+    warn.className = "presence-warning";
+    const names = activeEditors.map(e => escapeHtml(e.label || "un encadrant")).join(", ");
+    warn.textContent = `⚠ ${names} ${activeEditors.length > 1 ? "modifient" : "modifie"} actuellement ce projet — vos modifications peuvent se croiser.`;
+    main.appendChild(warn);
+  }
   if(adminUnlocked) main.appendChild(renderEncadrantsAdminPanel(p));
 
   const readOnly = !unlocked;
@@ -710,7 +805,7 @@ function renderItem(item, idx, project, readOnly){
     ${showBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
     <div class="livrable-foot">
       <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}></div>
-      <div class="livrable-field"><label for="date-${item.id}">Date</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
+      <div class="livrable-field"><label for="date-${item.id}">Date d'évaluation prévue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
       <div class="livrable-comment"><label for="comment-${item.id}">Commentaire</label><textarea id="comment-${item.id}" placeholder="Commentaire pour l'équipe…" ${readOnly?"disabled":""}>${escapeHtml(ev.commentaire||"")}</textarea></div>
     </div>`;
   card.querySelector('input[type=number]').addEventListener("change", e => updateEval(item.id, "note", e.target.value));
@@ -809,6 +904,14 @@ function openUnlockModal(id){
   document.getElementById("unlock-hint").textContent = hasCodes
     ? `Saisissez le code d'écriture pour "${p.nom}".`
     : `Aucun code n'existe encore pour "${p.nom}". Créez le vôtre.`;
+  const activeEditors = getActiveEditors(p, null);
+  const warnEl = document.getElementById("unlock-presence-warning");
+  if(activeEditors.length){
+    warnEl.textContent = `⚠ ${activeEditors.map(e=>escapeHtml(e.label||"un encadrant")).join(", ")} ${activeEditors.length>1?"sont":"est"} actuellement connecté${activeEditors.length>1?"s":""} en écriture sur ce projet.`;
+    warnEl.hidden = false;
+  } else {
+    warnEl.hidden = true;
+  }
   const body = document.getElementById("unlock-body");
   if(hasCodes){
     body.innerHTML = `
@@ -822,9 +925,17 @@ function openUnlockModal(id){
 }
 function renderCreateCodeForm(body, p){
   document.getElementById("unlock-title").textContent = "Créer un code d'écriture";
-  document.getElementById("unlock-hint").textContent = `Choisissez un code pour "${p.nom}". Chaque encadrant peut créer le sien.`;
+  const roster = (p.encadrants || []).filter(Boolean);
+  if(roster.length === 0){
+    document.getElementById("unlock-hint").textContent = `Aucun encadrant n'est renseigné pour "${p.nom}". Contactez l'administrateur pour corriger la liste avant de créer un code.`;
+    body.innerHTML = `<div class="field-full"><label for="unlock-label">Votre nom</label><select id="unlock-label" disabled><option value="">— Aucun encadrant listé —</option></select></div>`;
+    return;
+  }
+  document.getElementById("unlock-hint").textContent = `Seul un encadrant listé sur "${p.nom}" peut créer un code. Sélectionnez votre nom.`;
   body.innerHTML = `
-    <div class="field-full"><label for="unlock-label">Votre nom (affiché aux autres encadrants)</label><input type="text" id="unlock-label"></div>
+    <div class="field-full"><label for="unlock-label">Votre nom</label>
+      <select id="unlock-label"><option value="">— Sélectionnez votre nom —</option>${roster.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select>
+    </div>
     <div class="field-full"><label for="unlock-code">Nouveau code</label><input type="password" id="unlock-code"></div>
     <div class="field-full"><label for="unlock-code-confirm">Confirmer le code</label><input type="password" id="unlock-code-confirm"></div>`;
 }
@@ -917,6 +1028,7 @@ document.getElementById("nav-projets").addEventListener("click", () => { view = 
 document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
 document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
 document.getElementById("filter-parcours").addEventListener("change", e => { filterParcours = e.target.value; renderSidebar(); });
+document.getElementById("filter-encadrant").addEventListener("change", e => { filterEncadrant = e.target.value; renderSidebar(); });
 
 /* ---------------- project edit modal (admin / encadrant) ---------------- */
 function openProjectEditModal(id, scope){

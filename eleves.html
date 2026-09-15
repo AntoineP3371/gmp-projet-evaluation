@@ -17,7 +17,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.1</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.2</span></span>
       <span class="brand-title">Carnet d'évaluation</span>
       <span class="brand-sub">Consultation — lecture seule</span>
     </div>
@@ -71,6 +71,21 @@ function showConnError(show){ document.getElementById("conn-banner").classList.t
 function allItemsFromReferentiel(ref){
   if(!ref || !ref.sections) return [];
   return ref.sections.flatMap(s => s.items.map(it => ({...it, sectionId: s.id})));
+}
+function getOverdueItemNumbers(project){
+  if(!allItems.length) return [];
+  const today = new Date().toISOString().slice(0,10);
+  const nums = [];
+  allItems.forEach((item, idx) => {
+    for(const sem of ["S3","S4"]){
+      const ev = project.evals && project.evals[sem] && project.evals[sem][item.id];
+      if(ev && ev.date && ev.date <= today && (ev.note === undefined || ev.note === null || ev.note === "")){
+        nums.push(idx+1);
+        break;
+      }
+    }
+  });
+  return nums;
 }
 function computeScores(project, semestres){
   const totals = { C1:{n:0,d:0}, C2:{n:0,d:0}, C3:{n:0,d:0}, C4:{n:0,d:0}, C5:{n:0,d:0} };
@@ -164,9 +179,10 @@ function renderSidebar(){
     for(const [id,p] of entries){
       const li = document.createElement("li");
       const btn = document.createElement("button");
+      const overdue = getOverdueItemNumbers(p);
       btn.className = "team-item" + (currentProjectId===id ? " active" : "");
       btn.innerHTML = `<div class="team-item-main">
-          <div class="team-item-name">${escapeHtml(p.nom)}</div>
+          <div class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}</div>
           <div class="team-item-sujet">${escapeHtml(p.sujet || p.parcours || "—")}</div>
         </div>`;
       btn.addEventListener("click", () => { currentProjectId = id; renderAll(); });
@@ -261,7 +277,7 @@ function renderItem(item, idx, project){
     ${hasBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
     <div class="livrable-foot">
       <div class="livrable-field"><label>Note /20</label><input type="number" value="${ev.note ?? ""}" disabled></div>
-      <div class="livrable-field"><label>Date</label><input type="date" value="${ev.date||""}" disabled></div>
+      <div class="livrable-field"><label>Date d'évaluation prévue</label><input type="date" value="${ev.date||""}" disabled></div>
       <div class="livrable-comment"><label>Commentaire</label><textarea placeholder="Aucun commentaire" disabled>${escapeHtml(ev.commentaire||"")}</textarea></div>
     </div>`;
   return card;

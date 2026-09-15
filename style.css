@@ -50,7 +50,8 @@ h1,h2,h3{ text-wrap:balance; }
 .version-tag{ font-weight:400; color:var(--ink-faint); }
 
 .side-search{ padding:7px 9px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface-2); width:100%; }
-.side-filters{ display:flex; gap:6px; }
+.side-filters{ display:flex; gap:6px; flex-wrap:wrap; }
+.side-filters .side-select{ flex-basis:80px; }
 .side-select{ flex:1; min-width:0; padding:6px 7px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface-2); color:var(--ink); font-size:12px; }
 
 .team-list{ display:flex; flex-direction:column; gap:5px; margin:0; padding:0; list-style:none; }
@@ -64,6 +65,8 @@ h1,h2,h3{ text-wrap:balance; }
 .team-item-lock{ flex:none; width:18px; height:18px; color:var(--ink-faint); }
 .team-item-lock.rw{ color:var(--accent); }
 .team-item-lock.nocode{ color:var(--ink-faint); opacity:.5; }
+.overdue-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:15px; padding:0 4px; border-radius:99px; background:var(--danger); color:#fff; font-size:9.5px; font-weight:700; font-family:var(--font-mono); vertical-align:middle; animation:overdue-blink 1.1s step-start infinite; }
+@keyframes overdue-blink{ 50%{ opacity:.2; } }
 
 .nav-item{ display:flex; align-items:center; gap:8px; border-left:3px solid transparent; border-radius:var(--radius); padding:8px 9px; cursor:pointer; background:transparent; width:100%; text-align:left; font-weight:600; font-size:13px; color:var(--ink-muted); }
 .nav-item:hover{ background:var(--surface-2); }
@@ -114,6 +117,8 @@ h1,h2,h3{ text-wrap:balance; }
 .lock-banner-label{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-muted); }
 .lock-banner.rw .lock-banner-label{ color:var(--ink); font-weight:600; }
 .lock-icon{ width:16px; height:16px; flex:none; }
+
+.presence-warning{ background:var(--surface-2); border:1px solid var(--warn); color:var(--ink); border-radius:var(--radius); padding:10px 14px; margin-bottom:18px; font-size:12.5px; }
 
 .scorecard{ background:var(--surface); border:1px solid var(--rule); border-radius:var(--radius); padding:16px 18px; margin:16px 0 22px; }
 .scorecard-title{ font-size:11.5px; color:var(--ink-muted); font-weight:600; margin-bottom:12px; text-transform:uppercase; letter-spacing:.03em; }
@@ -176,7 +181,7 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .modal p.hint{ color:var(--ink-muted); font-size:12.5px; margin:0 0 16px; }
 .modal .field-full{ display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
 .modal .field-full label{ font-size:11.5px; font-weight:600; color:var(--ink-muted); }
-.modal input[type=text], .modal input[type=password], .modal textarea{ padding:8px 10px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface); width:100%; }
+.modal input[type=text], .modal input[type=password], .modal textarea, .modal select{ padding:8px 10px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface); width:100%; }
 .modal textarea{ min-height:60px; resize:vertical; }
 .student-row{ display:flex; gap:6px; margin-bottom:6px; }
 .student-row input{ flex:1; }
