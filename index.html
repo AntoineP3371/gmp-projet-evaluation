@@ -18,7 +18,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.6</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.7</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -105,6 +105,7 @@
       <label>Encadrants</label>
       <div id="pe-encadrant-rows"></div>
       <button class="btn btn-ghost btn-sm" id="pe-add-encadrant" type="button">+ Ajouter un encadrant</button>
+      <datalist id="pe-encadrant-datalist"></datalist>
     </div>
     <div class="modal-actions">
       <button class="btn" id="pe-cancel">Annuler</button>
@@ -137,6 +138,7 @@
     <h2>Import Excel — confirmation</h2>
     <p class="hint">Vérifiez le résumé avant d'appliquer les changements. Les notes déjà saisies ne sont jamais touchées par un import.</p>
     <div class="diff-summary" id="diff-summary"></div>
+    <p class="hint" id="diff-skipped-hint" hidden></p>
     <div class="modal-actions">
       <button class="btn" id="diff-cancel">Annuler</button>
       <button class="btn btn-accent" id="diff-confirm">Confirmer l'import</button>
@@ -388,7 +390,7 @@ function renderSidebar(){
       btn.innerHTML = `<span class="team-item-lock ${lockState}" title="${lockState==="none"?"Aucun encadrant connecté":lockState==="one"?"Un encadrant connecté":"Plusieurs encadrants connectés"}">${lockIconSvg(lockState!=="none")}</span>
         <div class="team-item-main">
           <div class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}${p.archived ? " (archivé)" : ""}</div>
-          <div class="team-item-sujet">${escapeHtml(p.sujet || p.parcours || "—")}</div>
+          <div class="team-item-sujet">${escapeHtml([p.formation, p.parcours].filter(Boolean).join(" · ") || p.sujet || "—")}</div>
         </div>`;
       btn.addEventListener("click", () => selectProject(id));
       li.appendChild(btn);
@@ -1211,19 +1213,26 @@ function openProjectEditModal(id, scope){
   document.getElementById("pe-parcours").value = p.parcours || "";
   const srows = document.getElementById("pe-student-rows"); srows.innerHTML = "";
   (p.etudiants && p.etudiants.length ? p.etudiants : [""]).forEach(v => addPeRow(srows, v));
+  populateEncadrantDatalist();
   const erows = document.getElementById("pe-encadrant-rows"); erows.innerHTML = "";
-  (p.encadrants && p.encadrants.length ? p.encadrants : [""]).forEach(v => addPeRow(erows, v));
+  (p.encadrants && p.encadrants.length ? p.encadrants : [""]).forEach(v => addPeRow(erows, v, "pe-encadrant-datalist"));
   document.getElementById("modal-project-edit").classList.add("open");
 }
-function addPeRow(container, value){
+function populateEncadrantDatalist(){
+  const names = new Set(encadrantCodes.keys());
+  for(const p of projects.values()) for(const n of (p.encadrants||[])) if(n) names.add(n);
+  const sorted = Array.from(names).sort((a,b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
+  document.getElementById("pe-encadrant-datalist").innerHTML = sorted.map(n => `<option value="${escapeHtml(n)}">`).join("");
+}
+function addPeRow(container, value, listId){
   const row = document.createElement("div");
   row.className = "student-row";
-  row.innerHTML = `<input type="text" value="${escapeHtml(value||"")}"><button class="btn-ghost btn-sm" type="button">✕</button>`;
+  row.innerHTML = `<input type="text" value="${escapeHtml(value||"")}"${listId ? ` list="${listId}"` : ""}><button class="btn-ghost btn-sm" type="button">✕</button>`;
   row.querySelector("button").addEventListener("click", () => row.remove());
   container.appendChild(row);
 }
 document.getElementById("pe-add-student").addEventListener("click", () => addPeRow(document.getElementById("pe-student-rows"), ""));
-document.getElementById("pe-add-encadrant").addEventListener("click", () => addPeRow(document.getElementById("pe-encadrant-rows"), ""));
+document.getElementById("pe-add-encadrant").addEventListener("click", () => addPeRow(document.getElementById("pe-encadrant-rows"), "", "pe-encadrant-datalist"));
 document.getElementById("pe-cancel").addEventListener("click", () => document.getElementById("modal-project-edit").classList.remove("open"));
 document.getElementById("pe-save").addEventListener("click", async () => {
   const nom = document.getElementById("pe-nom").value.trim();
@@ -1267,9 +1276,26 @@ document.getElementById("file-import").addEventListener("change", async e => {
   if(!file) return;
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, {type:"array"});
+  const rosterSheets = wb.SheetNames.filter(n => /^BUT\s*\d/i.test(n));
+  let groups, skipped = 0;
+  const isRoster = rosterSheets.length > 0;
+  if(isRoster){
+    const parsed = parseRosterWorkbook(wb, rosterSheets);
+    groups = parsed.groups; skipped = parsed.skipped;
+    if(Object.keys(groups).length === 0 && skipped === 0){ alert("Aucune ligne exploitable trouvée dans les onglets " + rosterSheets.join(", ") + "."); return; }
+  } else {
+    groups = parseFlatWorkbook(wb);
+    if(groups === null) return;
+  }
+  importDiff = computeImportDiff(groups, isRoster ? {skipArchive:true} : undefined);
+  importDiff.skipped = skipped;
+  renderImportDiff();
+  document.getElementById("modal-import-diff").classList.add("open");
+});
+function parseFlatWorkbook(wb){
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(sheet, {defval:""});
-  if(rows.length === 0){ alert("Le fichier ne contient aucune ligne exploitable."); return; }
+  if(rows.length === 0){ alert("Le fichier ne contient aucune ligne exploitable."); return null; }
   const keyMap = {};
   for(const h of Object.keys(rows[0])){
     const n = normalizeHeader(h);
@@ -1280,7 +1306,7 @@ document.getElementById("file-import").addEventListener("change", async e => {
     else if(n === "parcours") keyMap[h] = "parcours";
     else { const m = n.match(/^encadrant(\d+)$/); if(m) keyMap[h] = "encadrant"+m[1]; }
   }
-  if(!Object.values(keyMap).includes("projet")){ alert('Colonne "Projet" introuvable dans le fichier.'); return; }
+  if(!Object.values(keyMap).includes("projet")){ alert('Colonne "Projet" introuvable dans le fichier.'); return null; }
   const groups = {};
   for(const r of rows){
     const rr = {}; for(const [orig,k] of Object.entries(keyMap)) rr[k] = String(r[orig]||"").trim();
@@ -1295,16 +1321,47 @@ document.getElementById("file-import").addEventListener("change", async e => {
       if(k.startsWith("encadrant") && rr[k] && !g.encadrants.includes(rr[k])) g.encadrants.push(rr[k]);
     }
   }
-  importDiff = computeImportDiff(groups);
-  renderImportDiff();
-  document.getElementById("modal-import-diff").classList.add("open");
-});
+  return groups;
+}
+function parseRosterWorkbook(wb, sheetNames){
+  // Fichier type "Gestion étudiants" : un onglet par formation (BUT 2, BUT 3…), en-tête sur 2 lignes
+  // (ligne 1 : Nom/Prénom/Parcours/Formation/…/Nom du projet/Encadrant 1-4 ; ligne 2 : libellés détaillés).
+  const groups = {};
+  let skipped = 0;
+  for(const sheetName of sheetNames){
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:""});
+    if(rows.length < 3) continue;
+    const h1 = rows[1].map(v => normalizeHeader(v));
+    if(h1[0] !== "nom" || h1[1] !== "prenom" || h1[2] !== "parcours" || h1[3] !== "formation") continue;
+    for(let i = 2; i < rows.length; i++){
+      const r = rows[i];
+      const nom = String(r[0]||"").trim();
+      const prenom = String(r[1]||"").trim();
+      if(!nom) continue;
+      const parcours = String(r[2]||"").trim();
+      const formationCol = String(r[3]||"").trim();
+      const nomProjet = String(r[10]||"").trim();
+      if(!nomProjet){ skipped++; continue; }
+      const key = slugify(`${sheetName} ${nomProjet}`);
+      if(!groups[key]) groups[key] = { nom: nomProjet, formation: [sheetName, formationCol].filter(Boolean).join(" · "), parcours, etudiants: [], encadrants: [] };
+      const g = groups[key];
+      const nomPrenom = `${nom} ${prenom}`.trim();
+      if(nomPrenom && !g.etudiants.includes(nomPrenom)) g.etudiants.push(nomPrenom);
+      for(let c = 11; c <= 14; c++){
+        const enc = String(r[c]||"").trim();
+        if(enc && !g.encadrants.includes(enc)) g.encadrants.push(enc);
+      }
+    }
+  }
+  return {groups, skipped};
+}
 function sameRoster(existing, g){
   return existing.formation === g.formation && existing.parcours === g.parcours &&
     JSON.stringify(existing.etudiants||[]) === JSON.stringify(g.etudiants) &&
     JSON.stringify(existing.encadrants||[]) === JSON.stringify(g.encadrants);
 }
-function computeImportDiff(groups){
+function computeImportDiff(groups, opts){
+  opts = opts || {};
   const toCreate = [], toUpdate = [], toArchive = [], toReactivate = [];
   const newIds = new Set(Object.keys(groups));
   for(const [id,g] of Object.entries(groups)){
@@ -1315,8 +1372,10 @@ function computeImportDiff(groups){
       if(existing.archived || !sameRoster(existing,g)) toUpdate.push({id,...g});
     }
   }
-  for(const [id,data] of projects.entries()){
-    if(!newIds.has(id) && !data.archived) toArchive.push({id,nom:data.nom});
+  if(!opts.skipArchive){
+    for(const [id,data] of projects.entries()){
+      if(!newIds.has(id) && !data.archived) toArchive.push({id,nom:data.nom});
+    }
   }
   return {toCreate,toUpdate,toArchive,toReactivate};
 }
@@ -1333,6 +1392,13 @@ function renderImportDiff(){
       <div><div>${label}</div>${list.length ? `<div class="diff-names">${list.map(x=>escapeHtml(x.nom)).join(", ")}</div>` : ""}</div>
       <b>${list.length}</b>
     </div>`).join("");
+  const skippedHint = document.getElementById("diff-skipped-hint");
+  if(importDiff.skipped){
+    skippedHint.textContent = `${importDiff.skipped} étudiant(s) pas encore affecté(s) à un projet dans le fichier (colonne "Nom du projet" vide) — ignoré(s) pour cet import.`;
+    skippedHint.hidden = false;
+  } else {
+    skippedHint.hidden = true;
+  }
 }
 document.getElementById("diff-cancel").addEventListener("click", () => document.getElementById("modal-import-diff").classList.remove("open"));
 document.getElementById("diff-confirm").addEventListener("click", async () => {
