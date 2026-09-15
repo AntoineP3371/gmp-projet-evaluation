@@ -18,7 +18,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP</span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.1</span></span>
       <span class="brand-title">Carnet d'évaluation</span>
       <span class="brand-sub">Espace encadrants</span>
     </div>
@@ -31,18 +31,14 @@
 
     <ul class="team-list" id="team-list"></ul>
 
-    <button class="nav-item" id="nav-referentiel">Référentiel — livrables &amp; barème (admin)</button>
+    <div class="admin-nav" id="admin-nav" hidden>
+      <button class="nav-item" id="nav-referentiel">Gestion des livrables</button>
+      <button class="nav-item" id="nav-projets">Gestion des projets</button>
+    </div>
+
+    <input type="file" id="file-import" accept=".xlsx,.xls" style="display:none">
 
     <div class="sidebar-admin">
-      <label class="archived-toggle" id="archived-toggle-wrap" hidden>
-        <input type="checkbox" id="archived-toggle"> Afficher les projets archivés
-      </label>
-      <div class="admin-tools" id="admin-tools" hidden>
-        <button class="btn btn-sm btn-block" id="btn-import">Importer un Excel</button>
-        <input type="file" id="file-import" accept=".xlsx,.xls" style="display:none">
-        <button class="btn btn-sm btn-block" id="btn-add-project">+ Ajouter un projet</button>
-        <button class="btn btn-sm btn-block" id="btn-export-json">Exporter (sauvegarde JSON)</button>
-      </div>
       <div class="admin-status" id="admin-status">
         <span>Mode administrateur</span>
         <button class="btn btn-ghost btn-sm" id="btn-admin-toggle">Activer</button>
@@ -274,6 +270,7 @@ function renderAll(){
   renderSidebar();
   if(view === "project") renderProjectView();
   else if(view === "referentiel") renderReferentielView();
+  else if(view === "projets") renderProjectsManagementView();
   else renderEmpty();
 }
 function matchesFilter(p){
@@ -327,8 +324,8 @@ function renderSidebar(){
     }
   }
   document.getElementById("nav-referentiel").classList.toggle("active", view==="referentiel");
-  document.getElementById("archived-toggle-wrap").hidden = !adminUnlocked;
-  document.getElementById("admin-tools").hidden = !adminUnlocked;
+  document.getElementById("nav-projets").classList.toggle("active", view==="projets");
+  document.getElementById("admin-nav").hidden = !adminUnlocked;
   const st = document.getElementById("admin-status");
   st.classList.toggle("on", adminUnlocked);
   st.querySelector("span").textContent = adminUnlocked ? "Administrateur actif" : "Mode administrateur";
@@ -339,6 +336,68 @@ function renderEmpty(){
     <h2>Aucun projet sélectionné</h2>
     <p>Choisissez un projet à gauche${projects.size===0 ? ", ou importez le fichier Excel des projets (mode administrateur)" : ""}.</p>
   </div>`;
+}
+function renderProjectsManagementView(){
+  const main = document.getElementById("main");
+  if(!adminUnlocked){
+    main.innerHTML = `<div class="empty-state"><h2>Gestion des projets</h2><p>La liste complète des projets et encadrants est réservée au mode administrateur.</p>
+      <button class="btn btn-accent" id="proj-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
+    main.querySelector("#proj-unlock-admin").addEventListener("click", openAdminModal);
+    return;
+  }
+  main.innerHTML = "";
+  const head = document.createElement("div");
+  head.className = "team-head";
+  head.innerHTML = `<div><h1>Gestion des projets</h1><div class="tags"><span class="tag">Admin</span></div></div>`;
+  main.appendChild(head);
+
+  const actions = document.createElement("div");
+  actions.className = "pm-actions";
+  actions.innerHTML = `
+    <button class="btn btn-sm" id="pm-import">Importer un Excel</button>
+    <button class="btn btn-sm" id="pm-add">+ Ajouter un projet</button>
+    <button class="btn btn-sm" id="pm-export">Exporter (sauvegarde JSON)</button>
+    <label class="archived-toggle pm-archived-toggle">
+      <input type="checkbox" id="pm-archived-toggle" ${showArchived?"checked":""}> Afficher les projets archivés
+    </label>`;
+  main.appendChild(actions);
+  actions.querySelector("#pm-import").addEventListener("click", () => document.getElementById("file-import").click());
+  actions.querySelector("#pm-add").addEventListener("click", () => openProjectEditModal(null, "admin"));
+  actions.querySelector("#pm-export").addEventListener("click", exportJsonBackup);
+  actions.querySelector("#pm-archived-toggle").addEventListener("change", e => { showArchived = e.target.checked; renderAll(); });
+
+  const list = Array.from(projects.values())
+    .filter(p => showArchived || !p.archived)
+    .sort((a,b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
+
+  if(list.length === 0){
+    const empty = document.createElement("p");
+    empty.style.cssText = "color:var(--ink-muted); font-size:12.5px; margin-top:16px;";
+    empty.textContent = "Aucun projet.";
+    main.appendChild(empty);
+    return;
+  }
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "ref-table-wrap";
+  const table = document.createElement("table");
+  table.className = "ref-table";
+  table.innerHTML = `<thead><tr><th>Projet</th><th>Formation</th><th>Parcours</th><th>Étudiants</th><th>Encadrants</th></tr></thead><tbody></tbody>`;
+  const tbody = table.querySelector("tbody");
+  for(const p of list){
+    const tr = document.createElement("tr");
+    tr.className = "ref-row pm-row";
+    tr.innerHTML = `
+      <td><b>${escapeHtml(p.nom)}</b>${p.archived ? ' <span class="tag">archivé</span>' : ""}</td>
+      <td>${escapeHtml(p.formation||"—")}</td>
+      <td>${escapeHtml(p.parcours||"—")}</td>
+      <td>${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : "—"}</td>
+      <td>${p.encadrants && p.encadrants.length ? escapeHtml(p.encadrants.join(", ")) : "—"}</td>`;
+    tr.addEventListener("click", () => selectProject(p.slug));
+    tbody.appendChild(tr);
+  }
+  tableWrap.appendChild(table);
+  main.appendChild(tableWrap);
 }
 
 function renderReferentielView(){
@@ -354,14 +413,23 @@ function renderReferentielView(){
     return;
   }
   if(!refDraft) refDraft = deepClone(referentiel);
-  main.innerHTML = `<div class="team-head"><div><h1>Référentiel d'évaluation</h1><div class="tags"><span class="tag">Admin</span></div></div></div>`;
+  main.innerHTML = `<div class="team-head"><div><h1>Gestion des livrables</h1><div class="tags"><span class="tag">Admin</span></div></div></div>`;
   for(const section of refDraft.sections){
     const wrap = document.createElement("div");
     wrap.className = "section-block";
     wrap.innerHTML = `<div class="section-head"><div class="section-title">${escapeHtml(section.titre)}</div></div>`;
-    section.items.forEach(item => wrap.appendChild(renderRefItemEditor(section, item)));
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "ref-table-wrap";
+    const table = document.createElement("table");
+    table.className = "ref-table";
+    table.innerHTML = `<thead><tr><th>#</th><th>Livrable</th>${Object.keys(COMPETENCES).map(c=>`<th>${c}</th>`).join("")}<th></th></tr></thead><tbody></tbody>`;
+    const tbody = table.querySelector("tbody");
+    section.items.forEach((item,i) => renderRefRow(tbody, section, item, i+1));
+    tableWrap.appendChild(table);
+    wrap.appendChild(tableWrap);
     const addBtn = document.createElement("button");
     addBtn.className = "btn btn-sm";
+    addBtn.style.marginTop = "10px";
     addBtn.textContent = "+ Ajouter un livrable";
     addBtn.addEventListener("click", () => {
       const nid = section.id + "-c" + Math.random().toString(36).slice(2,7);
@@ -373,26 +441,36 @@ function renderReferentielView(){
     main.appendChild(wrap);
   }
 }
-function renderRefItemEditor(section, item){
-  const row = document.createElement("div");
-  row.className = "ref-item";
-  const coefInputs = Object.keys(COMPETENCES).map(c => `
-    <label for="ref-${item.id}-coef-${c}">${c}<input id="ref-${item.id}-coef-${c}" type="number" min="0" step="1" data-coef="${c}" value="${item.coef && item.coef[c] ? item.coef[c] : ""}"></label>`).join("");
+function renderRefRow(tbody, section, item, idx){
+  const row = document.createElement("tr");
+  row.className = "ref-row";
+  const coefCells = Object.keys(COMPETENCES).map(c => `
+    <td><input id="ref-${item.id}-coef-${c}" class="ref-coef-input" type="number" min="0" step="1" data-coef="${c}" value="${item.coef && item.coef[c] ? item.coef[c] : ""}"></td>`).join("");
   row.innerHTML = `
-    <div class="ref-item-row">
-      <input id="ref-${item.id}-titre" type="text" data-field="titre" value="${escapeHtml(item.titre)}" placeholder="Titre du livrable">
-      ${item.editable ? "" : `<input id="ref-${item.id}-duree" type="text" data-field="duree" value="${escapeHtml(item.duree||"")}" placeholder="Durée (optionnel)" style="max-width:160px;">`}
+    <td class="ref-idx">${idx}.</td>
+    <td><input id="ref-${item.id}-titre" class="ref-titre-input" type="text" data-field="titre" value="${escapeHtml(item.titre)}" placeholder="Titre du livrable"></td>
+    ${coefCells}
+    <td class="ref-row-actions">
+      <button class="btn-ghost btn-sm" type="button" title="Détails (durée, description, barème)">✎</button>
+      <button class="btn-ghost btn-sm btn-danger" type="button" title="Supprimer">🗑</button>
+    </td>`;
+  const detailRow = document.createElement("tr");
+  detailRow.className = "ref-detail-row";
+  detailRow.hidden = true;
+  detailRow.innerHTML = `<td colspan="${2 + Object.keys(COMPETENCES).length + 1}">
+    <div class="ref-detail-body">
+      ${item.editable ? "" : `<input id="ref-${item.id}-duree" type="text" data-field="duree" value="${escapeHtml(item.duree||"")}" placeholder="Durée (optionnel)">`}
+      <textarea id="ref-${item.id}-desc" data-field="desc" placeholder="Description">${escapeHtml(item.desc||"")}</textarea>
+      ${item.editable ? "" : `
+      <textarea id="ref-${item.id}-faible" data-field="faible" placeholder="Barème — niveau faible">${escapeHtml(item.faible||"")}</textarea>
+      <textarea id="ref-${item.id}-moyen" data-field="moyen" placeholder="Barème — niveau moyen">${escapeHtml(item.moyen||"")}</textarea>
+      <textarea id="ref-${item.id}-bon" data-field="bon" placeholder="Barème — niveau bon">${escapeHtml(item.bon||"")}</textarea>`}
     </div>
-    <textarea id="ref-${item.id}-desc" data-field="desc" placeholder="Description">${escapeHtml(item.desc||"")}</textarea>
-    ${item.editable ? "" : `
-    <textarea id="ref-${item.id}-faible" data-field="faible" placeholder="Barème — niveau faible">${escapeHtml(item.faible||"")}</textarea>
-    <textarea id="ref-${item.id}-moyen" data-field="moyen" placeholder="Barème — niveau moyen">${escapeHtml(item.moyen||"")}</textarea>
-    <textarea id="ref-${item.id}-bon" data-field="bon" placeholder="Barème — niveau bon">${escapeHtml(item.bon||"")}</textarea>`}
-    <div class="ref-item-foot">
-      <div class="ref-coefs">${coefInputs}</div>
-      <button class="btn btn-ghost btn-sm btn-danger" type="button">Supprimer</button>
-    </div>`;
+  </td>`;
   row.querySelectorAll("[data-field]").forEach(el => {
+    el.addEventListener("change", () => { item[el.dataset.field] = el.value; saveReferentielDraft(); });
+  });
+  detailRow.querySelectorAll("[data-field]").forEach(el => {
     el.addEventListener("change", () => { item[el.dataset.field] = el.value; saveReferentielDraft(); });
   });
   row.querySelectorAll("[data-coef]").forEach(el => {
@@ -403,13 +481,15 @@ function renderRefItemEditor(section, item){
       saveReferentielDraft();
     });
   });
-  row.querySelector(".btn-danger").addEventListener("click", () => {
+  row.querySelector('[title="Détails (durée, description, barème)"]').addEventListener("click", () => { detailRow.hidden = !detailRow.hidden; });
+  row.querySelector('[title="Supprimer"]').addEventListener("click", () => {
     if(!confirm(`Supprimer le livrable "${item.titre}" ? Les notes déjà saisies pour ce livrable resteront dans les projets mais ne seront plus affichées.`)) return;
     section.items = section.items.filter(i => i !== item);
     renderReferentielView();
     saveReferentielDraft();
   });
-  return row;
+  tbody.appendChild(row);
+  tbody.appendChild(detailRow);
 }
 function saveReferentielDraft(){
   clearTimeout(refPendingTimer);
@@ -749,7 +829,7 @@ document.getElementById("btn-admin-toggle").addEventListener("click", () => {
   else openAdminModal();
 });
 document.getElementById("nav-referentiel").addEventListener("click", () => { view = "referentiel"; refDraft = null; renderAll(); });
-document.getElementById("archived-toggle").addEventListener("change", e => { showArchived = e.target.checked; renderAll(); });
+document.getElementById("nav-projets").addEventListener("click", () => { view = "projets"; renderAll(); });
 document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
 document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
 document.getElementById("filter-parcours").addEventListener("change", e => { filterParcours = e.target.value; renderSidebar(); });
@@ -821,11 +901,8 @@ document.getElementById("pe-save").addEventListener("click", async () => {
     renderAll();
   }catch(e){ alert("Échec de l'enregistrement : " + (e && e.message ? e.message : "erreur inconnue")); }
 });
-document.getElementById("btn-add-project").addEventListener("click", () => openProjectEditModal(null, "admin"));
-
 /* ---------------- Excel import (admin) ---------------- */
 function normalizeHeader(h){ return String(h||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]/g,""); }
-document.getElementById("btn-import").addEventListener("click", () => document.getElementById("file-import").click());
 document.getElementById("file-import").addEventListener("change", async e => {
   const file = e.target.files[0];
   e.target.value = "";
@@ -926,7 +1003,7 @@ document.getElementById("diff-confirm").addEventListener("click", async () => {
 });
 
 /* ---------------- export backup ---------------- */
-document.getElementById("btn-export-json").addEventListener("click", () => {
+function exportJsonBackup(){
   const bundle = { referentiel, projects: Object.fromEntries(projects) };
   const blob = new Blob([JSON.stringify(bundle, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -934,7 +1011,7 @@ document.getElementById("btn-export-json").addEventListener("click", () => {
   a.href = url; a.download = "carnet-sae-sauvegarde.json";
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
-});
+}
 
 /* ---------------- init ---------------- */
 async function init(){
