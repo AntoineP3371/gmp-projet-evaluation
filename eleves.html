@@ -28,7 +28,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.7</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.8</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -38,6 +38,7 @@
 
     <input class="side-search" id="side-search" type="text" placeholder="Filtrer les projets…">
     <div class="side-filters">
+      <select class="side-select" id="filter-annee"><option value="">Toutes années</option></select>
       <select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select>
       <select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select>
     </div>
@@ -67,6 +68,7 @@ let currentProjectId = null;
 let currentSemestre = "S3";
 let showArchived = false;
 let searchFilter = "";
+let filterAnnee = "";
 let filterFormation = "";
 let filterParcours = "";
 
@@ -173,6 +175,7 @@ function renderAll(){
   if(currentProjectId) renderProjectView(); else renderEmpty();
 }
 function matchesFilter(p){
+  if(filterAnnee && p.annee !== filterAnnee) return false;
   if(filterFormation && p.formation !== filterFormation) return false;
   if(filterParcours && p.parcours !== filterParcours) return false;
   if(!searchFilter) return true;
@@ -180,11 +183,13 @@ function matchesFilter(p){
   return (p.nom||"").toLowerCase().includes(q) || (p.sujet||"").toLowerCase().includes(q) || (p.parcours||"").toLowerCase().includes(q);
 }
 function populateFilterOptions(){
-  const formations = new Set(), parcoursSet = new Set();
+  const annees = new Set(), formations = new Set(), parcoursSet = new Set();
   for(const p of projects.values()){
+    if(p.annee) annees.add(p.annee);
     if(p.formation) formations.add(p.formation);
     if(p.parcours) parcoursSet.add(p.parcours);
   }
+  fillSelect("filter-annee", annees, "Toutes années", filterAnnee);
   fillSelect("filter-formation", formations, "Toutes formations", filterFormation);
   fillSelect("filter-parcours", parcoursSet, "Tous parcours", filterParcours);
 }
@@ -350,6 +355,7 @@ function renderIndividualisation(project){
 }
 
 document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
+document.getElementById("filter-annee").addEventListener("change", e => { filterAnnee = e.target.value; renderSidebar(); });
 document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
 document.getElementById("filter-parcours").addEventListener("change", e => { filterParcours = e.target.value; renderSidebar(); });
 
