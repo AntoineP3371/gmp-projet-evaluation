@@ -20,6 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
 </head>
@@ -30,7 +31,7 @@
 <div class="app">
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.20</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.21</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -38,14 +39,24 @@
       <span class="brand-sub">Consultation — lecture seule</span>
     </button>
 
-    <input class="side-search" id="side-search" type="text" placeholder="Filtrer les projets…" title="Rechercher par nom de projet, d'étudiant ou d'encadrant">
+    <div class="side-field">
+      <label for="side-search">Recherche</label>
+      <input class="side-search" id="side-search" type="text" placeholder="Nom de projet, d'étudiant, d'encadrant…" title="Rechercher par nom de projet, d'étudiant ou d'encadrant">
+    </div>
     <div class="side-filters">
-      <select class="side-select" id="filter-annee"><option value="">Toutes années</option></select>
-      <select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select>
-      <select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select>
+      <div class="side-field"><label for="filter-annee">Année</label><select class="side-select" id="filter-annee"><option value="">Toutes années</option></select></div>
+      <div class="side-field"><label for="filter-formation">Formation</label><select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select></div>
+      <div class="side-field"><label for="filter-parcours">Parcours</label><select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select></div>
     </div>
 
     <ul class="team-list" id="team-list"></ul>
+
+    <div class="sidebar-admin">
+      <div class="theme-status" id="theme-status">
+        <span>Affichage</span>
+        <button class="btn btn-ghost btn-sm" id="btn-theme-toggle" type="button"></button>
+      </div>
+    </div>
   </aside>
 
   <main class="main" id="main"></main>
@@ -205,6 +216,7 @@ function fillSelect(id, values, allLabel, current){
   const sorted = Array.from(values).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
   sel.innerHTML = `<option value="">${allLabel}</option>` + sorted.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
   sel.value = current;
+  sel.classList.toggle("is-set", !!current);
 }
 function renderSidebar(){
   populateFilterOptions();
@@ -365,6 +377,22 @@ document.getElementById("side-search").addEventListener("input", e => { searchFi
 document.getElementById("filter-annee").addEventListener("change", e => { filterAnnee = e.target.value; renderSidebar(); });
 document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
 document.getElementById("filter-parcours").addEventListener("change", e => { filterParcours = e.target.value; renderSidebar(); });
+function effectiveTheme(){
+  const stored = localStorage.getItem("theme");
+  if(stored === "light" || stored === "dark") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+function updateThemeToggleBtn(){
+  const dark = effectiveTheme() === "dark";
+  document.getElementById("btn-theme-toggle").textContent = dark ? "☀️ Mode clair" : "🌙 Mode sombre";
+}
+document.getElementById("btn-theme-toggle").addEventListener("click", () => {
+  const next = effectiveTheme() === "dark" ? "light" : "dark";
+  localStorage.setItem("theme", next);
+  document.documentElement.setAttribute("data-theme", next);
+  updateThemeToggleBtn();
+});
+updateThemeToggleBtn();
 
 async function init(){
   renderEmpty();

@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
@@ -20,7 +21,7 @@
 <div class="app">
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.20</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.21</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -44,12 +45,15 @@
       </button>
     </div>
 
-    <input class="side-search" id="side-search" type="text" placeholder="Filtrer les projets…" title="Rechercher par nom de projet, d'étudiant ou d'encadrant">
+    <div class="side-field">
+      <label for="side-search">Recherche</label>
+      <input class="side-search" id="side-search" type="text" placeholder="Nom de projet, d'étudiant, d'encadrant…" title="Rechercher par nom de projet, d'étudiant ou d'encadrant">
+    </div>
     <div class="side-filters">
-      <select class="side-select" id="filter-annee"><option value="">Toutes années</option></select>
-      <select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select>
-      <select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select>
-      <select class="side-select" id="filter-encadrant"><option value="">Tous encadrants</option></select>
+      <div class="side-field"><label for="filter-annee">Année</label><select class="side-select" id="filter-annee"><option value="">Toutes années</option></select></div>
+      <div class="side-field"><label for="filter-formation">Formation</label><select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select></div>
+      <div class="side-field"><label for="filter-parcours">Parcours</label><select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select></div>
+      <div class="side-field"><label for="filter-encadrant">Encadrant</label><select class="side-select" id="filter-encadrant"><option value="">Tous encadrants</option></select></div>
     </div>
 
     <ul class="team-list" id="team-list"></ul>
@@ -57,6 +61,10 @@
     <input type="file" id="file-import" accept=".xlsx,.xls" style="display:none">
 
     <div class="sidebar-admin">
+      <div class="theme-status" id="theme-status">
+        <span>Affichage</span>
+        <button class="btn btn-ghost btn-sm" id="btn-theme-toggle" type="button"></button>
+      </div>
       <div class="admin-status" id="admin-status">
         <span>Mode administrateur</span>
         <button class="btn btn-ghost btn-sm" id="btn-admin-toggle">Activer</button>
@@ -198,7 +206,7 @@ let filterAnnee = "";
 let filterFormation = "";
 let filterParcours = "";
 let filterEncadrant = "";
-let pendingTimer = null;
+let pendingSaves = new Map();
 let refPendingTimer = null;
 let refDraft = null;
 let refDirty = false;
@@ -348,7 +356,7 @@ function subscribeRealtime(){
   pb.collection("sae_projects").subscribe("*", (e) => {
     if(e.action === "delete") projects.delete(e.record.slug);
     else projects.set(e.record.slug, e.record);
-    if(pendingTimer) return;
+    if(pendingSaves.has(currentProjectId)) return;
     renderAll();
   }).catch(()=>{});
   pb.collection("sae_config").subscribe("*", (e) => {
@@ -411,6 +419,7 @@ function fillSelect(id, values, allLabel, current){
   const sorted = Array.from(values).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
   sel.innerHTML = `<option value="">${allLabel}</option>` + sorted.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
   sel.value = current;
+  sel.classList.toggle("is-set", !!current);
 }
 function renderSidebar(){
   populateFilterOptions();
@@ -1233,32 +1242,75 @@ function refreshScoresOnly(){
     main.querySelectorAll(".scorecard")[2].replaceWith(renderScorecard(p, ["S3","S4"], "Notes — cumul annuel (S3 + S4)"));
   }
 }
-function flushPendingPatch(){
-  clearTimeout(pendingTimer);
-  pendingTimer = setTimeout(async () => {
-    const p = projects.get(currentProjectId);
-    pendingTimer = null;
-    if(!p) return;
-    try{
-      await pb.collection("sae_projects").update(p.id, { evals: p.evals, individualisation: p.individualisation });
-      showToast("Enregistré");
-    }catch(e){ showToast("Échec de l'enregistrement"); }
-  }, 400);
+/* fusion des saisies concurrentes : on n'enregistre que le diff (item/étudiant + champ modifiés),
+   fusionné sur la dernière version serveur au moment de l'envoi, au lieu de réécrire tout
+   evals/individualisation depuis la copie locale — évite d'écraser la saisie d'un autre
+   encadrant qui aurait modifié un autre livrable du même projet entre-temps. */
+function mergeSparse(base, diff){
+  const out = deepClone(base || {});
+  for(const sem of Object.keys(diff)){
+    if(!out[sem]) out[sem] = {};
+    for(const key of Object.keys(diff[sem])){
+      out[sem][key] = {...(out[sem][key]||{}), ...diff[sem][key]};
+    }
+  }
+  return out;
+}
+function queuePendingSave(slug, recordId){
+  let entry = pendingSaves.get(slug);
+  if(!entry){ entry = {recordId, evalDiff:{}, indivDiff:{}, timer:null}; pendingSaves.set(slug, entry); }
+  return entry;
+}
+function scheduleFlush(slug){
+  const entry = pendingSaves.get(slug);
+  if(!entry) return;
+  clearTimeout(entry.timer);
+  entry.timer = setTimeout(() => flushProjectPatch(slug), 400);
+}
+async function flushProjectPatch(slug){
+  const entry = pendingSaves.get(slug);
+  if(!entry) return;
+  pendingSaves.delete(slug);
+  const {recordId, evalDiff, indivDiff} = entry;
+  if(Object.keys(evalDiff).length === 0 && Object.keys(indivDiff).length === 0) return;
+  try{
+    const fresh = await pb.collection("sae_projects").getOne(recordId);
+    const mergedEvals = mergeSparse(fresh.evals || {S3:{},S4:{}}, evalDiff);
+    const mergedIndiv = mergeSparse(fresh.individualisation || {S3:{},S4:{}}, indivDiff);
+    const updated = await pb.collection("sae_projects").update(recordId, { evals: mergedEvals, individualisation: mergedIndiv });
+    projects.set(updated.slug, updated);
+    if(currentProjectId === slug && view === "project") renderProjectView();
+    showToast("Enregistré");
+  }catch(e){
+    const retry = queuePendingSave(slug, recordId);
+    retry.evalDiff = mergeSparse(evalDiff, retry.evalDiff);
+    retry.indivDiff = mergeSparse(indivDiff, retry.indivDiff);
+    showToast("Échec de l'enregistrement");
+    scheduleFlush(slug);
+  }
 }
 function updateEval(itemId, field, value){
-  const p = projects.get(currentProjectId);
+  const slug = currentProjectId;
+  const p = projects.get(slug);
   if(!p.evals) p.evals = {S3:{},S4:{}};
   if(!p.evals[currentSemestre][itemId]) p.evals[currentSemestre][itemId] = {};
   p.evals[currentSemestre][itemId][field] = value;
+  const entry = queuePendingSave(slug, p.id);
+  if(!entry.evalDiff[currentSemestre]) entry.evalDiff[currentSemestre] = {};
+  entry.evalDiff[currentSemestre][itemId] = {...(entry.evalDiff[currentSemestre][itemId]||{}), [field]: value};
   refreshScoresOnly();
-  flushPendingPatch();
+  scheduleFlush(slug);
 }
 function updateIndiv(etuIdx, comp, value){
-  const p = projects.get(currentProjectId);
+  const slug = currentProjectId;
+  const p = projects.get(slug);
   if(!p.individualisation) p.individualisation = {S3:{},S4:{}};
   if(!p.individualisation[currentSemestre][etuIdx]) p.individualisation[currentSemestre][etuIdx] = {};
   p.individualisation[currentSemestre][etuIdx][comp] = value;
-  flushPendingPatch();
+  const entry = queuePendingSave(slug, p.id);
+  if(!entry.indivDiff[currentSemestre]) entry.indivDiff[currentSemestre] = {};
+  entry.indivDiff[currentSemestre][etuIdx] = {...(entry.indivDiff[currentSemestre][etuIdx]||{}), [comp]: value};
+  scheduleFlush(slug);
 }
 function selectProject(id){ currentProjectId = id; view = "project"; renderAll(); }
 
@@ -1414,6 +1466,22 @@ document.getElementById("btn-admin-toggle").addEventListener("click", () => {
   if(adminUnlocked){ adminUnlocked = false; saveSession(); renderAll(); }
   else openAdminModal();
 });
+function effectiveTheme(){
+  const stored = localStorage.getItem("theme");
+  if(stored === "light" || stored === "dark") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+function updateThemeToggleBtn(){
+  const dark = effectiveTheme() === "dark";
+  document.getElementById("btn-theme-toggle").textContent = dark ? "☀️ Mode clair" : "🌙 Mode sombre";
+}
+document.getElementById("btn-theme-toggle").addEventListener("click", () => {
+  const next = effectiveTheme() === "dark" ? "light" : "dark";
+  localStorage.setItem("theme", next);
+  document.documentElement.setAttribute("data-theme", next);
+  updateThemeToggleBtn();
+});
+updateThemeToggleBtn();
 document.getElementById("brand-home").addEventListener("click", () => { currentProjectId = null; view = "empty"; renderAll(); });
 document.getElementById("nav-referentiel").addEventListener("click", () => { view = "referentiel"; refDraft = null; renderAll(); });
 document.getElementById("nav-projets").addEventListener("click", () => { view = "projets"; renderAll(); });

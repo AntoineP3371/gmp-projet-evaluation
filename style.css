@@ -57,10 +57,13 @@ h1,h2,h3{ text-wrap:balance; }
 .brand-sub{ color:var(--ink-muted); font-size:12.5px; }
 .version-tag{ font-weight:400; color:var(--ink-faint); }
 
+.side-field{ display:flex; flex-direction:column; gap:4px; }
+.side-field label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
 .side-search{ padding:7px 9px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface-2); width:100%; }
-.side-filters{ display:flex; gap:6px; flex-wrap:wrap; }
-.side-filters .side-select{ flex-basis:80px; }
-.side-select{ flex:1; min-width:0; padding:6px 7px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface-2); color:var(--ink); font-size:12px; }
+.side-filters{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.side-filters .side-field:last-child:nth-child(odd){ grid-column:1 / -1; }
+.side-select{ width:100%; min-width:0; padding:6px 7px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface-2); color:var(--ink); font-size:12px; }
+.side-select.is-set{ border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); color:var(--accent); font-weight:600; }
 
 .team-list{ display:flex; flex-direction:column; gap:5px; margin:0; padding:0; list-style:none; }
 .team-item{ display:flex; align-items:center; gap:8px; border:1px solid transparent; border-left:3px solid transparent; border-radius:var(--radius); padding:8px 9px; cursor:pointer; background:transparent; width:100%; text-align:left; }
@@ -97,7 +100,7 @@ h1,h2,h3{ text-wrap:balance; }
 .btn:disabled{ opacity:.5; cursor:not-allowed; }
 
 .sidebar-admin{ margin-top:auto; padding-top:12px; border-top:1px solid var(--rule); display:flex; flex-direction:column; gap:8px; }
-.admin-status{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11.5px; color:var(--ink-muted); }
+.admin-status, .theme-status{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11.5px; color:var(--ink-muted); }
 .admin-status.on{ color:var(--good); font-weight:600; }
 .archived-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-muted); cursor:pointer; user-select:none; }
 .pm-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
