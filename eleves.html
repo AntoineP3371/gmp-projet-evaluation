@@ -29,14 +29,14 @@
 
 <div class="app">
   <aside class="sidebar">
-    <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.14</span></span>
+    <button class="brand" id="brand-home" type="button">
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.17</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-sub">Consultation — lecture seule</span>
-    </div>
+    </button>
 
     <input class="side-search" id="side-search" type="text" placeholder="Filtrer les projets…">
     <div class="side-filters">
@@ -266,8 +266,8 @@ function renderProjectView(){
   banner.textContent = "Consultation en lecture seule. Seuls les encadrants peuvent modifier les notes.";
   main.appendChild(banner);
 
-  main.appendChild(renderScorecard(p, [currentSemestre], `Scores — semestre ${currentSemestre==='S3'?'3':'4'}`));
-  main.appendChild(renderScorecard(p, ["S3","S4"], "Scores — cumul annuel (S3 + S4)"));
+  main.appendChild(renderScorecard(p, [currentSemestre], `Notes — semestre ${currentSemestre==='S3'?'3':'4'}`));
+  main.appendChild(renderScorecard(p, ["S3","S4"], "Notes — cumul annuel (S3 + S4)"));
 
   for(const section of referentiel.sections){
     if(section.parcours && section.parcours !== p.parcours) continue;
@@ -355,6 +355,7 @@ function renderIndividualisation(project){
   return wrap;
 }
 
+document.getElementById("brand-home").addEventListener("click", () => { currentProjectId = null; renderAll(); });
 document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
 document.getElementById("filter-annee").addEventListener("change", e => { filterAnnee = e.target.value; renderSidebar(); });
 document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });

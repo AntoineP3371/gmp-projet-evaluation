@@ -19,19 +19,29 @@
 
 <div class="app">
   <aside class="sidebar">
-    <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.14</span></span>
+    <button class="brand" id="brand-home" type="button">
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.17</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
-      <span class="brand-sub">Espace encadrants</span>
-    </div>
+      <span class="brand-sub" id="brand-sub">Espace encadrants</span>
+    </button>
 
     <div class="admin-nav" id="admin-nav" hidden>
-      <button class="nav-item" id="nav-referentiel">Gestion des livrables</button>
-      <button class="nav-item" id="nav-projets">Gestion des projets</button>
-      <button class="nav-item" id="nav-encadrants">Gestion des encadrants</button>
+      <span class="admin-nav-eyebrow">Administration</span>
+      <button class="nav-item" id="nav-referentiel">
+        <svg class="nav-item-icon" viewBox="0 0 24 24"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/></svg>
+        Livrables
+      </button>
+      <button class="nav-item" id="nav-projets">
+        <svg class="nav-item-icon" viewBox="0 0 24 24"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z"/></svg>
+        Projets
+      </button>
+      <button class="nav-item" id="nav-encadrants">
+        <svg class="nav-item-icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6"/><circle cx="18" cy="9" r="2.4"/><path d="M16.2 14c2.8.4 4.8 2.5 4.8 5.6"/></svg>
+        Encadrants
+      </button>
     </div>
 
     <input class="side-search" id="side-search" type="text" placeholder="Filtrer les projets…">
@@ -205,6 +215,25 @@ function slugify(s){
 function escapeHtml(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+function normName(s){ return String(s||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
+function findEncadrantRec(nom){
+  const key = normName(nom);
+  for(const [k,v] of encadrantCodes) if(normName(k) === key) return v;
+  return null;
+}
+function rosterHasName(list, nom){
+  const key = normName(nom);
+  return (list||[]).some(n => normName(n) === key);
+}
+const canonNameCache = new Map();
+function canonicalEncadrantName(n){
+  const norm = normName(n);
+  if(canonNameCache.has(norm)) return canonNameCache.get(norm);
+  const rec = findEncadrantRec(n);
+  const canon = rec ? rec.nom : n;
+  canonNameCache.set(norm, canon);
+  return canon;
+}
 async function sha256Hex(text){
   const enc = new TextEncoder().encode(text);
   const buf = await crypto.subtle.digest("SHA-256", enc);
@@ -353,18 +382,19 @@ function matchesFilter(p){
   if(filterAnnee && p.annee !== filterAnnee) return false;
   if(filterFormation && p.formation !== filterFormation) return false;
   if(filterParcours && p.parcours !== filterParcours) return false;
-  if(filterEncadrant && !(p.encadrants||[]).includes(filterEncadrant)) return false;
+  if(filterEncadrant && !rosterHasName(p.encadrants, filterEncadrant)) return false;
   if(!searchFilter) return true;
   const q = searchFilter.toLowerCase();
   return (p.nom||"").toLowerCase().includes(q) || (p.sujet||"").toLowerCase().includes(q) || (p.parcours||"").toLowerCase().includes(q);
 }
 function populateFilterOptions(){
+  canonNameCache.clear();
   const annees = new Set(), formations = new Set(), parcoursSet = new Set(), encadrantsSet = new Set();
   for(const p of projects.values()){
     if(p.annee) annees.add(p.annee);
     if(p.formation) formations.add(p.formation);
     if(p.parcours) parcoursSet.add(p.parcours);
-    (p.encadrants||[]).forEach(e => e && encadrantsSet.add(e));
+    (p.encadrants||[]).forEach(e => e && encadrantsSet.add(canonicalEncadrantName(e)));
   }
   fillSelect("filter-annee", annees, "Toutes années", filterAnnee);
   fillSelect("filter-formation", formations, "Toutes formations", filterFormation);
@@ -410,6 +440,7 @@ function renderSidebar(){
   document.getElementById("nav-projets").classList.toggle("active", view==="projets");
   document.getElementById("nav-encadrants").classList.toggle("active", view==="encadrants");
   document.getElementById("admin-nav").hidden = !adminUnlocked;
+  document.getElementById("brand-sub").textContent = adminUnlocked ? "Espace administrateur" : "Espace encadrants";
   const st = document.getElementById("admin-status");
   st.classList.toggle("on", adminUnlocked);
   st.querySelector("span").textContent = adminUnlocked ? "Administrateur actif" : "Mode administrateur";
@@ -552,6 +583,14 @@ function renderReferentielView(){
     table.innerHTML = `<thead><tr><th></th><th>#</th><th>Livrable</th>${Object.keys(COMPETENCES).map(c=>`<th>${c}</th>`).join("")}<th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
     section.items.forEach((item,i) => renderRefRow(tbody, section, item, i+1));
+    tbody.addEventListener("dragover", e => {
+      if(draggedRefItem) e.preventDefault();
+    });
+    tbody.addEventListener("drop", e => {
+      if(!draggedRefItem || e.target !== tbody) return;
+      e.preventDefault();
+      moveRefItem(draggedRefItem.section, draggedRefItem.item, section, null);
+    });
     tableWrap.appendChild(table);
     wrap.appendChild(tableWrap);
     const addBtn = document.createElement("button");
@@ -611,6 +650,15 @@ document.addEventListener("mousedown", e => {
 });
 document.addEventListener("mouseup", () => { dragArmedRow = null; });
 let draggedRefItem = null;
+function moveRefItem(fromSection, item, toSection, beforeItem){
+  const fromIdx = fromSection.items.indexOf(item);
+  if(fromIdx === -1) return;
+  fromSection.items.splice(fromIdx, 1);
+  const toIdx = beforeItem ? toSection.items.indexOf(beforeItem) : -1;
+  toSection.items.splice(toIdx === -1 ? toSection.items.length : toIdx, 0, item);
+  renderReferentielView();
+  saveReferentielDraft();
+}
 function renderRefRow(tbody, section, item, idx){
   const row = document.createElement("tr");
   row.className = "ref-row";
@@ -634,19 +682,13 @@ function renderRefRow(tbody, section, item, idx){
   });
   row.addEventListener("dragend", () => { row.classList.remove("dragging"); draggedRefItem = null; });
   row.addEventListener("dragover", e => {
-    if(draggedRefItem && draggedRefItem.section === section) e.preventDefault();
+    if(draggedRefItem) e.preventDefault();
   });
   row.addEventListener("drop", e => {
-    if(!draggedRefItem || draggedRefItem.section !== section || draggedRefItem.item === item) return;
+    if(!draggedRefItem || draggedRefItem.item === item) return;
     e.preventDefault();
-    const items = section.items;
-    const fromIdx = items.indexOf(draggedRefItem.item);
-    const toIdx = items.indexOf(item);
-    if(fromIdx === -1 || toIdx === -1) return;
-    items.splice(fromIdx,1);
-    items.splice(toIdx,0,draggedRefItem.item);
-    renderReferentielView();
-    saveReferentielDraft();
+    e.stopPropagation();
+    moveRefItem(draggedRefItem.section, draggedRefItem.item, section, item);
   });
   const detailRow = document.createElement("tr");
   detailRow.className = "ref-detail-row";
@@ -842,7 +884,7 @@ function renderProjectView(){
 
   const banner = document.createElement("div");
   banner.className = "lock-banner" + (unlocked ? " rw" : "");
-  const anyRosterHasCode = (p.encadrants||[]).some(n => { const r = encadrantCodes.get(n); return r && r.hash; });
+  const anyRosterHasCode = (p.encadrants||[]).some(n => { const r = findEncadrantRec(n); return r && r.hash; });
   banner.innerHTML = `<span class="lock-banner-label">${lockIconSvg(unlocked ? true : !anyRosterHasCode)} ${unlocked ? "Modification activée — " + escapeHtml(unlocked) : '<span class="lock-banner-instructions">SELECTIONNER VOTRE NOM DANS LA LISTE DES ENCADRANTS CI DESSUS &gt; ENTRER VOTRE CODE &gt; SELECTIONNER LE SEMESTRE D\'EVALUATION &gt; COMPLETER LES NOTES ET LES COMMENTAIRES</span>'}</span>`;
   if(unlocked){
     const bannerBtn = document.createElement("button");
@@ -874,9 +916,9 @@ function renderProjectView(){
   if(adminUnlocked) main.appendChild(renderEncadrantsAdminPanel(p));
 
   const readOnly = !unlocked;
-  main.appendChild(renderScorecard(p, ["S3"], "Scores — semestre 3", {selectable:true, sem:"S3", active:currentSemestre==="S3"}));
-  main.appendChild(renderScorecard(p, ["S4"], "Scores — semestre 4", {selectable:true, sem:"S4", active:currentSemestre==="S4"}));
-  main.appendChild(renderScorecard(p, ["S3","S4"], "Scores — cumul annuel (S3 + S4)"));
+  main.appendChild(renderScorecard(p, ["S3"], "Notes — semestre 3", {selectable:true, sem:"S3", active:currentSemestre==="S3"}));
+  main.appendChild(renderScorecard(p, ["S4"], "Notes — semestre 4", {selectable:true, sem:"S4", active:currentSemestre==="S4"}));
+  main.appendChild(renderScorecard(p, ["S3","S4"], "Notes — cumul annuel (S3 + S4)"));
 
   for(const section of referentiel.sections){
     if(section.parcours && section.parcours !== p.parcours) continue;
@@ -912,7 +954,7 @@ function renderEncadrantsAdminPanel(project){
   return wrap;
 }
 function renderEncadrantCodeRow(tbody, nom, onChange, projectsList){
-  const rec = encadrantCodes.get(nom);
+  const rec = findEncadrantRec(nom);
   const hasCode = !!(rec && rec.hash);
   const row = document.createElement("tr");
   row.className = "ref-row";
@@ -953,8 +995,8 @@ function renderEncadrantCodeRow(tbody, nom, onChange, projectsList){
       const projList = projectsList && projectsList.length ? ` (retiré des projets : ${projectsList.join(", ")})` : "";
       if(!confirm(`Supprimer "${nom}" ? Son code sera effacé et il/elle sera retiré(e) de tous ses projets${projList}.`)) return;
       for(const p of projects.values()){
-        if((p.encadrants||[]).includes(nom)){
-          const encadrants = p.encadrants.filter(n => n !== nom);
+        if(rosterHasName(p.encadrants, nom)){
+          const encadrants = p.encadrants.filter(n => normName(n) !== normName(nom));
           p.encadrants = encadrants;
           await pb.collection("sae_projects").update(p.id, {encadrants});
         }
@@ -997,12 +1039,14 @@ function renderEncadrantsManagementView(){
   hint.textContent = "Chaque encadrant n'a qu'un seul code d'écriture, valable sur tous ses projets.";
   main.appendChild(hint);
 
+  canonNameCache.clear();
   const projectsByName = new Map();
   for(const p of projects.values()){
     for(const n of (p.encadrants||[])){
       if(!n) continue;
-      if(!projectsByName.has(n)) projectsByName.set(n, []);
-      projectsByName.get(n).push(p.nom);
+      const key = canonicalEncadrantName(n);
+      if(!projectsByName.has(key)) projectsByName.set(key, []);
+      projectsByName.get(key).push(p.nom);
     }
   }
   const names = new Set();
@@ -1066,7 +1110,7 @@ document.getElementById("ae-save").addEventListener("click", async () => {
   for(const slug of slugs){
     const p = projects.get(slug);
     if(!p) continue;
-    if((p.encadrants||[]).includes(nom)) continue;
+    if(rosterHasName(p.encadrants, nom)) continue;
     const encadrants = (p.encadrants||[]).concat([nom]);
     p.encadrants = encadrants;
     await pb.collection("sae_projects").update(p.id, {encadrants});
@@ -1179,9 +1223,9 @@ function refreshScoresOnly(){
   const p = projects.get(currentProjectId);
   const cards = main.querySelectorAll(".scorecard");
   if(cards.length === 3 && p){
-    cards[0].replaceWith(renderScorecard(p, ["S3"], "Scores — semestre 3", {selectable:true, sem:"S3", active:currentSemestre==="S3"}));
-    main.querySelectorAll(".scorecard")[1].replaceWith(renderScorecard(p, ["S4"], "Scores — semestre 4", {selectable:true, sem:"S4", active:currentSemestre==="S4"}));
-    main.querySelectorAll(".scorecard")[2].replaceWith(renderScorecard(p, ["S3","S4"], "Scores — cumul annuel (S3 + S4)"));
+    cards[0].replaceWith(renderScorecard(p, ["S3"], "Notes — semestre 3", {selectable:true, sem:"S3", active:currentSemestre==="S3"}));
+    main.querySelectorAll(".scorecard")[1].replaceWith(renderScorecard(p, ["S4"], "Notes — semestre 4", {selectable:true, sem:"S4", active:currentSemestre==="S4"}));
+    main.querySelectorAll(".scorecard")[2].replaceWith(renderScorecard(p, ["S3","S4"], "Notes — cumul annuel (S3 + S4)"));
   }
 }
 function flushPendingPatch(){
@@ -1215,14 +1259,15 @@ function selectProject(id){ currentProjectId = id; view = "project"; renderAll()
 
 /* ---------------- encadrant codes (global, shared across all projects) ---------------- */
 async function upsertEncadrantCode(nom, hash){
-  const existing = encadrantCodes.get(nom);
+  const existing = findEncadrantRec(nom);
   let rec;
   if(existing){
     rec = await pb.collection("sae_encadrants").update(existing.id, {hash});
+    if(rec.nom !== existing.nom) encadrantCodes.delete(existing.nom);
   } else {
     rec = await pb.collection("sae_encadrants").create({nom, hash});
   }
-  encadrantCodes.set(nom, rec);
+  encadrantCodes.set(rec.nom, rec);
   return rec;
 }
 
@@ -1232,7 +1277,7 @@ function openUnlockModal(id, presetLabel){
   unlockPresetLabel = presetLabel;
   const p = projects.get(id);
   const backdrop = document.getElementById("modal-unlock");
-  const rec = encadrantCodes.get(presetLabel);
+  const rec = findEncadrantRec(presetLabel);
   const existing = rec && rec.hash;
   document.getElementById("unlock-error").hidden = true;
   document.getElementById("unlock-title").textContent = existing ? `Débloquer l'écriture — ${presetLabel}` : `Créer un code — ${presetLabel}`;
@@ -1293,7 +1338,7 @@ document.getElementById("unlock-submit").addEventListener("click", async () => {
     renderAll();
   } else {
     const hash = await sha256Hex(code);
-    const rec = encadrantCodes.get(unlockPresetLabel);
+    const rec = findEncadrantRec(unlockPresetLabel);
     if(!rec || rec.hash !== hash){ errEl.textContent = "Code incorrect."; errEl.hidden = false; return; }
     const changeWrap = document.getElementById("unlock-change-fields");
     const changing = changeWrap && !changeWrap.hidden;
@@ -1364,6 +1409,7 @@ document.getElementById("btn-admin-toggle").addEventListener("click", () => {
   if(adminUnlocked){ adminUnlocked = false; saveSession(); renderAll(); }
   else openAdminModal();
 });
+document.getElementById("brand-home").addEventListener("click", () => { currentProjectId = null; view = "empty"; renderAll(); });
 document.getElementById("nav-referentiel").addEventListener("click", () => { view = "referentiel"; refDraft = null; renderAll(); });
 document.getElementById("nav-projets").addEventListener("click", () => { view = "projets"; renderAll(); });
 document.getElementById("nav-encadrants").addEventListener("click", () => { view = "encadrants"; renderAll(); });
@@ -1400,8 +1446,9 @@ function openProjectEditModal(id, scope){
   document.getElementById("modal-project-edit").classList.add("open");
 }
 function populateEncadrantDatalist(){
+  canonNameCache.clear();
   const names = new Set(encadrantCodes.keys());
-  for(const p of projects.values()) for(const n of (p.encadrants||[])) if(n) names.add(n);
+  for(const p of projects.values()) for(const n of (p.encadrants||[])) if(n) names.add(canonicalEncadrantName(n));
   const sorted = Array.from(names).sort((a,b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
   document.getElementById("pe-encadrant-datalist").innerHTML = sorted.map(n => `<option value="${escapeHtml(n)}">`).join("");
 }
@@ -1613,25 +1660,32 @@ document.getElementById("diff-confirm").addEventListener("click", async () => {
 /* ---------------- export backup ---------------- */
 function exportNotesExcel(){
   const list = Array.from(projects.values()).sort((a,b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
-  const header = ["Projet","Année","Formation","Parcours","Archivé","Semestre","Section","Livrable","Étudiants","Encadrants","Note /20","Date d'évaluation prévue","Commentaire"];
-  const rows = [header];
-  for(const p of list){
-    for(const sem of ["S3","S4"]){
-      for(const item of allItems){
-        const ev = (p.evals && p.evals[sem] && p.evals[sem][item.id]) || {};
-        const section = referentiel.sections.find(s => s.id === item.sectionId);
-        rows.push([
-          p.nom, p.annee||"", p.formation||"", p.parcours||"", p.archived ? "oui" : "non",
-          sem==="S3" ? "Semestre 3" : "Semestre 4", section ? section.titre : "", item.titre,
-          (p.etudiants||[]).join(", "), (p.encadrants||[]).join(", "),
-          ev.note ?? "", ev.date || "", ev.commentaire || ""
-        ]);
+  const compKeys = Object.keys(COMPETENCES);
+  const wb = XLSX.utils.book_new();
+  for(const sem of ["S3","S4"]){
+    const header = ["Nom Prénom","Formation","Parcours","Année",
+      ...allItems.map((item,i) => `${i+1}. ${item.titre}`),
+      ...compKeys];
+    const rows = [header];
+    for(const p of list){
+      const teamScores = computeScores(p, [sem]);
+      const etudiants = p.etudiants || [];
+      for(let i=0; i<etudiants.length; i++){
+        const livrableVals = allItems.map(item => {
+          const ev = (p.evals && p.evals[sem] && p.evals[sem][item.id]) || {};
+          return ev.note ?? "";
+        });
+        const indiv = (p.individualisation && p.individualisation[sem] && p.individualisation[sem][i]) || {};
+        const compVals = compKeys.map(c => {
+          const val = (indiv[c] !== undefined && indiv[c] !== null) ? indiv[c] : teamScores[c];
+          return (val === null || val === undefined) ? "" : val;
+        });
+        rows.push([etudiants[i], p.formation||"", p.parcours||"", p.annee||"", ...livrableVals, ...compVals]);
       }
     }
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, sem === "S3" ? "Semestre 3" : "Semestre 4");
   }
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Notes");
   XLSX.writeFile(wb, `carnet-sae-notes-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 function exportJsonBackup(){
