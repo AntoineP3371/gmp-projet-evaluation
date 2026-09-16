@@ -20,7 +20,7 @@
 <div class="app">
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.19</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.20</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -44,7 +44,7 @@
       </button>
     </div>
 
-    <input class="side-search" id="side-search" type="text" placeholder="Filtrer les projets…">
+    <input class="side-search" id="side-search" type="text" placeholder="Filtrer les projets…" title="Rechercher par nom de projet, d'étudiant ou d'encadrant">
     <div class="side-filters">
       <select class="side-select" id="filter-annee"><option value="">Toutes années</option></select>
       <select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select>
@@ -385,7 +385,12 @@ function matchesFilter(p){
   if(filterEncadrant && !rosterHasName(p.encadrants, filterEncadrant)) return false;
   if(!searchFilter) return true;
   const q = searchFilter.toLowerCase();
-  return (p.nom||"").toLowerCase().includes(q) || (p.sujet||"").toLowerCase().includes(q) || (p.parcours||"").toLowerCase().includes(q);
+  if((p.nom||"").toLowerCase().includes(q)) return true;
+  if((p.sujet||"").toLowerCase().includes(q)) return true;
+  if((p.parcours||"").toLowerCase().includes(q)) return true;
+  if((p.etudiants||[]).some(n => (n||"").toLowerCase().includes(q))) return true;
+  if((p.encadrants||[]).some(n => (n||"").toLowerCase().includes(q))) return true;
+  return false;
 }
 function populateFilterOptions(){
   canonNameCache.clear();
