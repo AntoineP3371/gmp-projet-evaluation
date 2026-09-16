@@ -30,7 +30,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.10</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.11</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -269,26 +269,11 @@ function renderProjectView(){
   main.appendChild(renderScorecard(p, [currentSemestre], `Scores — semestre ${currentSemestre==='S3'?'3':'4'}`));
   main.appendChild(renderScorecard(p, ["S3","S4"], "Scores — cumul annuel (S3 + S4)"));
 
-  for(const section of referentiel.sections) main.appendChild(renderSection(section, p));
+  for(const section of referentiel.sections){
+    if(section.parcours && section.parcours !== p.parcours) continue;
+    main.appendChild(renderSection(section, p));
+  }
   main.appendChild(renderIndividualisation(p));
-}
-function hexToRgb(hex){
-  const m = String(hex||"").trim().match(/^#?([0-9a-f]{6})$/i);
-  if(!m) return [0,0,0];
-  const n = parseInt(m[1],16);
-  return [(n>>16)&255, (n>>8)&255, n&255];
-}
-function scoreColor(v){
-  if(v === null || v === undefined) return "var(--rule-strong)";
-  if(v > 16) return "var(--c5)";
-  const t = Math.max(0, Math.min(1, v/16));
-  const rootStyle = getComputedStyle(document.documentElement);
-  const red = hexToRgb(rootStyle.getPropertyValue("--danger"));
-  const green = hexToRgb(rootStyle.getPropertyValue("--good"));
-  const r = Math.round(red[0] + (green[0]-red[0])*t);
-  const g = Math.round(red[1] + (green[1]-red[1])*t);
-  const b = Math.round(red[2] + (green[2]-red[2])*t);
-  return `rgb(${r},${g},${b})`;
 }
 function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
@@ -301,7 +286,7 @@ function renderScorecard(project, semestres, titre){
     const pct = v === null ? 0 : Math.min(100, (v/20)*100);
     rows += `<div class="score-row">
       <div class="score-label">${c} · ${info.nom}</div>
-      <div class="score-track"><div class="score-fill" style="width:${pct}%; background:${scoreColor(v)};"></div></div>
+      <div class="score-track"><div class="score-gradient"></div><div class="score-mask" style="width:${100-pct}%"></div></div>
       <div class="score-value ${v===null?'na':''}">${v===null ? "—" : v.toFixed(2)}</div>
     </div>`;
   }
