@@ -20,7 +20,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.12</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.13</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -191,6 +191,7 @@ let filterEncadrant = "";
 let pendingTimer = null;
 let refPendingTimer = null;
 let refDraft = null;
+let refDirty = false;
 let importDiff = null;
 let projectEditId = null;
 let projectEditScope = "admin";
@@ -520,7 +521,14 @@ function renderReferentielView(){
     return;
   }
   if(!refDraft) refDraft = deepClone(referentiel);
-  main.innerHTML = `<div class="team-head"><div><h1>Gestion des livrables</h1><div class="tags"><span class="tag">Admin</span></div></div></div>`;
+  main.innerHTML = `<div class="team-head">
+    <div><h1>Gestion des livrables</h1><div class="tags"><span class="tag">Admin</span></div></div>
+    <div class="team-head-actions">
+      <button class="btn btn-sm" id="ref-validate-btn" type="button"></button>
+    </div>
+  </div>`;
+  document.getElementById("ref-validate-btn").addEventListener("click", validateReferentielDraft);
+  updateValidateButtonState();
   const knownParcours = new Set();
   for(const p of projects.values()) if(p.parcours) knownParcours.add(p.parcours);
   for(const section of refDraft.sections){
@@ -654,17 +662,17 @@ function renderRefRow(tbody, section, item, idx){
     </div>
   </td>`;
   row.querySelectorAll("[data-field]").forEach(el => {
-    el.addEventListener("change", () => { item[el.dataset.field] = el.value; saveReferentielDraft(); });
+    el.addEventListener("change", () => { item[el.dataset.field] = el.value; markRefDirty(); });
   });
   detailRow.querySelectorAll("[data-field]").forEach(el => {
-    el.addEventListener("change", () => { item[el.dataset.field] = el.value; saveReferentielDraft(); });
+    el.addEventListener("change", () => { item[el.dataset.field] = el.value; markRefDirty(); });
   });
   row.querySelectorAll("[data-coef]").forEach(el => {
     el.addEventListener("change", () => {
       item.coef = item.coef || {};
       const v = parseFloat(el.value);
       if(!v){ delete item.coef[el.dataset.coef]; } else { item.coef[el.dataset.coef] = v; }
-      saveReferentielDraft();
+      markRefDirty();
     });
   });
   row.querySelector('[title="Détails (durée, description, barème)"]').addEventListener("click", () => { detailRow.hidden = !detailRow.hidden; });
@@ -677,20 +685,46 @@ function renderRefRow(tbody, section, item, idx){
   tbody.appendChild(row);
   tbody.appendChild(detailRow);
 }
+async function persistReferentielDraft(){
+  if(referentielRecordId){
+    await pb.collection("sae_config").update(referentielRecordId, { value: refDraft });
+  } else {
+    const rec = await pb.collection("sae_config").create({ key: "referentiel", value: refDraft });
+    referentielRecordId = rec.id;
+  }
+}
 function saveReferentielDraft(){
   clearTimeout(refPendingTimer);
   refPendingTimer = setTimeout(async () => {
     try{
-      if(referentielRecordId){
-        await pb.collection("sae_config").update(referentielRecordId, { value: refDraft });
-      } else {
-        const rec = await pb.collection("sae_config").create({ key: "referentiel", value: refDraft });
-        referentielRecordId = rec.id;
-      }
+      await persistReferentielDraft();
+      refDirty = false;
+      updateValidateButtonState();
       showToast("Référentiel enregistré");
     }catch(e){ showToast("Échec de l'enregistrement"); }
     refPendingTimer = null;
   }, 500);
+}
+function markRefDirty(){
+  refDirty = true;
+  updateValidateButtonState();
+}
+function updateValidateButtonState(){
+  const btn = document.getElementById("ref-validate-btn");
+  if(!btn) return;
+  btn.disabled = !refDirty;
+  btn.classList.toggle("btn-accent", refDirty);
+  btn.textContent = refDirty ? "✓ Valider les modifications" : "✓ Modifications enregistrées";
+}
+async function validateReferentielDraft(){
+  clearTimeout(refPendingTimer);
+  refPendingTimer = null;
+  try{
+    await persistReferentielDraft();
+    refDirty = false;
+    showToast("Modifications enregistrées");
+  }catch(e){ showToast("Échec de l'enregistrement"); }
+  updateValidateButtonState();
 }
 
 /* ---------------- presence (multi-encadrant awareness) ---------------- */
@@ -761,6 +795,9 @@ function removeOwnPresenceOnUnload(){
 }
 window.addEventListener("pagehide", removeOwnPresenceOnUnload);
 window.addEventListener("beforeunload", removeOwnPresenceOnUnload);
+window.addEventListener("beforeunload", e => {
+  if(refDirty){ e.preventDefault(); e.returnValue = ""; }
+});
 
 function renderProjectView(){
   const main = document.getElementById("main");

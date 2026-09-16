@@ -156,10 +156,8 @@ h1,h2,h3{ text-wrap:balance; }
 .score-row{ display:grid; grid-template-columns:150px 1fr 52px; align-items:center; gap:12px; padding:6px 0; }
 .score-label{ font-size:12.5px; font-weight:600; }
 .score-track{ position:relative; height:8px; background:var(--surface-2); border-radius:99px; overflow:hidden; }
-.scorecard-selectable.active .score-track{ background:rgba(255,255,255,.3); }
 .score-gradient{ position:absolute; inset:0; background:linear-gradient(to right, var(--grad-red) 0%, var(--grad-green) 80%, var(--grad-purple) 100%); }
 .score-mask{ position:absolute; top:0; right:0; bottom:0; background:var(--surface-2); }
-.scorecard-selectable.active .score-mask{ background:rgba(255,255,255,.3); }
 .score-value{ font-family:var(--font-mono); font-weight:600; text-align:right; font-variant-numeric:tabular-nums; }
 .score-value.na{ color:var(--ink-faint); font-weight:400; }
 
