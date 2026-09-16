@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carnet SAE GMP — encadrants</title>
+<title>Evaluation projet GMP - Encadrants</title>
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,11 +21,11 @@
 <div class="app">
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.21</span></span>
-      <div class="brand-title-row">
-        <span class="brand-title">Carnet d'évaluation</span>
+      <div class="brand-tag-row">
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.22</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
+      <span class="brand-title">Fiches d'évaluation des projets</span>
       <span class="brand-sub" id="brand-sub">Espace encadrants</span>
     </button>
 
@@ -140,7 +140,7 @@
   <div class="modal wide">
     <h2>Ajouter un encadrant</h2>
     <p class="hint">Créez son code d'écriture et cochez les projets sur lesquels il ou elle doit apparaître.</p>
-    <div class="field-full"><label for="ae-nom">Nom</label><input type="text" id="ae-nom"></div>
+    <div class="field-full"><label for="ae-nom">Nom Prénom</label><input type="text" id="ae-nom"></div>
     <div class="field-full"><label for="ae-code">Code d'écriture</label><input type="password" id="ae-code"></div>
     <div class="field-full"><label for="ae-code-confirm">Confirmer le code</label><input type="password" id="ae-code-confirm"></div>
     <div class="field-full">
@@ -1077,8 +1077,8 @@ function renderEncadrantsManagementView(){
     const tableWrap = document.createElement("div");
     tableWrap.className = "ref-table-wrap";
     const table = document.createElement("table");
-    table.className = "ref-table";
-    table.innerHTML = `<thead><tr><th>Nom</th><th>Projets</th><th>Créé le</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
+    table.className = "ref-table ref-table-encadrants";
+    table.innerHTML = `<thead><tr><th>Nom Prénom</th><th>Projets</th><th>Créé le</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
     for(const nom of sorted){
       renderEncadrantCodeRow(tbody, nom, renderEncadrantsManagementView, projectsByName.get(nom) || []);

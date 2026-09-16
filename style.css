@@ -52,8 +52,8 @@ h1,h2,h3{ text-wrap:balance; }
 .brand:hover .brand-title{ text-decoration:underline; }
 .brand-tag{ font-family:var(--font-mono); font-size:11px; letter-spacing:.04em; color:var(--logo-blue); font-weight:600; }
 .brand-title{ font-size:19px; font-weight:700; line-height:1.2; }
-.brand-title-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.brand-logo{ height:24px; width:auto; display:block; }
+.brand-tag-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; }
+.brand-logo{ height:22px; width:auto; display:block; flex:none; }
 .brand-sub{ color:var(--ink-muted); font-size:12.5px; }
 .version-tag{ font-weight:400; color:var(--ink-faint); }
 
@@ -238,6 +238,7 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .ref-table th{ text-align:left; font-size:10.5px; color:var(--ink-muted); font-weight:600; padding:8px 10px; border-bottom:1px solid var(--rule-strong); background:var(--surface-2); white-space:nowrap; }
 .ref-table td{ padding:6px 10px; border-bottom:1px solid var(--rule); vertical-align:middle; }
 .ref-table tbody tr.ref-row:last-child td{ border-bottom:none; }
+.ref-table-encadrants td:first-child, .ref-table-encadrants th:first-child{ white-space:nowrap; }
 .ref-idx{ font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); white-space:nowrap; }
 .ref-drag-handle{ cursor:grab; color:var(--ink-faint); text-align:center; width:20px; user-select:none; }
 .ref-drag-handle:active{ cursor:grabbing; }
