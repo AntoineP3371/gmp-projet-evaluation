@@ -20,7 +20,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.11</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.12</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -528,7 +528,7 @@ function renderReferentielView(){
     wrap.className = "section-block";
     const isParcoursSection = Object.prototype.hasOwnProperty.call(section, "parcours");
     wrap.innerHTML = `<div class="section-head">
-      <div class="section-title">${escapeHtml(section.titre)}${isParcoursSection ? ` <span class="tag">Parcours : ${escapeHtml(section.parcours)}</span>` : ""}</div>
+      <div class="section-title">${escapeHtml(section.titre)}${isParcoursSection ? ` <span class="tag">${escapeHtml(section.parcours)}</span>` : ""}</div>
       <button class="btn-ghost btn-sm btn-danger" type="button" title="Supprimer cette section">🗑 Supprimer la section</button>
     </div>`;
     wrap.querySelector('[title="Supprimer cette section"]').addEventListener("click", () => {
@@ -889,8 +889,9 @@ function renderEncadrantCodeRow(tbody, nom, onChange, projectsList){
     ${projectsCell}
     ${statusCell}
     <td class="ref-row-actions"><button class="btn-ghost btn-sm" type="button">${hasCode ? "Changer le code" : "Créer un code"}</button></td>
-    <td class="ref-row-actions">${hasCode ? `<button class="btn-ghost btn-sm btn-danger" type="button">Réinitialiser</button>` : ""}</td>`;
-  const colspan = projectsList ? 5 : 4;
+    <td class="ref-row-actions">${hasCode ? `<button class="btn-ghost btn-sm btn-danger" type="button" data-action="reset">Réinitialiser</button>` : ""}</td>
+    ${projectsList ? `<td class="ref-row-actions"><button class="btn-ghost btn-sm btn-danger" type="button" data-action="delete">Supprimer</button></td>` : ""}`;
+  const colspan = projectsList ? 6 : 4;
   const detailRow = document.createElement("tr");
   detailRow.className = "ref-detail-row";
   detailRow.hidden = true;
@@ -900,12 +901,29 @@ function renderEncadrantCodeRow(tbody, nom, onChange, projectsList){
     <button class="btn btn-sm btn-accent" type="button">Enregistrer le code</button>
   </div></td>`;
   row.querySelector(".btn-ghost:not(.btn-danger)").addEventListener("click", () => { detailRow.hidden = !detailRow.hidden; });
-  const dangerBtn = row.querySelector(".btn-danger");
-  if(dangerBtn){
-    dangerBtn.addEventListener("click", async () => {
+  const resetBtn = row.querySelector('[data-action="reset"]');
+  if(resetBtn){
+    resetBtn.addEventListener("click", async () => {
       if(!confirm(`Réinitialiser le code de "${nom}" ? La personne devra en recréer un (sur n'importe lequel de ses projets).`)) return;
       await upsertEncadrantCode(nom, "");
       showToast("Code réinitialisé");
+      if(onChange) onChange();
+    });
+  }
+  const deleteBtn = row.querySelector('[data-action="delete"]');
+  if(deleteBtn){
+    deleteBtn.addEventListener("click", async () => {
+      const projList = projectsList && projectsList.length ? ` (retiré des projets : ${projectsList.join(", ")})` : "";
+      if(!confirm(`Supprimer "${nom}" ? Son code sera effacé et il/elle sera retiré(e) de tous ses projets${projList}.`)) return;
+      for(const p of projects.values()){
+        if((p.encadrants||[]).includes(nom)){
+          const encadrants = p.encadrants.filter(n => n !== nom);
+          p.encadrants = encadrants;
+          await pb.collection("sae_projects").update(p.id, {encadrants});
+        }
+      }
+      await upsertEncadrantCode(nom, "");
+      showToast("Encadrant supprimé");
       if(onChange) onChange();
     });
   }
@@ -950,7 +968,9 @@ function renderEncadrantsManagementView(){
       projectsByName.get(n).push(p.nom);
     }
   }
-  const names = new Set([...encadrantCodes.keys(), ...projectsByName.keys()]);
+  const names = new Set();
+  for(const [nom, rec] of encadrantCodes.entries()) if(rec.hash) names.add(nom);
+  for(const nom of projectsByName.keys()) names.add(nom);
   const sorted = Array.from(names).sort((a,b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
 
   if(sorted.length === 0){
@@ -963,7 +983,7 @@ function renderEncadrantsManagementView(){
     tableWrap.className = "ref-table-wrap";
     const table = document.createElement("table");
     table.className = "ref-table";
-    table.innerHTML = `<thead><tr><th>Nom</th><th>Projets</th><th>Créé le</th><th></th><th></th></tr></thead><tbody></tbody>`;
+    table.innerHTML = `<thead><tr><th>Nom</th><th>Projets</th><th>Créé le</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
     for(const nom of sorted){
       renderEncadrantCodeRow(tbody, nom, renderEncadrantsManagementView, projectsByName.get(nom) || []);
