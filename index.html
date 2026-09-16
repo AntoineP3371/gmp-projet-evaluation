@@ -22,7 +22,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.22</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.23</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -155,6 +155,34 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="modal-import-help">
+  <div class="modal wide">
+    <h2>Importer un fichier Excel</h2>
+    <p class="hint">Deux formats de fichier sont reconnus automatiquement. Les notes déjà saisies ne sont jamais touchées par un import.</p>
+    <div class="import-help">
+      <h3>Format « Gestion étudiants » (export standard)</h3>
+      <ul>
+        <li>Un onglet par formation, nommé <code>BUT 2…</code> ou <code>BUT 3…</code></li>
+        <li>En-têtes sur 2 lignes ; colonnes dans cet ordre : <b>Nom</b>, <b>Prénom</b>, <b>Parcours</b>, <b>Formation</b>, puis (colonne K) <b>Nom du projet</b> et (colonnes L à O) <b>Encadrant 1</b> à <b>Encadrant 4</b></li>
+        <li>Une ligne par étudiant — les étudiants d'un même projet sont regroupés automatiquement</li>
+        <li>Une ligne sans « Nom du projet » renseigné est ignorée (comptée à part dans le résumé)</li>
+        <li>Les projets absents du fichier ne sont jamais archivés avec ce format</li>
+      </ul>
+      <h3>Format « à plat » (une feuille, une ligne par étudiant)</h3>
+      <ul>
+        <li>Une seule feuille, en-têtes en 1<sup>re</sup> ligne — seuls les intitulés comptent, pas l'ordre des colonnes</li>
+        <li>Colonnes reconnues : <b>Nom</b>, <b>Prénom</b>, <b>Projet</b> (obligatoire), <b>Formation</b>, <b>Parcours</b>, <b>Encadrant 1</b>, <b>Encadrant 2</b>…</li>
+        <li>Les projets absents du fichier sont archivés (leurs notes sont conservées)</li>
+      </ul>
+    </div>
+    <p class="hint" style="margin-top:14px;">Un écran de confirmation détaillera les créations, mises à jour et archivages avant tout enregistrement.</p>
+    <div class="modal-actions">
+      <button class="btn" id="import-help-cancel">Annuler</button>
+      <button class="btn btn-accent" id="import-help-continue">Choisir un fichier…</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modal-import-diff">
   <div class="modal wide">
     <h2>Import Excel — confirmation</h2>
@@ -201,6 +229,7 @@ const PROJECT_POLL_MS = 15000;
 let adminUnlocked = false;
 let unlockedProjects = new Map();
 let showArchived = false;
+let archivedOnly = false;
 let searchFilter = "";
 let filterAnnee = "";
 let filterFormation = "";
@@ -442,8 +471,11 @@ function renderSidebar(){
       btn.className = "team-item" + (view==="project" && currentProjectId===id ? " active" : "") + (p.archived ? " is-archived" : "");
       btn.innerHTML = `<span class="team-item-lock ${lockState}" title="${lockState==="none"?"Aucun encadrant connecté":lockState==="one"?"Un encadrant connecté":"Plusieurs encadrants connectés"}">${lockIconSvg(lockState!=="none")}</span>
         <div class="team-item-main">
-          <div class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}${p.archived ? " (archivé)" : ""}</div>
-          <div class="team-item-sujet">${escapeHtml([p.formation, p.parcours].filter(Boolean).join(" · ") || p.sujet || "—")}</div>
+          <div class="team-item-top-row">
+            <span class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}${p.archived ? " (archivé)" : ""}</span>
+            <span class="team-item-sujet">${escapeHtml([p.formation, p.parcours].filter(Boolean).join(" · ") || p.sujet || "—")}</span>
+          </div>
+          <div class="team-item-students">${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : ""}</div>
         </div>`;
       btn.addEventListener("click", () => selectProject(id));
       li.appendChild(btn);
@@ -477,7 +509,7 @@ function renderProjectsManagementView(){
   main.innerHTML = "";
   const head = document.createElement("div");
   head.className = "team-head";
-  head.innerHTML = `<div><h1>Gestion des projets</h1><div class="tags"><span class="tag">Admin</span></div></div>`;
+  head.innerHTML = `<div><h1>Gestion des projets</h1><div class="tags"><span class="tag">Admin</span>${archivedOnly ? '<span class="tag">Archives</span>' : ""}</div></div>`;
   main.appendChild(head);
 
   const actions = document.createElement("div");
@@ -487,24 +519,27 @@ function renderProjectsManagementView(){
     <button class="btn btn-sm" id="pm-add">+ Ajouter un projet</button>
     <button class="btn btn-sm" id="pm-export-notes">Télécharger les notes (Excel)</button>
     <button class="btn btn-sm" id="pm-export">Exporter (sauvegarde JSON)</button>
-    <label class="archived-toggle pm-archived-toggle">
+    <button class="btn btn-sm${archivedOnly ? " btn-accent" : ""}" id="pm-archives-only" type="button">🗄 Archives</button>
+    ${!archivedOnly ? `<label class="archived-toggle pm-archived-toggle">
       <input type="checkbox" id="pm-archived-toggle" ${showArchived?"checked":""}> Afficher les projets archivés
-    </label>`;
+    </label>` : ""}`;
   main.appendChild(actions);
-  actions.querySelector("#pm-import").addEventListener("click", () => document.getElementById("file-import").click());
+  actions.querySelector("#pm-import").addEventListener("click", () => document.getElementById("modal-import-help").classList.add("open"));
   actions.querySelector("#pm-add").addEventListener("click", () => openProjectEditModal(null, "admin"));
   actions.querySelector("#pm-export-notes").addEventListener("click", exportNotesExcel);
   actions.querySelector("#pm-export").addEventListener("click", exportJsonBackup);
-  actions.querySelector("#pm-archived-toggle").addEventListener("change", e => { showArchived = e.target.checked; renderAll(); });
+  actions.querySelector("#pm-archives-only").addEventListener("click", () => { archivedOnly = !archivedOnly; renderAll(); });
+  const archivedToggle = actions.querySelector("#pm-archived-toggle");
+  if(archivedToggle) archivedToggle.addEventListener("change", e => { showArchived = e.target.checked; renderAll(); });
 
   const list = Array.from(projects.values())
-    .filter(p => showArchived || !p.archived)
+    .filter(p => archivedOnly ? p.archived : (showArchived || !p.archived))
     .sort((a,b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
 
   if(list.length === 0){
     const empty = document.createElement("p");
     empty.style.cssText = "color:var(--ink-muted); font-size:12.5px; margin-top:16px;";
-    empty.textContent = "Aucun projet.";
+    empty.textContent = archivedOnly ? "Aucun projet archivé." : "Aucun projet.";
     main.appendChild(empty);
     return;
   }
@@ -523,7 +558,7 @@ function renderProjectsManagementView(){
       <td>${escapeHtml(p.annee||"—")}</td>
       <td>${escapeHtml(p.formation||"—")}</td>
       <td>${escapeHtml(p.parcours||"—")}</td>
-      <td>${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : "—"}</td>
+      <td style="text-align:right;">${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : "—"}</td>
       <td>${p.encadrants && p.encadrants.length ? escapeHtml(p.encadrants.join(", ")) : "—"}</td>
       <td style="text-align:center;"><input type="checkbox" class="pm-visible-cb" ${p.visible_eleves !== false ? "checked" : ""}></td>
       <td style="text-align:center;"><input type="checkbox" class="pm-archive-cb" ${p.archived ? "checked" : ""}></td>
@@ -1573,6 +1608,11 @@ document.getElementById("pe-save").addEventListener("click", async () => {
 });
 /* ---------------- Excel import (admin) ---------------- */
 function normalizeHeader(h){ return String(h||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]/g,""); }
+document.getElementById("import-help-cancel").addEventListener("click", () => document.getElementById("modal-import-help").classList.remove("open"));
+document.getElementById("import-help-continue").addEventListener("click", () => {
+  document.getElementById("modal-import-help").classList.remove("open");
+  document.getElementById("file-import").click();
+});
 document.getElementById("file-import").addEventListener("change", async e => {
   const file = e.target.files[0];
   e.target.value = "";

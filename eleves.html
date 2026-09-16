@@ -32,7 +32,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.22</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.23</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -239,8 +239,11 @@ function renderSidebar(){
       btn.className = "team-item" + (currentProjectId===id ? " active" : "");
       btn.innerHTML = `<span class="team-item-lock ${lockState}" title="${lockState==="none"?"Aucun encadrant connecté":lockState==="one"?"Un encadrant connecté":"Plusieurs encadrants connectés"}">${lockIconSvg(lockState!=="none")}</span>
         <div class="team-item-main">
-          <div class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}</div>
-          <div class="team-item-sujet">${escapeHtml([p.formation, p.parcours].filter(Boolean).join(" · ") || p.sujet || "—")}</div>
+          <div class="team-item-top-row">
+            <span class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}</span>
+            <span class="team-item-sujet">${escapeHtml([p.formation, p.parcours].filter(Boolean).join(" · ") || p.sujet || "—")}</span>
+          </div>
+          <div class="team-item-students">${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : ""}</div>
         </div>`;
       btn.addEventListener("click", () => { currentProjectId = id; renderAll(); });
       li.appendChild(btn);
