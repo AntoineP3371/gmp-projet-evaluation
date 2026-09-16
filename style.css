@@ -5,7 +5,7 @@
   --accent:#C4571F; --accent-ink:#FFFFFF;
   --c1:#2F6F6A; --c2:#3E5FA0; --c3:#C4571F; --c4:#7A8B3F; --c5:#7A4B8C;
   --good:#2F6F4A; --warn:#B08A1E; --danger:#A32424;
-  --selected-red:#C0392B;
+  --logo-blue:#149DD9;
   --radius:3px;
   --font-ui:'Space Grotesk', sans-serif;
   --font-mono:'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
@@ -48,7 +48,7 @@ h1,h2,h3{ text-wrap:balance; }
 @media (max-width: 860px){ .sidebar{ position:static; height:auto; border-right:none; border-bottom:1px solid var(--rule);} }
 
 .brand{ display:flex; flex-direction:column; gap:2px; }
-.brand-tag{ font-family:var(--font-mono); font-size:11px; letter-spacing:.04em; color:var(--accent); font-weight:600; }
+.brand-tag{ font-family:var(--font-mono); font-size:11px; letter-spacing:.04em; color:var(--logo-blue); font-weight:600; }
 .brand-title{ font-size:19px; font-weight:700; line-height:1.2; }
 .brand-title-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .brand-logo{ height:24px; width:auto; display:block; }
@@ -137,14 +137,15 @@ h1,h2,h3{ text-wrap:balance; }
 .lock-banner.rw{ border-color:var(--accent); }
 .lock-banner-label{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-muted); }
 .lock-banner.rw .lock-banner-label{ color:var(--ink); font-weight:600; }
+.lock-banner-instructions{ color:var(--danger); font-weight:700; }
 .lock-icon{ width:16px; height:16px; flex:none; }
 
 .presence-warning{ background:var(--surface-2); border:1px solid var(--warn); color:var(--ink); border-radius:var(--radius); padding:10px 14px; margin-bottom:18px; font-size:12.5px; }
 
 .scorecard{ background:var(--surface); border:1px solid var(--rule); border-radius:var(--radius); padding:16px 18px; margin:16px 0 22px; }
 .scorecard-selectable{ cursor:pointer; transition:background .15s, border-color .15s; }
-.scorecard-selectable:hover{ border-color:var(--selected-red); }
-.scorecard-selectable.active{ background:var(--selected-red); border-color:var(--selected-red); }
+.scorecard-selectable:hover{ border-color:var(--logo-blue); }
+.scorecard-selectable.active{ background:var(--logo-blue); border-color:var(--logo-blue); }
 .scorecard-title{ font-size:11.5px; color:var(--ink-muted); font-weight:600; margin-bottom:12px; text-transform:uppercase; letter-spacing:.03em; display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .scorecard-pick-hint{ text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink-faint); }
 .scorecard-selectable.active .scorecard-title,
@@ -182,11 +183,11 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .livrable-bareme div.g{ border-color:var(--good); }
 .livrable-bareme b{ display:block; font-size:10.5px; color:var(--ink); margin-bottom:2px; }
 @media (max-width:640px){ .livrable-bareme{ grid-template-columns:1fr; } }
-.livrable-foot{ display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; border-top:1px solid var(--rule); padding-top:12px; }
+.livrable-foot{ display:grid; grid-template-columns:84px 156px 1fr; gap:14px; align-items:end; border-top:1px solid var(--rule); padding-top:12px; }
+@media(max-width:640px){ .livrable-foot{ grid-template-columns:1fr; } }
 .livrable-field label{ display:block; font-size:10px; color:var(--ink-faint); font-weight:600; margin-bottom:3px; }
-.livrable-field input[type=number]{ width:84px; padding:8px; border:1px solid var(--rule-strong); border-radius:var(--radius); font-family:var(--font-mono); font-variant-numeric:tabular-nums; text-align:right; background:var(--surface); font-size:15px; }
-.livrable-field input[type=date]{ width:156px; padding:8px; border:1px solid var(--rule-strong); border-radius:var(--radius); font-family:var(--font-mono); font-size:14px; background:var(--surface); }
-.livrable-comment{ flex:1; min-width:180px; }
+.livrable-field input[type=number]{ width:100%; box-sizing:border-box; padding:8px; border:1px solid var(--rule-strong); border-radius:var(--radius); font-family:var(--font-mono); font-variant-numeric:tabular-nums; text-align:right; background:var(--surface); font-size:15px; }
+.livrable-field input[type=date]{ width:100%; box-sizing:border-box; padding:8px; border:1px solid var(--rule-strong); border-radius:var(--radius); font-family:var(--font-mono); font-size:14px; background:var(--surface); }
 .livrable-comment label{ display:block; font-size:10px; color:var(--ink-faint); font-weight:600; margin-bottom:3px; }
 .livrable-comment textarea{ width:100%; min-height:36px; padding:7px 8px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface); resize:vertical; font-family:inherit; font-size:12.5px; box-sizing:border-box; }
 
