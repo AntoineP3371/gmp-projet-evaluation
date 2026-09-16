@@ -30,7 +30,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.13</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.14</span></span>
       <div class="brand-title-row">
         <span class="brand-title">Carnet d'évaluation</span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
@@ -330,9 +330,9 @@ function renderIndividualisation(project){
   const scores = computeScores(project, [currentSemestre]);
   const wrap = document.createElement("div");
   wrap.className = "indiv-panel";
-  wrap.innerHTML = `<div class="disclosure closed"><span class="chev">▾</span> Individualisation des notes (semestre ${currentSemestre==='S3'?'3':'4'})</div>`;
+  wrap.innerHTML = `<div class="disclosure">Individualisation des notes (semestre ${currentSemestre==='S3'?'3':'4'})</div>`;
   const body = document.createElement("div");
-  body.className = "indiv-body closed";
+  body.className = "indiv-body";
   if(etuIdx.length === 0){
     body.innerHTML = `<p style="color:var(--ink-muted); font-size:12.5px;">Aucun étudiant renseigné pour ce projet.</p>`;
   } else {
@@ -352,10 +352,6 @@ function renderIndividualisation(project){
     body.innerHTML = `<table class="indiv-table"><thead>${thead}</thead><tbody>${rows}</tbody></table><p class="indiv-default">Champ vide = note d'équipe reprise automatiquement.</p>`;
   }
   wrap.appendChild(body);
-  wrap.querySelector(".disclosure").addEventListener("click", () => {
-    wrap.querySelector(".disclosure").classList.toggle("closed");
-    body.classList.toggle("closed");
-  });
   return wrap;
 }
 
