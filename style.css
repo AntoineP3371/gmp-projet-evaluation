@@ -48,7 +48,7 @@ h1,h2,h3{ text-wrap:balance; }
 .sidebar{ background:var(--surface); border-right:1px solid var(--rule); padding:20px 16px 16px; display:flex; flex-direction:column; gap:16px; position:sticky; top:0; height:100vh; overflow-y:auto; }
 @media (max-width: 860px){ .sidebar{ position:static; height:auto; border-right:none; border-bottom:1px solid var(--rule);} }
 
-.brand{ display:flex; flex-direction:column; gap:2px; align-items:flex-start; background:none; border:none; padding:0; margin:0; font-family:inherit; cursor:pointer; text-align:left; width:100%; }
+.brand{ display:flex; flex-direction:column; gap:2px; align-items:flex-start; background:none; border:none; box-shadow:none; border-radius:0; padding:0; margin:0; font:inherit; color:inherit; appearance:none; -webkit-appearance:none; cursor:pointer; text-align:left; width:100%; }
 .brand:hover .brand-title{ text-decoration:underline; }
 .brand-tag{ font-family:var(--font-mono); font-size:11px; letter-spacing:.04em; color:var(--logo-blue); font-weight:600; }
 .brand-title{ font-size:19px; font-weight:700; line-height:1.2; }
