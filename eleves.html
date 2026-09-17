@@ -32,7 +32,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.27</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.28</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -340,7 +340,7 @@ function collectTimelineItems(project, sems){
     for(const item of allItems){
       const ev = evals[item.id];
       if(!ev || !ev.date) continue;
-      out.push({ titre: item.titre, date: ev.date, status: timelineItemStatus(ev, today) });
+      out.push({ titre: item.titre, date: ev.date, note: ev.note, status: timelineItemStatus(ev, today) });
     }
   }
   out.sort((a,b) => a.date.localeCompare(b.date));
@@ -360,7 +360,7 @@ function buildTimelineSVG(items, range, opts){
   const h = opts.height || 180;
   const axisY = opts.axisY || 40;
   const svg = tlEl('svg', {viewBox:'0 0 900 '+h, class:'timeline-svg', style:'width:100%; height:'+h+'px; overflow:visible;'});
-  const x0 = 20, x1 = 880;
+  const x0 = 8, x1 = 892;
   const minD = range[0], maxD = range[1];
   const today = new Date();
   function xPos(d){ return x0 + (new Date(d) - minD) / (maxD - minD) * (x1 - x0); }
@@ -387,12 +387,23 @@ function buildTimelineSVG(items, range, opts){
 
   items.forEach((it, idx) => {
     const x = xPos(it.date);
-    svg.appendChild(tlEl('circle', {cx:x, cy:axisY, r:opts.r||5.5, fill:it.status.color, class:'tl-dot'}));
+    const noteTxt = (it.note !== undefined && it.note !== null && it.note !== "") ? `${it.note}/20` : "Pas encore noté";
+    const tipTxt = `${it.titre}\n${fmtTlDate(it.date)} — ${noteTxt}`;
+
+    const dot = tlEl('circle', {cx:x, cy:axisY, r:opts.r||5.5, fill:it.status.color, class:'tl-dot'});
+    const dotTip = tlEl('title', {});
+    dotTip.textContent = tipTxt;
+    dot.appendChild(dotTip);
+    svg.appendChild(dot);
+
     const above = opts.alternate && (idx % 2 === 1);
     const ly = above ? axisY - 11 : axisY + 16;
     const rot = above ? -45 : 45;
-    const label = tlEl('text', {x:x, y:ly, fill:it.status.text, style:'font-size:'+(opts.labelSize||10)+'px;', transform:'rotate('+rot+' '+x+' '+ly+')'});
+    const label = tlEl('text', {x:x, y:ly, fill:it.status.text, style:'font-size:'+(opts.labelSize||10)+'px; cursor:default;', transform:'rotate('+rot+' '+x+' '+ly+')'});
     label.textContent = it.titre + " · " + fmtTlDate(it.date);
+    const labelTip = tlEl('title', {});
+    labelTip.textContent = tipTxt;
+    label.appendChild(labelTip);
     svg.appendChild(label);
   });
   return svg;
