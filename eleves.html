@@ -32,7 +32,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.26</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.27</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -79,6 +79,7 @@ let allItems = [];
 let projects = new Map();
 let currentProjectId = null;
 let currentSemestre = "S3";
+let currentVue = "S3";
 let showArchived = false;
 let searchFilter = "";
 let filterAnnee = "";
@@ -273,27 +274,157 @@ function renderProjectView(){
       ${p.sujet ? `<div style="color:var(--ink-muted); font-size:13.5px;">${escapeHtml(p.sujet)}</div>` : ""}
       <div class="tags">${tags}</div>
       <div class="people"><b>Étudiants —</b> ${p.etudiants && p.etudiants.length ? p.etudiants.map(escapeHtml).join(", ") : "aucun"}</div>
-    </div>
-    <div class="tabs">
-      <button class="tab ${currentSemestre==='S3'?'active':''}" data-sem="S3">Semestre 3</button>
-      <button class="tab ${currentSemestre==='S4'?'active':''}" data-sem="S4">Semestre 4</button>
     </div>`;
   main.appendChild(head);
-  head.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { currentSemestre = b.dataset.sem; renderProjectView(); }));
 
   const banner = document.createElement("div");
   banner.className = "banner-info";
   banner.textContent = "Consultation en lecture seule. Seuls les encadrants peuvent modifier les notes.";
   main.appendChild(banner);
 
-  main.appendChild(renderScorecard(p, [currentSemestre], `Notes — semestre ${currentSemestre==='S3'?'3':'4'}`));
-  main.appendChild(renderScorecard(p, ["S3","S4"], "Notes — cumul annuel (S3 + S4)"));
+  const vueSel = document.createElement("div");
+  vueSel.className = "vue-selector";
+  vueSel.innerHTML = `
+    <button class="vue-btn ${currentVue==='S3'?'active':''}" data-vue="S3">Semestre 3</button>
+    <button class="vue-btn ${currentVue==='S4'?'active':''}" data-vue="S4">Semestre 4</button>
+    <button class="vue-btn ${currentVue==='ANNEE'?'active':''}" data-vue="ANNEE">Année</button>`;
+  main.appendChild(vueSel);
+  vueSel.querySelectorAll(".vue-btn").forEach(b => b.addEventListener("click", () => {
+    currentVue = b.dataset.vue;
+    if(currentVue === "S3" || currentVue === "S4") currentSemestre = currentVue;
+    renderProjectView();
+  }));
+
+  main.appendChild(renderTimeline(p, currentVue));
+
+  if(currentVue === "ANNEE"){
+    main.appendChild(renderScorecard(p, ["S3","S4"], "Notes — cumul annuel (S3 + S4)"));
+  } else {
+    main.appendChild(renderScorecard(p, [currentVue], `Notes — semestre ${currentVue==='S3'?'3':'4'}`));
+  }
 
   for(const section of referentiel.sections){
     if(section.parcours && section.parcours !== p.parcours) continue;
     main.appendChild(renderSection(section, p));
   }
   main.appendChild(renderIndividualisation(p));
+}
+function parseAnneeYears(p){
+  const m = /^(\d{4})-(\d{4})$/.exec(p.annee || "");
+  if(m) return [parseInt(m[1],10), parseInt(m[2],10)];
+  const y = new Date().getFullYear();
+  return [y, y+1];
+}
+function semRange(p, sem){
+  const [y1,y2] = parseAnneeYears(p);
+  return sem === "S3" ? [new Date(y1,8,1), new Date(y1,11,31)] : [new Date(y2,0,1), new Date(y2,5,30)];
+}
+function timelineItemStatus(ev, today){
+  if(ev && ev.note !== undefined && ev.note !== null && ev.note !== ""){
+    const n = parseFloat(ev.note);
+    if(!isNaN(n)){
+      if(n >= 12) return {color:"var(--good)", text:"var(--good)"};
+      if(n >= 8) return {color:"var(--logo-blue)", text:"var(--logo-blue)"};
+      return {color:"var(--warn)", text:"var(--warn)"};
+    }
+  }
+  const due = ev && ev.date ? new Date(ev.date) : null;
+  if(due && due < today) return {color:"var(--danger)", text:"var(--danger)"};
+  return {color:"var(--rule-strong)", text:"var(--ink-faint)"};
+}
+function collectTimelineItems(project, sems){
+  const today = new Date();
+  const out = [];
+  for(const sem of sems){
+    const evals = (project.evals && project.evals[sem]) || {};
+    for(const item of allItems){
+      const ev = evals[item.id];
+      if(!ev || !ev.date) continue;
+      out.push({ titre: item.titre, date: ev.date, status: timelineItemStatus(ev, today) });
+    }
+  }
+  out.sort((a,b) => a.date.localeCompare(b.date));
+  return out;
+}
+function fmtTlDate(d){
+  return new Date(d).toLocaleDateString('fr-FR', {day:'2-digit', month:'short'});
+}
+const TL_NS = "http://www.w3.org/2000/svg";
+function tlEl(tag, attrs){
+  const e = document.createElementNS(TL_NS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+function buildTimelineSVG(items, range, opts){
+  opts = opts || {};
+  const h = opts.height || 180;
+  const axisY = opts.axisY || 40;
+  const svg = tlEl('svg', {viewBox:'0 0 900 '+h, class:'timeline-svg', style:'width:100%; height:'+h+'px; overflow:visible;'});
+  const x0 = 20, x1 = 880;
+  const minD = range[0], maxD = range[1];
+  const today = new Date();
+  function xPos(d){ return x0 + (new Date(d) - minD) / (maxD - minD) * (x1 - x0); }
+
+  let cur = new Date(minD.getFullYear(), minD.getMonth(), 1);
+  while(cur <= maxD){
+    const x = xPos(cur);
+    svg.appendChild(tlEl('line', {x1:x, y1:8, x2:x, y2:h-15, stroke:'var(--rule)', 'stroke-width':1}));
+    const lbl = tlEl('text', {x:x+4, y:10, class:'tl-month-label'});
+    lbl.textContent = cur.toLocaleDateString('fr-FR', {month:'short'});
+    svg.appendChild(lbl);
+    cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+  }
+
+  svg.appendChild(tlEl('line', {x1:x0, y1:axisY, x2:x1, y2:axisY, class:'tl-axis'}));
+
+  if(today >= minD && today <= maxD){
+    const tx = xPos(today);
+    svg.appendChild(tlEl('line', {x1:tx, y1:20, x2:tx, y2:h-10, class:'tl-today-line'}));
+    const tlbl = tlEl('text', {x:tx+5, y:30, class:'tl-today-label'});
+    tlbl.textContent = "Aujourd'hui";
+    svg.appendChild(tlbl);
+  }
+
+  items.forEach((it, idx) => {
+    const x = xPos(it.date);
+    svg.appendChild(tlEl('circle', {cx:x, cy:axisY, r:opts.r||5.5, fill:it.status.color, class:'tl-dot'}));
+    const above = opts.alternate && (idx % 2 === 1);
+    const ly = above ? axisY - 11 : axisY + 16;
+    const rot = above ? -45 : 45;
+    const label = tlEl('text', {x:x, y:ly, fill:it.status.text, style:'font-size:'+(opts.labelSize||10)+'px;', transform:'rotate('+rot+' '+x+' '+ly+')'});
+    label.textContent = it.titre + " · " + fmtTlDate(it.date);
+    svg.appendChild(label);
+  });
+  return svg;
+}
+function renderTimeline(project, vue){
+  const wrap = document.createElement('div');
+  wrap.className = 'timeline-wrap';
+  const cap = document.createElement('div');
+  cap.className = 'timeline-caption';
+  let items, range, opts;
+  if(vue === 'ANNEE'){
+    const [y1,y2] = parseAnneeYears(project);
+    range = [new Date(y1,8,1), new Date(y2,5,30)];
+    items = collectTimelineItems(project, ["S3","S4"]);
+    cap.textContent = 'Frise — Année complète (septembre → juin)';
+    opts = {height:320, axisY:165, labelSize:8.5, alternate:true};
+  } else {
+    range = semRange(project, vue);
+    items = collectTimelineItems(project, [vue]);
+    cap.textContent = 'Frise — ' + (vue === 'S3' ? 'Semestre 3 (sept.–déc.)' : 'Semestre 4 (janv.–juin)');
+    opts = {height:180, axisY:40};
+  }
+  wrap.appendChild(cap);
+  if(items.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'timeline-empty';
+    empty.textContent = "Aucune date d'évaluation renseignée pour l'instant.";
+    wrap.appendChild(empty);
+  } else {
+    wrap.appendChild(buildTimelineSVG(items, range, opts));
+  }
+  return wrap;
 }
 function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
