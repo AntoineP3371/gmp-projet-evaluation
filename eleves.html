@@ -32,7 +32,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.30</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.31</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -295,7 +295,9 @@ function renderProjectView(){
     renderProjectView();
   }));
 
-  main.appendChild(renderTimeline(p, currentVue));
+  const timelineEl = renderTimeline(p, currentVue);
+  main.appendChild(timelineEl);
+  populateTimelineSVG(timelineEl);
 
   if(currentVue === "ANNEE"){
     main.appendChild(renderScorecard(p, ["S3","S4"], "Notes — cumul annuel (S3 + S4)"));
@@ -357,10 +359,14 @@ function tlEl(tag, attrs){
 }
 function buildTimelineSVG(items, range, opts){
   opts = opts || {};
+  const w = opts.width || 900;
   const h = opts.height || 180;
   const axisY = opts.axisY || 40;
-  const svg = tlEl('svg', {viewBox:'0 0 900 '+h, preserveAspectRatio:'none', class:'timeline-svg', style:'width:100%; height:'+h+'px; overflow:visible;'});
-  const x0 = 8, x1 = 892;
+  // viewBox exactement à la largeur réelle en pixels : le repère de dessin correspond
+  // au rendu final 1:1, donc aucune déformation du texte (contrairement à un viewBox
+  // abstrait étiré avec preserveAspectRatio="none").
+  const svg = tlEl('svg', {viewBox:'0 0 '+w+' '+h, class:'timeline-svg', style:'width:100%; height:'+h+'px; overflow:visible;'});
+  const x0 = 6, x1 = w - 6;
   const minD = range[0], maxD = range[1];
   const today = new Date();
   function xPos(d){ return x0 + (new Date(d) - minD) / (maxD - minD) * (x1 - x0); }
@@ -409,8 +415,8 @@ function buildTimelineSVG(items, range, opts){
   return svg;
 }
 function estimateLabelReach(items, labelSize){
-  // estime, en pixels d'un viewBox de 900 de large, jusqu'où le texte incliné à 45°
-  // le plus long peut s'étendre verticalement depuis son point d'ancrage.
+  // estime, en pixels réels, jusqu'où le texte incliné à 45° le plus long peut
+  // s'étendre verticalement depuis son point d'ancrage.
   let maxChars = 0;
   items.forEach(it => {
     const txt = it.titre + " · " + fmtTlDate(it.date);
@@ -436,10 +442,6 @@ function renderTimeline(project, vue){
     label = 'Frise — ' + (vue === 'S3' ? 'Semestre 3 (sept.–déc.)' : 'Semestre 4 (janv.–juin)');
   }
   cap.textContent = label;
-  const labelSize = 8.5;
-  const reach = Math.ceil(estimateLabelReach(items, labelSize));
-  const axisY = Math.max(60, reach + 40); // + place pour l'ancrage et la ligne des mois
-  const opts = { height: axisY + reach + 40, axisY, labelSize, alternate: items.length > 4 };
   wrap.appendChild(cap);
   if(items.length === 0){
     const empty = document.createElement('div');
@@ -447,9 +449,25 @@ function renderTimeline(project, vue){
     empty.textContent = "Aucune date d'évaluation renseignée pour l'instant.";
     wrap.appendChild(empty);
   } else {
-    wrap.appendChild(buildTimelineSVG(items, range, opts));
+    const holder = document.createElement('div');
+    wrap.appendChild(holder);
+    // la largeur réelle du conteneur n'est connue qu'une fois inséré dans le document ;
+    // voir populateTimelineSVG, appelé juste après l'insertion de ce wrap dans la page.
+    wrap._tlItems = items;
+    wrap._tlRange = range;
+    wrap._tlHolder = holder;
   }
   return wrap;
+}
+function populateTimelineSVG(wrap){
+  if(!wrap._tlHolder) return;
+  const items = wrap._tlItems, range = wrap._tlRange, holder = wrap._tlHolder;
+  const width = Math.round(holder.getBoundingClientRect().width) || 900;
+  const labelSize = 8.5;
+  const reach = Math.ceil(estimateLabelReach(items, labelSize));
+  const axisY = Math.max(60, reach + 40); // + place pour l'ancrage et la ligne des mois
+  const opts = { width, height: axisY + reach + 40, axisY, labelSize, alternate: items.length > 4 };
+  holder.appendChild(buildTimelineSVG(items, range, opts));
 }
 function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
