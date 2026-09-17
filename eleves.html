@@ -32,7 +32,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.29</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.30</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -359,7 +359,7 @@ function buildTimelineSVG(items, range, opts){
   opts = opts || {};
   const h = opts.height || 180;
   const axisY = opts.axisY || 40;
-  const svg = tlEl('svg', {viewBox:'0 0 900 '+h, class:'timeline-svg', style:'width:100%; height:'+h+'px; overflow:visible;'});
+  const svg = tlEl('svg', {viewBox:'0 0 900 '+h, preserveAspectRatio:'none', class:'timeline-svg', style:'width:100%; height:'+h+'px; overflow:visible;'});
   const x0 = 8, x1 = 892;
   const minD = range[0], maxD = range[1];
   const today = new Date();
