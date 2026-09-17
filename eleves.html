@@ -32,7 +32,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.28</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.29</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -408,24 +408,38 @@ function buildTimelineSVG(items, range, opts){
   });
   return svg;
 }
+function estimateLabelReach(items, labelSize){
+  // estime, en pixels d'un viewBox de 900 de large, jusqu'où le texte incliné à 45°
+  // le plus long peut s'étendre verticalement depuis son point d'ancrage.
+  let maxChars = 0;
+  items.forEach(it => {
+    const txt = it.titre + " · " + fmtTlDate(it.date);
+    maxChars = Math.max(maxChars, txt.length);
+  });
+  const avgCharWidth = labelSize * 0.58;
+  return maxChars * avgCharWidth * Math.SQRT1_2; // sin(45°) = cos(45°)
+}
 function renderTimeline(project, vue){
   const wrap = document.createElement('div');
   wrap.className = 'timeline-wrap';
   const cap = document.createElement('div');
   cap.className = 'timeline-caption';
-  let items, range, opts;
+  let items, range, label;
   if(vue === 'ANNEE'){
     const [y1,y2] = parseAnneeYears(project);
     range = [new Date(y1,8,1), new Date(y2,5,30)];
     items = collectTimelineItems(project, ["S3","S4"]);
-    cap.textContent = 'Frise — Année complète (septembre → juin)';
-    opts = {height:320, axisY:165, labelSize:8.5, alternate:true};
+    label = 'Frise — Année complète (septembre → juin)';
   } else {
     range = semRange(project, vue);
     items = collectTimelineItems(project, [vue]);
-    cap.textContent = 'Frise — ' + (vue === 'S3' ? 'Semestre 3 (sept.–déc.)' : 'Semestre 4 (janv.–juin)');
-    opts = {height:180, axisY:40};
+    label = 'Frise — ' + (vue === 'S3' ? 'Semestre 3 (sept.–déc.)' : 'Semestre 4 (janv.–juin)');
   }
+  cap.textContent = label;
+  const labelSize = 8.5;
+  const reach = Math.ceil(estimateLabelReach(items, labelSize));
+  const axisY = Math.max(60, reach + 40); // + place pour l'ancrage et la ligne des mois
+  const opts = { height: axisY + reach + 40, axisY, labelSize, alternate: items.length > 4 };
   wrap.appendChild(cap);
   if(items.length === 0){
     const empty = document.createElement('div');
