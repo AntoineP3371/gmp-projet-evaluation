@@ -11,17 +11,17 @@ Les deux lisent/écrivent dans la même base PocketBase, en temps réel.
 
 ## Côté PocketBase — déjà fait ✓
 
-Tout ce qui suit a été réalisé directement sur `https://api.gmpbordeaux.fr` (l'instance déjà en place pour le projet "Réalité augmentée des objets", réutilisée telle quelle) :
+Depuis le 2026-09-17, ce projet a sa **propre instance PocketBase dédiée** (`https://api_evalprojet.gmpbordeaux.fr`), sur le même Raspberry Pi que le projet "Réalité augmentée des objets" mais totalement séparée (processus, port, base de données indépendants) — plus de collections partagées. Guide RA utilise désormais `https://api_guidera.gmpbordeaux.fr`.
 
-- **HTTPS public** : déjà exposé sur ce domaine, vérifié via `/api/health`.
-- **Collections** `sae_projects` (11 champs : slug unique, nom, sujet, formation, parcours, etudiants, encadrants, codes *(hérité, non utilisé — voir `sae_encadrants`)*, archived, evals, individualisation), `sae_config` (key unique, value) et `sae_encadrants` (nom unique, hash — un code d'écriture par encadrant, partagé sur tous ses projets) créées, avec règles API List/View/Create/Update publiques et Delete réservé au superutilisateur — sans toucher aux collections existantes du projet RA (`users`, `anchors`, `machines`, etc.).
+- **HTTPS public** : exposé via un tunnel Cloudflare (route dédiée sur ce domaine), vérifié via `/api/health`.
+- **Collections** `sae_projects` (nom, sujet, formation, parcours, annee, etudiants, encadrants, codes *(hérité, non utilisé — voir `sae_encadrants`)*, archived, evals, individualisation, presence, visible_eleves), `sae_config` (key unique, value) et `sae_encadrants` (nom unique, hash — un code d'écriture par encadrant, partagé sur tous ses projets), avec règles API List/View/Create/Update publiques et Delete réservé au superutilisateur.
 - **CORS** : PocketBase 0.40.3 autorise les requêtes cross-origin par défaut (aucun réglage dédié dans cette version) — vérifié en conditions réelles depuis un domaine tiers, ça fonctionne sans rien configurer.
 - **Données** : le référentiel complet et les 24 projets réels sont chargés dans la base (`seed-projects.json` / `seed-referentiel.json` conservés ici pour mémoire/re-seed, mais l'import a été fait via l'API PocketBase directement — le tableau de bord de cette version n'expose pas de bouton "Import" en évidence).
 - **Code administrateur** : volontairement **non pré-rempli** — la première personne qui clique sur "Activer" le mode administrateur dans l'appli en choisit un.
 
 ## Configurer le site
 
-`config.js` pointe déjà sur `https://api.gmpbordeaux.fr`. Rien à faire ici sauf si vous changez d'instance PocketBase un jour.
+`config.js` pointe déjà sur `https://api_evalprojet.gmpbordeaux.fr`. Rien à faire ici sauf si vous changez d'instance PocketBase un jour.
 
 ## Publier sur GitHub Pages
 
