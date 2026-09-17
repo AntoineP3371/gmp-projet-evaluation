@@ -23,6 +23,7 @@
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
+<script src="app-common.js"></script>
 </head>
 <body>
 
@@ -32,7 +33,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.31</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.32</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -85,74 +86,6 @@ let searchFilter = "";
 let filterAnnee = "";
 let filterFormation = "";
 let filterParcours = "";
-
-function escapeHtml(s){
-  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-let toastTimer = null;
-function showToast(msg){
-  const el = document.getElementById("toast");
-  el.textContent = msg; el.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>el.classList.remove("show"), 1500);
-}
-function showConnError(show){ document.getElementById("conn-banner").classList.toggle("show", !!show); }
-
-function allItemsFromReferentiel(ref){
-  if(!ref || !ref.sections) return [];
-  return ref.sections.flatMap(s => s.items.map(it => ({...it, sectionId: s.id})));
-}
-function getOverdueItemNumbers(project){
-  if(!allItems.length) return [];
-  const today = new Date().toISOString().slice(0,10);
-  const nums = [];
-  allItems.forEach((item, idx) => {
-    for(const sem of ["S3","S4"]){
-      const ev = project.evals && project.evals[sem] && project.evals[sem][item.id];
-      if(ev && ev.date && ev.date <= today && (ev.note === undefined || ev.note === null || ev.note === "")){
-        nums.push(idx+1);
-        break;
-      }
-    }
-  });
-  return nums;
-}
-const PRESENCE_STALE_MS = 45000;
-function getActiveEditors(project, excludeLabel){
-  const now = Date.now();
-  return (project.presence || []).filter(e =>
-    e.label !== excludeLabel && (now - new Date(e.lastSeen).getTime()) < PRESENCE_STALE_MS
-  );
-}
-function connectionState(project){
-  const count = getActiveEditors(project, null).length;
-  return count === 0 ? "none" : count === 1 ? "one" : "many";
-}
-function lockIconSvg(open){
-  return `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="4" y="11" width="16" height="10" rx="2"></rect>
-    ${open ? '<path d="M8 11V8a4 4 0 0 1 7.6-1.8"></path>' : '<path d="M8 11V8a4 4 0 0 1 8 0v3"></path>'}
-  </svg>`;
-}
-function computeScores(project, semestres){
-  const totals = { C1:{n:0,d:0}, C2:{n:0,d:0}, C3:{n:0,d:0}, C4:{n:0,d:0}, C5:{n:0,d:0} };
-  for(const sem of semestres){
-    const evals = (project.evals && project.evals[sem]) || {};
-    for(const item of allItems){
-      const ev = evals[item.id];
-      if(!ev || ev.note === undefined || ev.note === null || ev.note === "") continue;
-      const note = parseFloat(ev.note);
-      if(isNaN(note)) continue;
-      for(const c of Object.keys(item.coef||{})){
-        totals[c].n += note * item.coef[c];
-        totals[c].d += item.coef[c];
-      }
-    }
-  }
-  const out = {};
-  for(const c of Object.keys(totals)) out[c] = totals[c].d > 0 ? Math.round((totals[c].n/totals[c].d)*100)/100 : null;
-  return out;
-}
 
 /* ---------------- data loading ---------------- */
 async function loadReferentiel(){
@@ -211,13 +144,6 @@ function populateFilterOptions(){
   fillSelect("filter-annee", annees, "Toutes années", filterAnnee);
   fillSelect("filter-formation", formations, "Toutes formations", filterFormation);
   fillSelect("filter-parcours", parcoursSet, "Tous parcours", filterParcours);
-}
-function fillSelect(id, values, allLabel, current){
-  const sel = document.getElementById(id);
-  const sorted = Array.from(values).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
-  sel.innerHTML = `<option value="">${allLabel}</option>` + sorted.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
-  sel.value = current;
-  sel.classList.toggle("is-set", !!current);
 }
 function renderSidebar(){
   populateFilterOptions();
@@ -554,15 +480,6 @@ document.getElementById("side-search").addEventListener("input", e => { searchFi
 document.getElementById("filter-annee").addEventListener("change", e => { filterAnnee = e.target.value; renderSidebar(); });
 document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
 document.getElementById("filter-parcours").addEventListener("change", e => { filterParcours = e.target.value; renderSidebar(); });
-function effectiveTheme(){
-  const stored = localStorage.getItem("theme");
-  if(stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-function updateThemeToggleBtn(){
-  const dark = effectiveTheme() === "dark";
-  document.getElementById("btn-theme-toggle").textContent = dark ? "☀️ Mode clair" : "🌙 Mode sombre";
-}
 document.getElementById("btn-theme-toggle").addEventListener("click", () => {
   const next = effectiveTheme() === "dark" ? "light" : "dark";
   localStorage.setItem("theme", next);

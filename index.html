@@ -13,6 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
+<script src="app-common.js"></script>
 </head>
 <body>
 
@@ -22,7 +23,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.31</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.32</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -223,7 +224,6 @@ let presenceHeartbeat = null;
 let presenceProjectId = null;
 let presenceLabel = null;
 let projectPollTimer = null;
-const PRESENCE_STALE_MS = 45000;
 const PRESENCE_HEARTBEAT_MS = 12000;
 const PROJECT_POLL_MS = 15000;
 let adminUnlocked = false;
@@ -248,9 +248,6 @@ let unlockPresetLabel = null;
 function slugify(s){
   const base = String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
   return base || ("projet-" + Date.now().toString(36));
-}
-function escapeHtml(s){
-  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 function normName(s){ return String(s||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
 function findEncadrantRec(nom){
@@ -277,63 +274,6 @@ async function sha256Hex(text){
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
-let toastTimer = null;
-function showToast(msg){
-  const el = document.getElementById("toast");
-  el.textContent = msg; el.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>el.classList.remove("show"), 1500);
-}
-function showConnError(show){ document.getElementById("conn-banner").classList.toggle("show", !!show); }
-
-function lockIconSvg(open){
-  return `<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="4" y="11" width="16" height="10" rx="2"></rect>
-    ${open ? '<path d="M8 11V8a4 4 0 0 1 7.6-1.8"></path>' : '<path d="M8 11V8a4 4 0 0 1 8 0v3"></path>'}
-  </svg>`;
-}
-function connectionState(project){
-  const count = getActiveEditors(project, null).length;
-  return count === 0 ? "none" : count === 1 ? "one" : "many";
-}
-function allItemsFromReferentiel(ref){
-  if(!ref || !ref.sections) return [];
-  return ref.sections.flatMap(s => s.items.map(it => ({...it, sectionId: s.id})));
-}
-function getOverdueItemNumbers(project){
-  if(!allItems.length) return [];
-  const today = new Date().toISOString().slice(0,10);
-  const nums = [];
-  allItems.forEach((item, idx) => {
-    for(const sem of ["S3","S4"]){
-      const ev = project.evals && project.evals[sem] && project.evals[sem][item.id];
-      if(ev && ev.date && ev.date <= today && (ev.note === undefined || ev.note === null || ev.note === "")){
-        nums.push(idx+1);
-        break;
-      }
-    }
-  });
-  return nums;
-}
-function computeScores(project, semestres){
-  const totals = { C1:{n:0,d:0}, C2:{n:0,d:0}, C3:{n:0,d:0}, C4:{n:0,d:0}, C5:{n:0,d:0} };
-  for(const sem of semestres){
-    const evals = (project.evals && project.evals[sem]) || {};
-    for(const item of allItems){
-      const ev = evals[item.id];
-      if(!ev || ev.note === undefined || ev.note === null || ev.note === "") continue;
-      const note = parseFloat(ev.note);
-      if(isNaN(note)) continue;
-      for(const c of Object.keys(item.coef||{})){
-        totals[c].n += note * item.coef[c];
-        totals[c].d += item.coef[c];
-      }
-    }
-  }
-  const out = {};
-  for(const c of Object.keys(totals)) out[c] = totals[c].d > 0 ? Math.round((totals[c].n/totals[c].d)*100)/100 : null;
-  return out;
-}
 
 /* ---------------- session persistence ---------------- */
 function loadSession(){
@@ -442,13 +382,6 @@ function populateFilterOptions(){
   fillSelect("filter-formation", formations, "Toutes formations", filterFormation);
   fillSelect("filter-parcours", parcoursSet, "Tous parcours", filterParcours);
   fillSelect("filter-encadrant", encadrantsSet, "Tous encadrants", filterEncadrant);
-}
-function fillSelect(id, values, allLabel, current){
-  const sel = document.getElementById(id);
-  const sorted = Array.from(values).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
-  sel.innerHTML = `<option value="">${allLabel}</option>` + sorted.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
-  sel.value = current;
-  sel.classList.toggle("is-set", !!current);
 }
 function renderSidebar(){
   populateFilterOptions();
@@ -783,6 +716,8 @@ async function persistReferentielDraft(){
     const rec = await pb.collection("sae_config").create({ key: "referentiel", value: refDraft });
     referentielRecordId = rec.id;
   }
+  referentiel = deepClone(refDraft);
+  allItems = allItemsFromReferentiel(referentiel);
 }
 function saveReferentielDraft(){
   clearTimeout(refPendingTimer);
@@ -819,12 +754,6 @@ async function validateReferentielDraft(){
 }
 
 /* ---------------- presence (multi-encadrant awareness) ---------------- */
-function getActiveEditors(project, excludeLabel){
-  const now = Date.now();
-  return (project.presence || []).filter(e =>
-    e.label !== excludeLabel && (now - new Date(e.lastSeen).getTime()) < PRESENCE_STALE_MS
-  );
-}
 function syncPresence(){
   const wantHeartbeat = view === "project" && unlockedProjects.has(currentProjectId);
   if(wantHeartbeat){
@@ -993,8 +922,8 @@ function renderEncadrantsAdminPanel(project){
     const tableWrap = document.createElement("div");
     tableWrap.className = "ref-table-wrap";
     const table = document.createElement("table");
-    table.className = "ref-table";
-    table.innerHTML = `<thead><tr><th>Nom</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
+    table.className = "ref-table ref-table-encadrants";
+    table.innerHTML = `<thead><tr><th>Nom Prénom</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
     roster.forEach(nom => renderEncadrantCodeRow(tbody, nom, renderProjectView));
     tableWrap.appendChild(table);
@@ -1501,15 +1430,6 @@ document.getElementById("btn-admin-toggle").addEventListener("click", () => {
   if(adminUnlocked){ adminUnlocked = false; saveSession(); renderAll(); }
   else openAdminModal();
 });
-function effectiveTheme(){
-  const stored = localStorage.getItem("theme");
-  if(stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-function updateThemeToggleBtn(){
-  const dark = effectiveTheme() === "dark";
-  document.getElementById("btn-theme-toggle").textContent = dark ? "☀️ Mode clair" : "🌙 Mode sombre";
-}
 document.getElementById("btn-theme-toggle").addEventListener("click", () => {
   const next = effectiveTheme() === "dark" ? "light" : "dark";
   localStorage.setItem("theme", next);
@@ -1518,7 +1438,7 @@ document.getElementById("btn-theme-toggle").addEventListener("click", () => {
 });
 updateThemeToggleBtn();
 document.getElementById("brand-home").addEventListener("click", () => { currentProjectId = null; view = "empty"; renderAll(); });
-document.getElementById("nav-referentiel").addEventListener("click", () => { view = "referentiel"; refDraft = null; renderAll(); });
+document.getElementById("nav-referentiel").addEventListener("click", () => { if(!refDirty && !refPendingTimer) refDraft = null; view = "referentiel"; renderAll(); });
 document.getElementById("nav-projets").addEventListener("click", () => { view = "projets"; renderAll(); });
 document.getElementById("nav-encadrants").addEventListener("click", () => { view = "encadrants"; renderAll(); });
 document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
