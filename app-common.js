@@ -1,4 +1,4 @@
-// Fonctions partagées entre la page encadrants (encadrants-*.html) et eleves.html (consultation).
+// Fonctions partagées entre la page encadrants (encadrants-*.html) et etudiant.html (consultation).
 // Chargé via <script src="app-common.js"> avant le script propre à chaque page ;
 // ces fonctions s'appuient sur des globales définies par la page (ex. allItems).
 
