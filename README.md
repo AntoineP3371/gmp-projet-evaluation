@@ -2,8 +2,9 @@
 
 Deux pages statiques partageant un même backend PocketBase :
 
-- `index.html` — espace **encadrants** : consultation, saisie des notes (un code d'écriture par encadrant, valable sur tous ses projets), mode admin (référentiel, import Excel).
+- `encadrants-<suffixe>.html` — espace **encadrants** : consultation, saisie des notes (un code d'écriture par encadrant, valable sur tous ses projets), mode admin (référentiel, import Excel). Son nom contient un suffixe aléatoire volontairement non documenté ici ; il est marqué `noindex`.
 - `eleves.html` — espace **étudiants** : consultation seule, aucune option d'écriture.
+- `index.html` — simple redirection vers `eleves.html` (adresse racine du site).
 
 Les deux lisent/écrivent dans la même base PocketBase, en temps réel.
 
@@ -25,9 +26,9 @@ Depuis le 2026-09-17, ce projet a sa **propre instance PocketBase dédiée** (`h
 
 ## Publier sur GitHub Pages
 
-Poussez le contenu de ce dossier (`index.html`, `eleves.html`, `style.css`, `config.js`) à la racine d'un dépôt GitHub, puis **Settings → Pages → Deploy from branch**. Vous obtenez deux liens à partager :
+Poussez le contenu de ce dossier (pages HTML, `app-common.js`, `style.css`, `config.js`) à la racine d'un dépôt GitHub, puis **Settings → Pages → Deploy from branch**. Vous obtenez deux liens à partager :
 
-- `https://<compte>.github.io/<repo>/index.html` — **aux encadrants**.
-- `https://<compte>.github.io/<repo>/eleves.html` — **aux étudiants**.
+- `https://<compte>.github.io/<repo>/encadrants-<suffixe>.html` — **aux encadrants uniquement** (adresse à communiquer directement, sans la publier).
+- `https://<compte>.github.io/<repo>/` (redirige vers `eleves.html`) — **aux étudiants**.
 
-Rien n'empêche techniquement un étudiant curieux de deviner l'URL `index.html` — la séparation est une commodité de partage, la vraie protection reste le code par projet.
+Rien n'empêche techniquement un étudiant déterminé de retrouver le nom de la page encadrants (le dépôt est public) — le suffixe aléatoire évite seulement de tomber dessus par hasard ; la vraie protection reste le code par encadrant.
