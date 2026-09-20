@@ -33,7 +33,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.38</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.39</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -209,16 +209,9 @@ function renderProjectView(){
   banner.textContent = "Consultation en lecture seule. Seuls les encadrants peuvent modifier les notes.";
   main.appendChild(banner);
 
-  const vueSel = document.createElement("div");
-  vueSel.className = "vue-selector";
-  vueSel.innerHTML = `
-    <button class="vue-btn ${currentVue==='S3'?'active':''}" data-vue="S3">Semestre 3</button>
-    <button class="vue-btn ${currentVue==='S4'?'active':''}" data-vue="S4">Semestre 4</button>
-    <button class="vue-btn ${currentVue==='ANNEE'?'active':''}" data-vue="ANNEE">Année</button>`;
-  main.appendChild(vueSel);
-  vueSel.querySelectorAll(".vue-btn").forEach(b => b.addEventListener("click", () => {
-    currentVue = b.dataset.vue;
-    if(currentVue === "S3" || currentVue === "S4") currentSemestre = currentVue;
+  main.appendChild(renderVueSelector(currentVue, v => {
+    currentVue = v;
+    if(v === "S3" || v === "S4") currentSemestre = v;
     renderProjectView();
   }));
 

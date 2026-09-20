@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.38</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.39</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -220,6 +220,7 @@ let projects = new Map(); // keyed by slug
 let encadrantCodes = new Map(); // keyed by nom -> sae_encadrants record
 let currentProjectId = null; // slug
 let currentSemestre = "S3";
+let currentVue = "S3";
 let baremeVisible = true;
 let view = "empty";
 let presenceHeartbeat = null;
@@ -897,10 +898,16 @@ function renderProjectView(){
   if(adminUnlocked) main.appendChild(renderEncadrantsAdminPanel(p));
 
   const readOnly = !unlocked;
-  for(const def of FRAME_DEFS){
-    const frame = renderFrame(p, def);
-    main.appendChild(frame);
-    drawFrameTimeline(frame);
+  main.appendChild(renderVueBar());
+  const panel = renderPanel(p);
+  main.appendChild(panel);
+  drawFrameTimeline(panel);
+  if(currentVue === "ANNEE"){
+    const rappel = document.createElement("div");
+    rappel.className = "liv-reminder";
+    rappel.innerHTML = "<b>Vue de synthèse.</b> Choisissez Semestre 3 ou Semestre 4 pour saisir les notes.";
+    main.appendChild(rappel);
+    return;
   }
 
   for(const section of referentiel.sections){
@@ -1102,11 +1109,10 @@ document.getElementById("ae-save").addEventListener("click", async () => {
   showToast("Encadrant ajouté");
   renderAll();
 });
-function renderScorecard(project, semestres, titre, opts){
-  opts = opts || {};
+function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
   const card = document.createElement("div");
-  card.className = "scorecard" + (opts.selectable ? " scorecard-selectable" : "") + (opts.active ? " active" : "");
+  card.className = "scorecard";
   let rows = "";
   for(const c of Object.keys(COMPETENCES)){
     const info = COMPETENCES[c];
@@ -1118,92 +1124,77 @@ function renderScorecard(project, semestres, titre, opts){
       <div class="score-value ${v===null?'na':''}">${v===null ? "—" : v.toFixed(2)}</div>
     </div>`;
   }
-  card.innerHTML = `<div class="scorecard-title">${titre}${opts.selectable ? `<span class="scorecard-pick-hint">${opts.active ? "Sélectionné" : "Cliquer pour saisir"}</span>` : ""}</div>${rows}`;
-  if(opts.selectable){
-    card.addEventListener("click", () => { currentSemestre = opts.sem; renderProjectView(); });
-  }
+  card.innerHTML = `<div class="scorecard-title">${titre}</div>${rows}`;
   return card;
 }
-const FRAME_DEFS = [
-  { vue:"S3",    titre:"Semestre 3",     sub:"sept. – déc.", sems:["S3"],       titreNotes:"Notes — semestre 3" },
-  { vue:"S4",    titre:"Semestre 4",     sub:"janv. – juin", sems:["S4"],       titreNotes:"Notes — semestre 4" },
-  { vue:"ANNEE", titre:"Année complète", sub:"S3 + S4",      sems:["S3","S4"],  titreNotes:"Notes — cumul annuel (S3 + S4)" },
-];
-const FRAME_STATE_KEY = "cadres-projet";
-const frameState = (() => {
-  const base = { S3:{}, S4:{}, ANNEE:{} };
-  try{
-    const saved = JSON.parse(localStorage.getItem(FRAME_STATE_KEY) || "{}");
-    for(const k of Object.keys(base)) base[k] = { collapsed:!!(saved[k]&&saved[k].collapsed), frise:!(saved[k]&&saved[k].frise===false), notes:!(saved[k]&&saved[k].notes===false) };
-  }catch(e){ for(const k of Object.keys(base)) base[k] = { collapsed:false, frise:true, notes:true }; }
-  return base;
+const VUE_DEFS = {
+  S3:    { sems:["S3"],      titreNotes:"Notes — semestre 3" },
+  S4:    { sems:["S4"],      titreNotes:"Notes — semestre 4" },
+  ANNEE: { sems:["S3","S4"], titreNotes:"Notes — cumul annuel (S3 + S4)" },
+};
+const AFFICHAGE_KEY = "affichage-projet";
+const affichage = (() => {
+  try{ const s = JSON.parse(localStorage.getItem(AFFICHAGE_KEY) || "{}"); return { frise: s.frise !== false, notes: s.notes !== false }; }
+  catch(e){ return { frise:true, notes:true }; }
 })();
-function saveFrameState(){ try{ localStorage.setItem(FRAME_STATE_KEY, JSON.stringify(frameState)); }catch(e){} }
-function renderFrameScorecard(project, def){
-  const selectable = def.vue !== "ANNEE";
-  return renderScorecard(project, def.sems, def.titreNotes, selectable ? {selectable:true, sem:def.vue, active:currentSemestre===def.vue} : {});
-}
-function applyFrameState(frame){
-  const st = frameState[frame.dataset.vue];
-  frame.classList.toggle("is-collapsed", st.collapsed);
-  frame.classList.toggle("hide-frise", !st.frise);
-  frame.classList.toggle("hide-notes", !st.notes);
-  const set = (act, on) => { const b = frame.querySelector(`[data-act="${act}"]`); if(b){ b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); } };
-  set("frise", st.frise); set("notes", st.notes);
-  const col = frame.querySelector('[data-act="collapse"]');
-  col.setAttribute("aria-expanded", !st.collapsed);
-  col.title = st.collapsed ? "Déplier ce cadre" : "Réduire ce cadre";
-}
-function drawFrameTimeline(frame){
-  const tl = frame.querySelector(".timeline-wrap");
+function saveAffichage(){ try{ localStorage.setItem(AFFICHAGE_KEY, JSON.stringify(affichage)); }catch(e){} }
+function drawFrameTimeline(panel){
+  const tl = panel.querySelector(".timeline-wrap");
   if(tl && tl.offsetParent !== null) populateTimelineSVG(tl);
 }
-function renderFrame(project, def){
-  const selectable = def.vue !== "ANNEE";
-  const isActive = selectable && currentSemestre === def.vue;
-  const frame = document.createElement("section");
-  frame.className = "sem-frame" + (isActive ? " active" : "");
-  frame.dataset.vue = def.vue;
-  frame.innerHTML = `
-    <div class="sem-frame-head">
-      <button type="button" class="frame-collapse" data-act="collapse" aria-label="Réduire ou déplier ce cadre">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      <div class="sem-frame-title">${def.titre}<span class="sem-frame-sub">${def.sub}</span></div>
-      ${selectable ? `<button type="button" class="frame-select ${isActive ? "is-active" : ""}" data-act="select">${isActive ? "Saisie en cours" : "Saisir ce semestre"}</button>` : ""}
-      <div class="frame-chips">
-        <button type="button" class="chip-btn" data-act="frise" title="Afficher / masquer la frise">Frise</button>
-        <button type="button" class="chip-btn" data-act="notes" title="Afficher / masquer les notes par compétence">Notes</button>
-      </div>
-    </div>
-    <div class="sem-frame-body"></div>`;
-  const body = frame.querySelector(".sem-frame-body");
-  body.appendChild(renderTimeline(project, def.vue));
-  body.appendChild(renderFrameScorecard(project, def));
-  applyFrameState(frame);
-  new ResizeObserver(() => {
-    clearTimeout(frame._resizeTimer);
-    frame._resizeTimer = setTimeout(() => redrawTimelineIfWidthChanged(frame), 60);
-  }).observe(body);
-  frame.querySelector(".sem-frame-head").addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-act]");
-    if(!btn) return;
-    const act = btn.dataset.act, st = frameState[def.vue];
-    if(act === "select"){ currentSemestre = def.vue; renderProjectView(); return; }
-    if(act === "collapse") st.collapsed = !st.collapsed;
-    if(act === "frise") st.frise = !st.frise;
-    if(act === "notes") st.notes = !st.notes;
-    saveFrameState();
-    applyFrameState(frame);
-    drawFrameTimeline(frame);
-  });
-  return frame;
-}
-function redrawTimelineIfWidthChanged(frame){
-  const tl = frame.querySelector(".timeline-wrap");
+function redrawTimelineIfWidthChanged(panel){
+  const tl = panel.querySelector(".timeline-wrap");
   if(!tl || !tl._tlHolder) return;
   const w = tl._tlHolder.clientWidth;
   if(w && w !== tl._tlWidth) populateTimelineSVG(tl);
+}
+function renderVueBar(){
+  const bar = document.createElement("div");
+  bar.className = "vue-bar";
+  bar.dataset.vue = currentVue;
+  const sel = renderVueSelector(currentVue, v => {
+    currentVue = v;
+    if(v !== "ANNEE") currentSemestre = v;
+    renderProjectView();
+  });
+  sel.classList.add("vue-colored");
+  const toggles = document.createElement("div");
+  toggles.className = "vue-toggles";
+  toggles.innerHTML = `
+    <label class="sw">Frise <button type="button" role="switch" data-t="frise" aria-checked="${affichage.frise}" aria-label="Afficher la frise"></button></label>
+    <label class="sw">Notes <button type="button" role="switch" data-t="notes" aria-checked="${affichage.notes}" aria-label="Afficher les notes par compétence"></button></label>`;
+  toggles.addEventListener("click", e => {
+    const btn = e.target.closest("button[data-t]");
+    if(!btn) return;
+    const t = btn.dataset.t;
+    affichage[t] = !affichage[t];
+    saveAffichage();
+    btn.setAttribute("aria-checked", affichage[t]);
+    const panel = document.querySelector(".sem-frame");
+    if(panel){ panel.classList.toggle("hide-" + t, !affichage[t]); drawFrameTimeline(panel); }
+  });
+  bar.append(sel, toggles);
+  return bar;
+}
+function renderPanel(project){
+  const def = VUE_DEFS[currentVue];
+  const panel = document.createElement("section");
+  panel.className = "sem-frame" + (currentVue !== "ANNEE" ? " active" : "") + (affichage.frise ? "" : " hide-frise") + (affichage.notes ? "" : " hide-notes");
+  panel.dataset.vue = currentVue;
+  const body = document.createElement("div");
+  body.className = "sem-frame-body";
+  body.appendChild(renderTimeline(project, currentVue));
+  body.appendChild(renderScorecard(project, def.sems, def.titreNotes));
+  const vide = document.createElement("div");
+  vide.className = "panel-empty";
+  vide.textContent = "Frise et notes masquées : utilisez les interrupteurs ci-dessus.";
+  body.appendChild(vide);
+  panel.appendChild(body);
+  new ResizeObserver(() => {
+    clearTimeout(panel._resizeTimer);
+    panel._resizeTimer = setTimeout(() => redrawTimelineIfWidthChanged(panel), 60);
+  }).observe(body);
+  return panel;
 }
 function renderSection(section, project, readOnly){
   const totalCoef = {};
@@ -1285,13 +1276,12 @@ function renderIndividualisation(project, readOnly){
 function refreshScoresOnly(){
   const main = document.getElementById("main");
   const p = projects.get(currentProjectId);
-  if(!p) return;
-  main.querySelectorAll(".sem-frame").forEach(frame => {
-    const def = FRAME_DEFS.find(d => d.vue === frame.dataset.vue);
-    frame.querySelector(".scorecard").replaceWith(renderFrameScorecard(p, def));
-    frame.querySelector(".timeline-wrap").replaceWith(renderTimeline(p, def.vue));
-    drawFrameTimeline(frame);
-  });
+  const panel = main.querySelector(".sem-frame");
+  if(!p || !panel) return;
+  const def = VUE_DEFS[currentVue];
+  panel.querySelector(".scorecard").replaceWith(renderScorecard(p, def.sems, def.titreNotes));
+  panel.querySelector(".timeline-wrap").replaceWith(renderTimeline(p, currentVue));
+  drawFrameTimeline(panel);
 }
 /* fusion des saisies concurrentes : on n'enregistre que le diff (item/étudiant + champ modifiés),
    fusionné sur la dernière version serveur au moment de l'envoi, au lieu de réécrire tout

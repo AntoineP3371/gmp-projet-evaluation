@@ -247,3 +247,17 @@ function populateTimelineSVG(wrap){
   holder.appendChild(buildTimelineSVG(items, range, opts));
   wrap._tlWidth = width;
 }
+
+/* ---------------- bande de choix de la période (S3 / S4 / Année), pastille glissante ---------------- */
+let lastVue = null;
+function renderVueSelector(current, onChange){
+  const el = document.createElement("div");
+  el.className = "vue-selector";
+  el.dataset.vue = lastVue || current;
+  el.innerHTML = [["S3","Semestre 3"],["S4","Semestre 4"],["ANNEE","Année"]]
+    .map(([k,t]) => `<button type="button" class="vue-btn${k===current?" active":""}" data-vue="${k}">${t}</button>`).join("");
+  el.querySelectorAll(".vue-btn").forEach(b => b.addEventListener("click", () => onChange(b.dataset.vue)));
+  requestAnimationFrame(() => requestAnimationFrame(() => { el.dataset.vue = current; }));
+  lastVue = current;
+  return el;
+}
