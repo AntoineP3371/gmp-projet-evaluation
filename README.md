@@ -4,6 +4,7 @@ Deux pages statiques partageant un même backend PocketBase :
 
 - `encadrants-<suffixe>.html` — espace **encadrants** : consultation, saisie des notes (un code d'écriture par encadrant, valable sur tous ses projets), mode admin (référentiel, import Excel). Son nom contient un suffixe aléatoire volontairement non documenté ici ; il est marqué `noindex`.
 - `etudiant.html` — espace **étudiants** : consultation seule, aucune option d'écriture. (`eleves.html`, ancien nom, redirige vers cette page pour ne pas casser les favoris.)
+- `guide-encadrants.pdf` — guide de démarrage (2 pages) proposé en téléchargement par le lien « Guide » de la page encadrants. Version publique volontairement **sans l'adresse** de la page encadrants ; à régénérer quand l'interface change.
 - `index.html` — simple redirection vers `etudiant.html` (adresse racine du site).
 
 Les deux lisent/écrivent dans la même base PocketBase, en temps réel.

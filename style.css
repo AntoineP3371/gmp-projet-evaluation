@@ -108,6 +108,7 @@ h1,h2,h3{ text-wrap:balance; }
 .admin-status.on{ color:var(--good); font-weight:600; }
 .privacy-link{ align-self:center; font-size:11px; color:var(--ink-faint); text-decoration:none; }
 .privacy-link:hover{ color:var(--ink-muted); text-decoration:underline; }
+.side-links{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:11px; color:var(--ink-faint); }
 .archived-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-muted); cursor:pointer; user-select:none; }
 .pm-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
 .pm-archived-toggle{ margin-left:auto; }
