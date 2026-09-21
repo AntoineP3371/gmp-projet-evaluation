@@ -489,3 +489,96 @@ function upsertEvent(rec){
 function eventsOfProject(slug){
   return eventsAll.filter(e => !e.deleted_by && e.date && Array.isArray(e.projets) && e.projets.includes(slug));
 }
+
+/* ---------------- journal : lecture partagée (auteur et horodatage des notes) ---------------- */
+let journalAll = [];
+async function loadJournal(){
+  try{ journalAll = await pb.collection("sae_journal").getFullList({ sort:"created", batch:500 }); }
+  catch(e){ journalAll = []; }
+}
+function upsertJournal(rec){
+  if(!journalAll.some(x => x.id === rec.id)) journalAll.push(rec);
+}
+let _jNoteIdx = null, _jNoteLen = -1;
+function journalLastByKey(){
+  if(_jNoteIdx && _jNoteLen === journalAll.length) return _jNoteIdx;
+  const m = new Map();
+  for(const e of journalAll) m.set(`${e.project}|${e.sem}|${e.cle}`, e);   // les lignes arrivent dans l'ordre : la dernière l'emporte
+  _jNoteIdx = m; _jNoteLen = journalAll.length;
+  return m;
+}
+function fmtNoteStamp(created){
+  const d = new Date(String(created).replace(" ", "T"));
+  return isNaN(d) ? "" : d.toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+}
+// « NOM Prénom · 21/09/2026 14:32 » : dernier auteur de la note (auteur et heure fournis par le serveur)
+function noteStampText(project, sem, itemId){
+  const e = journalLastByKey().get(`${project.slug}|${sem}|item:${itemId}:note`);
+  if(!e || String(e.apres || "").trim() === "") return "";
+  if(/^(Point de référence|Validé par)/.test(e.author)) return "";
+  return e.author + " · " + fmtNoteStamp(e.created);
+}
+function refreshNoteStamps(project, sem){
+  document.querySelectorAll(".livrable-card[data-item]").forEach(card => {
+    const el = card.querySelector(".note-stamp");
+    if(el) el.textContent = noteStampText(project, sem, card.dataset.item);
+  });
+}
+
+/* ---------------- individualisation des notes : note des livrables et note revue par les encadrants ---------------- */
+// Par compétence, deux colonnes alignées sous le nom de la compétence :
+//   « Livrables » = note d'équipe calculée à partir des notes des livrables ;
+//   « Revue » = note modifiée par les encadrants pour cet étudiant (vide = la note d'équipe est reprise, dans l'appli comme dans l'export Excel).
+function buildIndividualisation(project, sem, readOnly, onEdit){
+  const comps = Object.keys(COMPETENCES);
+  const etu = (project.etudiants || []).map((n, i) => ({ n, i }));
+  const wrap = document.createElement("div");
+  wrap.className = "indiv-panel";
+  wrap.innerHTML = `<div class="disclosure">Individualisation des notes (semestre ${sem === "S3" ? "3" : "4"})</div>`;
+  const body = document.createElement("div");
+  body.className = "indiv-body";
+  wrap.appendChild(body);
+  if(etu.length === 0){
+    body.innerHTML = `<p style="color:var(--ink-muted); font-size:12.5px;">Aucun étudiant renseigné pour ce projet.</p>`;
+    return wrap;
+  }
+  const fmt = v => (v === null || v === undefined || v === "" || isNaN(Number(v))) ? "—" : String(Math.round(Number(v) * 100) / 100);
+  const indiv = (project.individualisation && project.individualisation[sem]) || {};
+  const team = computeScores(project, [sem]);
+  const head1 = `<tr><th rowspan="2" class="nm">Étudiant</th>${comps.map(c => `<th colspan="2" class="ic" style="border-top-color:${COMPETENCES[c].couleur}">${c} · ${escapeHtml(COMPETENCES[c].nom)}</th>`).join("")}</tr>`;
+  const head2 = `<tr>${comps.map(() => `<th class="sub" title="Note calculée avec les notes des livrables (équipe)">Livrables</th><th class="sub" title="Note revue par les encadrants">Revue</th>`).join("")}</tr>`;
+  let rows = "";
+  for(const { n, i } of etu){
+    const ov = indiv[i] || {};
+    rows += `<tr><td class="nm">${escapeHtml(n)}</td>`;
+    for(const c of comps){
+      const has = ov[c] !== undefined && ov[c] !== null && ov[c] !== "";
+      rows += `<td class="num team${has ? " off" : ""}" data-comp="${c}" data-etu="${i}">${fmt(team[c])}</td>`;
+      rows += readOnly
+        ? `<td class="num rev${has ? " on" : ""}">${has ? fmt(ov[c]) : "—"}</td>`
+        : `<td class="num rev"><input id="indiv-${i}-${c}" type="number" min="0" max="20" step="0.5" class="${has ? "on" : ""}" data-etu="${i}" data-comp="${c}" value="${has ? ov[c] : ""}" placeholder="—" aria-label="Note revue, ${escapeHtml(n)}, ${c}"></td>`;
+    }
+    rows += "</tr>";
+  }
+  body.innerHTML = `<div class="indiv-scroll"><table class="indiv-table"><thead>${head1}${head2}</thead><tbody>${rows}</tbody></table></div>
+    <p class="indiv-default"><b>Livrables</b> : note calculée avec les notes des livrables (identique pour toute l'équipe). <b>Revue</b> : note revue par les encadrants pour cet étudiant. Case « Revue » vide : la note des livrables est reprise, dans l'application comme dans le fichier Excel. Case remplie : c'est elle qui est reprise.</p>`;
+  if(!readOnly){
+    body.querySelectorAll("input").forEach(inp => {
+      inp.addEventListener("input", () => {
+        inp.classList.toggle("on", inp.value !== "");
+        const cell = body.querySelector(`td.team[data-etu="${inp.dataset.etu}"][data-comp="${inp.dataset.comp}"]`);
+        if(cell) cell.classList.toggle("off", inp.value !== "");
+      });
+      inp.addEventListener("change", e => {
+        const v = e.target.value === "" ? null : parseFloat(e.target.value);
+        if(onEdit) onEdit(e.target.dataset.etu, e.target.dataset.comp, v);
+      });
+    });
+  }
+  // recalcul de la colonne « Livrables » quand une note de livrable change (sans reconstruire la table)
+  wrap._refresh = () => {
+    const t = computeScores(project, [sem]);
+    body.querySelectorAll("td.team").forEach(td => { td.textContent = fmt(t[td.dataset.comp]); });
+  };
+  return wrap;
+}

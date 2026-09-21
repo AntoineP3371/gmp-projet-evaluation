@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.50">
+<link rel="stylesheet" href="style.css?v=0.51">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.50"></script>
+<script src="app-common.js?v=0.51"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.50</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.51</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -360,7 +360,7 @@ function subscribeRealtime(){
   pb.collection("sae_comments").subscribe("*", onCommentEvent).catch(()=>{});
   pb.collection("sae_journal").subscribe("*", (e) => {
     if(e.action !== "delete") upsertJournal(e.record);
-    if(view === "journal") softRender(); else renderSidebar();
+    if(view === "journal") softRender(); else { renderSidebar(); refreshVisibleStamps(); }
   }).catch(()=>{});
   pb.collection("sae_events").subscribe("*", (e) => {
     if(e.action === "delete") eventsAll = eventsAll.filter(x => x.id !== e.record.id);
@@ -723,14 +723,6 @@ document.getElementById("event-name").addEventListener("keydown", e => { if(e.ke
 /* ---------------- journal des modifications de notes (surveillance) ---------------- */
 // Chaque note, date ou note individuelle enregistrée par l'application laisse une trace (qui, quand, avant, après).
 // Une valeur qui a changé sans laisser de trace (écriture directe dans la base) apparaît comme « écart ».
-let journalAll = [];
-async function loadJournal(){
-  try{ journalAll = await pb.collection("sae_journal").getFullList({ sort:"created", batch:500 }); }
-  catch(e){ journalAll = []; }
-}
-function upsertJournal(rec){
-  if(!journalAll.some(x => x.id === rec.id)) journalAll.push(rec);
-}
 const jNorm = v => {
   if(v === undefined || v === null) return "";
   const s = String(v).trim();
@@ -750,7 +742,12 @@ function journalRecord(slug, fresh, evalDiff, indivDiff){
     if(avant !== apres) rows.push({ sem, cle:`indiv:${idx}:${comp}`, avant, apres });
   }
   const author = connectedUser || "inconnu";
-  rows.forEach(r => pb.collection("sae_journal").create({ project:slug, ...r, author }).then(upsertJournal).catch(() => {}));
+  rows.forEach(r => pb.collection("sae_journal").create({ project:slug, ...r, author }).then(r => { upsertJournal(r); refreshVisibleStamps(); }).catch(() => {}));
+}
+function refreshVisibleStamps(){
+  if(view !== "project") return;
+  const p = projects.get(currentProjectId);
+  if(p) refreshNoteStamps(p, currentSemestre);
 }
 function journalValues(p){
   const m = new Map();
@@ -1643,7 +1640,7 @@ function renderItem(item, idx, project, readOnly){
     ${item.desc ? `<div class="livrable-desc">${escapeHtml(item.desc)}</div>` : ""}
     ${showBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
     <div class="livrable-foot">
-      <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}></div>
+      <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}><div class="note-stamp">${escapeHtml(noteStampText(project, currentSemestre, item.id))}</div></div>
       <div class="livrable-field"><label for="date-${item.id}">Date d'évaluation prévue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
     </div>
     ${threadShellHTML(item.id)}`;
@@ -1742,40 +1739,7 @@ function onCommentEvent(e){
   if(th && th._draw && !th._st.editing) th._draw();
 }
 function renderIndividualisation(project, readOnly){
-  const etuIdx = (project.etudiants||[]).map((n,i)=>({n,i}));
-  const scores = computeScores(project, [currentSemestre]);
-  const wrap = document.createElement("div");
-  wrap.className = "indiv-panel";
-  wrap.innerHTML = `<div class="disclosure">Individualisation des notes (semestre ${currentSemestre==='S3'?'3':'4'})</div>`;
-  const body = document.createElement("div");
-  body.className = "indiv-body";
-  if(etuIdx.length === 0){
-    body.innerHTML = `<p style="color:var(--ink-muted); font-size:12.5px;">Aucun étudiant renseigné pour ce projet.</p>`;
-  } else {
-    let thead = "<tr><th>Étudiant</th>" + Object.keys(COMPETENCES).map(c=>`<th>${c}</th>`).join("") + "</tr>";
-    let rows = "";
-    const indiv = (project.individualisation && project.individualisation[currentSemestre]) || {};
-    for(const {n,i} of etuIdx){
-      const ov = indiv[i] || {};
-      rows += `<tr><td>${escapeHtml(n)}</td>`;
-      for(const c of Object.keys(COMPETENCES)){
-        const def = scores[c];
-        const val = ov[c] !== undefined && ov[c] !== null ? ov[c] : "";
-        rows += `<td class="num"><input id="indiv-${i}-${c}" type="number" min="0" max="20" step="0.5" placeholder="${def===null?'—':def.toFixed(1)}" data-etu="${i}" data-comp="${c}" value="${val}" ${readOnly?"disabled":""}></td>`;
-      }
-      rows += "</tr>";
-    }
-    body.innerHTML = `<table class="indiv-table"><thead>${thead}</thead><tbody>${rows}</tbody></table><p class="indiv-default">Champ vide = note d'équipe reprise automatiquement.</p>`;
-    body.querySelectorAll("input").forEach(inp => {
-      inp.addEventListener("change", e => {
-        const etu = e.target.dataset.etu, comp = e.target.dataset.comp;
-        const v = e.target.value === "" ? null : parseFloat(e.target.value);
-        updateIndiv(etu, comp, v);
-      });
-    });
-  }
-  wrap.appendChild(body);
-  return wrap;
+  return buildIndividualisation(project, currentSemestre, readOnly, updateIndiv);
 }
 
 /* ---------------- mutations ---------------- */
@@ -1788,6 +1752,8 @@ function refreshScoresOnly(){
   panel.querySelector(".scorecard").replaceWith(renderScorecard(p, def.sems, def.titreNotes));
   panel.querySelector(".timeline-wrap").replaceWith(renderTimeline(p, currentVue));
   drawFrameTimeline(panel);
+  const ip = main.querySelector(".indiv-panel");
+  if(ip && ip._refresh) ip._refresh();
 }
 /* fusion des saisies concurrentes : on n'enregistre que le diff (item/étudiant + champ modifiés),
    fusionné sur la dernière version serveur au moment de l'envoi, au lieu de réécrire tout

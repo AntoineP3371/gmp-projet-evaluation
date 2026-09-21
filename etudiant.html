@@ -19,11 +19,11 @@
 <link rel="apple-touch-icon" href="evaluation/evaluation-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.50">
+<link rel="stylesheet" href="style.css?v=0.51">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.50"></script>
+<script src="app-common.js?v=0.51"></script>
 </head>
 <body>
 
@@ -33,7 +33,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.50</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.51</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -115,6 +115,11 @@ function subscribeRealtime(){
     const st = captureViewState();
     renderAll();
     restoreViewState(st);
+  }).catch(()=>{});
+  pb.collection("sae_journal").subscribe("*", (e) => {
+    if(e.action !== "delete") upsertJournal(e.record);
+    const p = projects.get(currentProjectId);
+    if(p) refreshNoteStamps(p, currentSemestre);
   }).catch(()=>{});
   pb.collection("sae_events").subscribe("*", (e) => {
     if(e.action === "delete") eventsAll = eventsAll.filter(x => x.id !== e.record.id);
@@ -304,7 +309,7 @@ function renderItem(item, idx, project){
     ${item.desc ? `<div class="livrable-desc">${escapeHtml(item.desc)}</div>` : ""}
     ${hasBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
     <div class="livrable-foot">
-      <div class="livrable-field"><label>Note /20</label><input type="number" value="${ev.note ?? ""}" disabled></div>
+      <div class="livrable-field"><label>Note /20</label><input type="number" value="${ev.note ?? ""}" disabled><div class="note-stamp">${escapeHtml(noteStampText(project, currentSemestre, item.id))}</div></div>
       <div class="livrable-field"><label>Date d'évaluation prévue</label><input type="date" value="${ev.date||""}" disabled></div>
     </div>
     ${threadShellHTML(item.id)}`;
@@ -312,33 +317,7 @@ function renderItem(item, idx, project){
   return card;
 }
 function renderIndividualisation(project){
-  const etuIdx = (project.etudiants||[]).map((n,i)=>({n,i}));
-  const scores = computeScores(project, [currentSemestre]);
-  const wrap = document.createElement("div");
-  wrap.className = "indiv-panel";
-  wrap.innerHTML = `<div class="disclosure">Individualisation des notes (semestre ${currentSemestre==='S3'?'3':'4'})</div>`;
-  const body = document.createElement("div");
-  body.className = "indiv-body";
-  if(etuIdx.length === 0){
-    body.innerHTML = `<p style="color:var(--ink-muted); font-size:12.5px;">Aucun étudiant renseigné pour ce projet.</p>`;
-  } else {
-    let thead = "<tr><th>Étudiant</th>" + Object.keys(COMPETENCES).map(c=>`<th>${c}</th>`).join("") + "</tr>";
-    let rows = "";
-    const indiv = (project.individualisation && project.individualisation[currentSemestre]) || {};
-    for(const {n,i} of etuIdx){
-      const ov = indiv[i] || {};
-      rows += `<tr><td>${escapeHtml(n)}</td>`;
-      for(const c of Object.keys(COMPETENCES)){
-        const def = scores[c];
-        const val = ov[c] !== undefined && ov[c] !== null ? ov[c] : "";
-        rows += `<td class="num"><input type="number" placeholder="${def===null?'—':def.toFixed(1)}" value="${val}" disabled></td>`;
-      }
-      rows += "</tr>";
-    }
-    body.innerHTML = `<table class="indiv-table"><thead>${thead}</thead><tbody>${rows}</tbody></table><p class="indiv-default">Champ vide = note d'équipe reprise automatiquement.</p>`;
-  }
-  wrap.appendChild(body);
-  return wrap;
+  return buildIndividualisation(project, currentSemestre, true, null);
 }
 
 document.getElementById("brand-home").addEventListener("click", () => { currentProjectId = null; renderAll(); });
@@ -356,7 +335,7 @@ updateThemeToggleBtn();
 
 async function init(){
   renderEmpty();
-  await Promise.all([loadReferentiel(), loadProjects(), loadComments(), loadEvents()]);
+  await Promise.all([loadReferentiel(), loadProjects(), loadComments(), loadEvents(), loadJournal()]);
   subscribeRealtime();
 }
 init();
