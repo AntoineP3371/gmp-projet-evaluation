@@ -193,7 +193,7 @@ h1,h2,h3{ text-wrap:balance; }
 .timeline-wrap{ margin:16px 0 0; }
 .timeline-caption{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:2px; }
 .timeline-empty{ color:var(--ink-faint); font-size:12px; font-style:italic; padding:10px 2px; }
-.timeline-svg text{ font-family:var(--font-ui); }
+.timeline-svg text{ font-family:var(--font-ui); paint-order:stroke; stroke:var(--surface); stroke-width:3px; stroke-linejoin:round; }
 .tl-dot{ stroke:var(--surface); stroke-width:2; }
 .tl-axis{ stroke:var(--rule-strong); stroke-width:1.5; }
 .tl-today-line{ stroke:var(--accent); stroke-width:1.5; stroke-dasharray:3 3; }

@@ -111,7 +111,6 @@ function timelineItemStatus(ev, today){
   return {color:"var(--rule-strong)", text:"var(--ink-faint)"};
 }
 // même jour : les livrables sont empilés (rang dans la pile) et partagent le même côté de l'axe
-const TL_STACK = 18;
 function assignTimelineStacks(items){
   const days = new Map();
   items.forEach(it => {
@@ -148,19 +147,64 @@ function tlEl(tag, attrs){
   for(const k in attrs) e.setAttribute(k, attrs[k]);
   return e;
 }
+// Disposition : un bloc de texte horizontal par jour (date, puis un livrable par ligne, les uns sous les autres),
+// posé sous ou au-dessus de l'axe, sur le premier niveau libre pour que rien ne se chevauche.
+function layoutTimeline(items, w, range, size){
+  const x0 = 6, x1 = w - 6, minD = range[0], maxD = range[1];
+  const xPos = d => x0 + (new Date(d) - minD) / (maxD - minD) * (x1 - x0);
+  const cw = size * 0.6, lh = size + 4, gap = 10;
+  const groups = [];
+  items.forEach(it => { (groups[it.group] = groups[it.group] || []).push(it); });
+  const levels = { below: [], above: [] };
+  const blocks = [];
+  groups.forEach((g, gi) => {
+    if(!g) return;
+    const x = xPos(g[0].date);
+    const head = fmtTlDate(g[0].date);
+    const lines = g.map(it => ({ it, txt: it.titre.length > 32 ? it.titre.slice(0, 31) + "…" : it.titre }));
+    const wd = Math.max(head.length, ...lines.map(l => l.txt.length)) * cw + 8;
+    const right = x + wd > x1;
+    const a = right ? x - wd + 4 : x - 4, b = a + wd;
+    const place = side => {
+      const lv = levels[side];
+      for(let L = 0; L <= lv.length; L++){
+        if(L > 0 && lv[L-1].some(r => x >= r.a - 3 && x <= r.b + 3)) return null; // le trait de liaison traverserait un bloc
+        const row = lv[L] || [];
+        if(row.every(r => b + gap <= r.a || a - gap >= r.b)) return L;
+      }
+      return null;
+    };
+    const lb = place("below"), la = place("above");
+    let side, L;
+    if(lb === null && la === null){ side = "below"; L = levels.below.length; }
+    else if(la === null || (lb !== null && (lb < la || (lb === la && gi % 2 === 0)))){ side = "below"; L = lb; }
+    else { side = "above"; L = la; }
+    const bk = { x, a, b, right, head, lines, side, L, h: (lines.length + 1) * lh + 4, group: g };
+    (levels[side][L] = levels[side][L] || []).push(bk);
+    blocks.push(bk);
+  });
+  const offs = {}, total = {};
+  for(const side of ["below", "above"]){
+    let o = 0; offs[side] = [];
+    levels[side].forEach((row, L) => { offs[side][L] = o; o += Math.max(...row.map(r => r.h)) + 8; });
+    total[side] = o;
+  }
+  return { blocks, offs, aboveH: total.above, belowH: total.below, lh, xPos, x0, x1 };
+}
 function buildTimelineSVG(items, range, opts){
   opts = opts || {};
   const w = opts.width || 900;
-  const h = opts.height || 180;
-  const axisY = opts.axisY || 40;
+  const size = opts.labelSize || 10;
+  const lay = layoutTimeline(items, w, range, size);
+  const axisY = Math.max(60, lay.aboveH + 16 + 40);
+  const h = axisY + lay.belowH + 16 + 24;
   // viewBox exactement à la largeur réelle en pixels : le repère de dessin correspond
-  // au rendu final 1:1, donc aucune déformation du texte (contrairement à un viewBox
-  // abstrait étiré avec preserveAspectRatio="none").
+  // au rendu final 1:1, donc aucune déformation du texte.
   const svg = tlEl('svg', {viewBox:'0 0 '+w+' '+h, class:'timeline-svg', style:'width:100%; height:'+h+'px; overflow:visible;'});
-  const x0 = 6, x1 = w - 6;
+  const x0 = lay.x0, x1 = lay.x1;
   const minD = range[0], maxD = range[1];
   const today = new Date();
-  function xPos(d){ return x0 + (new Date(d) - minD) / (maxD - minD) * (x1 - x0); }
+  const xPos = lay.xPos;
 
   let cur = new Date(minD.getFullYear(), minD.getMonth(), 1);
   while(cur <= maxD){
@@ -182,47 +226,39 @@ function buildTimelineSVG(items, range, opts){
     svg.appendChild(tlbl);
   }
 
-  items.forEach((it, idx) => {
-    const x = xPos(it.date);
-    const noteTxt = (it.note !== undefined && it.note !== null && it.note !== "") ? `${it.note}/20` : "Pas encore noté";
-    const tipTxt = `${it.titre}\n${fmtTlDate(it.date)} — ${noteTxt}\n(cliquer pour aller au livrable)`;
+  const goTo = it => () => { if(typeof goToLivrable === "function") goToLivrable(it.id, it.sem); };
+  const tipOf = it => {
+    const noteTxt = (it.note !== undefined && it.note !== null && it.note !== "") ? it.note + "/20" : "Pas encore noté";
+    return it.titre + "\n" + fmtTlDate(it.date) + " — " + noteTxt + "\n(cliquer pour aller au livrable)";
+  };
+  const addTip = (el, txt) => { const t = tlEl('title', {}); t.textContent = txt; el.appendChild(t); };
 
-    const above = opts.alternate && (it.group % 2 === 1);
-    const dir = above ? -1 : 1;
-    const cy = axisY + dir * TL_STACK * it.stack;
-    if(it.stack > 0) svg.appendChild(tlEl('line', {x1:x, y1:axisY, x2:x, y2:cy, stroke:'var(--rule-strong)', 'stroke-width':1}));
-    const clic = () => { if(typeof goToLivrable === "function") goToLivrable(it.id, it.sem); };
-    const dot = tlEl('circle', {cx:x, cy:cy, r:opts.r||5.5, fill:it.status.color, class:'tl-dot tl-link'});
-    dot.addEventListener('click', clic);
-    const dotTip = tlEl('title', {});
-    dotTip.textContent = tipTxt;
-    dot.appendChild(dotTip);
+  lay.blocks.forEach(bk => {
+    const below = bk.side === "below";
+    const off = lay.offs[bk.side][bk.L];
+    const top = below ? axisY + 16 + off : axisY - 16 - off - bk.h;
+    // trait de liaison de l'axe jusqu'au bloc
+    svg.appendChild(tlEl('line', {x1:bk.x, y1:axisY, x2:bk.x, y2: below ? top + 2 : top + bk.h - 2, stroke:'var(--rule-strong)', 'stroke-width':1}));
+    const tx = bk.right ? bk.b - 4 : bk.a + 4;
+    const anchor = bk.right ? 'end' : 'start';
+    const hd = tlEl('text', {x:tx, y:top + lay.lh - 4, 'text-anchor':anchor, style:'font-size:'+size+'px; font-weight:700;', fill:'var(--ink-muted)'});
+    hd.textContent = bk.head;
+    svg.appendChild(hd);
+    bk.lines.forEach((l, i) => {
+      const t = tlEl('text', {x:tx, y:top + lay.lh * (i + 2) - 4, 'text-anchor':anchor, fill:l.it.status.text, class:'tl-link', style:'font-size:'+size+'px;'});
+      t.textContent = l.txt;
+      t.addEventListener('click', goTo(l.it));
+      addTip(t, tipOf(l.it));
+      svg.appendChild(t);
+    });
+    // point sur l'axe : rouge dès qu'un livrable du jour est en retard, sinon couleur du premier
+    const worst = bk.group.find(it => it.status.color === "var(--danger)") || bk.group[0];
+    const dot = tlEl('circle', {cx:bk.x, cy:axisY, r:opts.r||5.5, fill:worst.status.color, class:'tl-dot tl-link'});
+    dot.addEventListener('click', goTo(worst));
+    addTip(dot, bk.group.map(tipOf).join("\n\n"));
     svg.appendChild(dot);
-
-    const ly = above ? cy - 11 : cy + 16;
-    const rot = above ? -45 : 45;
-    const label = tlEl('text', {x:x, y:ly, fill:it.status.text, style:'font-size:'+(opts.labelSize||10)+'px;', transform:'rotate('+rot+' '+x+' '+ly+')'});
-    label.textContent = it.titre + " · " + fmtTlDate(it.date);
-    label.setAttribute('class', 'tl-link');
-    label.addEventListener('click', clic);
-    const labelTip = tlEl('title', {});
-    labelTip.textContent = tipTxt;
-    label.appendChild(labelTip);
-    svg.appendChild(label);
   });
   return svg;
-}
-function estimateLabelReach(items, labelSize){
-  // estime, en pixels réels, jusqu'où le texte incliné à 45° le plus long peut
-  // s'étendre verticalement depuis son point d'ancrage.
-  let maxChars = 0;
-  items.forEach(it => {
-    const txt = it.titre + " · " + fmtTlDate(it.date);
-    maxChars = Math.max(maxChars, txt.length);
-  });
-  const avgCharWidth = labelSize * 0.58;
-  const maxStack = items.reduce((m, it) => Math.max(m, it.stack || 0), 0);
-  return maxChars * avgCharWidth * Math.SQRT1_2 + maxStack * TL_STACK; // sin(45°) = cos(45°)
 }
 function renderTimeline(project, vue){
   const wrap = document.createElement('div');
@@ -262,12 +298,8 @@ function populateTimelineSVG(wrap){
   if(!wrap._tlHolder) return;
   const items = wrap._tlItems, range = wrap._tlRange, holder = wrap._tlHolder;
   const width = holder.clientWidth || Math.round(holder.getBoundingClientRect().width) || 900;
-  const labelSize = 8.5;
-  const reach = Math.ceil(estimateLabelReach(items, labelSize));
-  const axisY = Math.max(60, reach + 40); // + place pour l'ancrage et la ligne des mois
-  const opts = { width, height: axisY + reach + 40, axisY, labelSize, alternate: new Set(items.map(it => it.group)).size > 4 };
   holder.innerHTML = "";
-  holder.appendChild(buildTimelineSVG(items, range, opts));
+  holder.appendChild(buildTimelineSVG(items, range, { width, labelSize:10 }));
   wrap._tlWidth = width;
 }
 
@@ -418,6 +450,7 @@ function scrollToLivrable(itemId){
   if(!card) return false;
   card.scrollIntoView({ behavior:"smooth", block:"center" });
   card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash");
-  setTimeout(() => card.classList.remove("flash"), 2200);
+  clearTimeout(card._flashTimer);
+  card._flashTimer = setTimeout(() => card.classList.remove("flash"), 2200);
   return true;
 }
