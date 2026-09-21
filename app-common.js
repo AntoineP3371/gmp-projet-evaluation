@@ -110,6 +110,21 @@ function timelineItemStatus(ev, today){
   if(due && due < today) return {color:"var(--danger)", text:"var(--danger)"};
   return {color:"var(--rule-strong)", text:"var(--ink-faint)"};
 }
+// même jour : les livrables sont empilés (rang dans la pile) et partagent le même côté de l'axe
+const TL_STACK = 18;
+function assignTimelineStacks(items){
+  const days = new Map();
+  items.forEach(it => {
+    const k = String(it.date).slice(0,10);
+    if(!days.has(k)) days.set(k, []);
+    it.stack = days.get(k).length;
+    days.get(k).push(it);
+    it.day = k;
+  });
+  let g = 0;
+  for(const list of days.values()){ list.forEach(it => { it.group = g; it.stackSize = list.length; }); g++; }
+  return items;
+}
 function collectTimelineItems(project, sems){
   const today = new Date();
   const out = [];
@@ -122,7 +137,7 @@ function collectTimelineItems(project, sems){
     }
   }
   out.sort((a,b) => a.date.localeCompare(b.date));
-  return out;
+  return assignTimelineStacks(out);
 }
 function fmtTlDate(d){
   return new Date(d).toLocaleDateString('fr-FR', {day:'2-digit', month:'short'});
@@ -172,14 +187,17 @@ function buildTimelineSVG(items, range, opts){
     const noteTxt = (it.note !== undefined && it.note !== null && it.note !== "") ? `${it.note}/20` : "Pas encore noté";
     const tipTxt = `${it.titre}\n${fmtTlDate(it.date)} — ${noteTxt}`;
 
-    const dot = tlEl('circle', {cx:x, cy:axisY, r:opts.r||5.5, fill:it.status.color, class:'tl-dot'});
+    const above = opts.alternate && (it.group % 2 === 1);
+    const dir = above ? -1 : 1;
+    const cy = axisY + dir * TL_STACK * it.stack;
+    if(it.stack > 0) svg.appendChild(tlEl('line', {x1:x, y1:axisY, x2:x, y2:cy, stroke:'var(--rule-strong)', 'stroke-width':1}));
+    const dot = tlEl('circle', {cx:x, cy:cy, r:opts.r||5.5, fill:it.status.color, class:'tl-dot'});
     const dotTip = tlEl('title', {});
     dotTip.textContent = tipTxt;
     dot.appendChild(dotTip);
     svg.appendChild(dot);
 
-    const above = opts.alternate && (idx % 2 === 1);
-    const ly = above ? axisY - 11 : axisY + 16;
+    const ly = above ? cy - 11 : cy + 16;
     const rot = above ? -45 : 45;
     const label = tlEl('text', {x:x, y:ly, fill:it.status.text, style:'font-size:'+(opts.labelSize||10)+'px; cursor:default;', transform:'rotate('+rot+' '+x+' '+ly+')'});
     label.textContent = it.titre + " · " + fmtTlDate(it.date);
@@ -199,7 +217,8 @@ function estimateLabelReach(items, labelSize){
     maxChars = Math.max(maxChars, txt.length);
   });
   const avgCharWidth = labelSize * 0.58;
-  return maxChars * avgCharWidth * Math.SQRT1_2; // sin(45°) = cos(45°)
+  const maxStack = items.reduce((m, it) => Math.max(m, it.stack || 0), 0);
+  return maxChars * avgCharWidth * Math.SQRT1_2 + maxStack * TL_STACK; // sin(45°) = cos(45°)
 }
 function renderTimeline(project, vue){
   const wrap = document.createElement('div');
@@ -242,7 +261,7 @@ function populateTimelineSVG(wrap){
   const labelSize = 8.5;
   const reach = Math.ceil(estimateLabelReach(items, labelSize));
   const axisY = Math.max(60, reach + 40); // + place pour l'ancrage et la ligne des mois
-  const opts = { width, height: axisY + reach + 40, axisY, labelSize, alternate: items.length > 4 };
+  const opts = { width, height: axisY + reach + 40, axisY, labelSize, alternate: new Set(items.map(it => it.group)).size > 4 };
   holder.innerHTML = "";
   holder.appendChild(buildTimelineSVG(items, range, opts));
   wrap._tlWidth = width;
@@ -305,9 +324,21 @@ function legacyComment(project, sem, itemId){
 function countComments(project, sem, itemId){
   return commentsFor(project.slug, sem, itemId).filter(c => !c.deleted_by).length + (legacyComment(project, sem, itemId) ? 1 : 0);
 }
-const COMMENT_COLORS = ["#2F6F6A","#3E5FA0","#B4501C","#6B7B33","#7A4B8C"];
-const commentNorm = s => String(s||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-function authorColor(name){ return COMMENT_COLORS[[...String(name)].reduce((a,c) => a + c.charCodeAt(0), 0) % COMMENT_COLORS.length]; }
+const commentNorm = s => String(s||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+function knownAuthorNames(){
+  const m = new Map();
+  for(const p of projects.values()) for(const a of (p.encadrants || [])) if(a) m.set(commentNorm(a), a);
+  for(const cm of commentsAll) if(cm.author) m.set(commentNorm(cm.author), cm.author);
+  return [...m.keys()].sort((a,b) => a.localeCompare(b, "fr"));
+}
+// 20 teintes écartées (rang × 7 modulo 20, par pas de 18°), deux niveaux de clarté en alternance :
+// chaque encadrant a une couleur propre, et la même sur les deux pages
+function authorStyle(name){
+  const key = commentNorm(name);
+  let i = knownAuthorNames().indexOf(key);
+  if(i < 0) i = [...key].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  return "--h:" + (((i * 7) % 20) * 18) + ";--l:" + (i % 2 ? 44 : 32) + "%";
+}
 function authorInitials(name){ return String(name).split(/\s+/).filter(Boolean).map(s => s[0]).slice(0,2).join("").toUpperCase(); }
 function authorShort(name){ const p = String(name).split(/\s+/).filter(Boolean); return p.length > 1 ? p[1] + " " + p[0][0] + "." : String(name); }
 function commentDate(s){ return new Date(String(s).replace(" ", "T")); }
@@ -324,7 +355,7 @@ function fmtCommentDate(s){
 }
 function threadShellHTML(itemId){
   return `<div class="cm-thread" data-item="${escapeHtml(itemId)}">
-    <div class="cm-h">Commentaires <span class="cm-n" data-n>0</span></div>
+    <div class="cm-h">Commentaires <span class="cm-n" data-n>0</span><span class="cm-people" data-people></span></div>
     <div data-list></div>
     <div data-composer></div>
   </div>`;
@@ -332,6 +363,10 @@ function threadShellHTML(itemId){
 function drawThreadList(th, project, sem, itemId, opts){
   th.querySelector("[data-list]").innerHTML = commentListHTML(project, sem, itemId, opts);
   th.querySelector("[data-n]").textContent = countComments(project, sem, itemId);
+  const seen = new Map();
+  for(const cm of commentsFor(project.slug, sem, itemId)) if(!seen.has(commentNorm(cm.author))) seen.set(commentNorm(cm.author), cm.author);
+  th.querySelector("[data-people]").innerHTML = [...seen.values()]
+    .map(a => `<span class="cm-person" style="${authorStyle(a)}"><i></i>${escapeHtml(authorShort(a))}</span>`).join("");
 }
 function commentListHTML(project, sem, itemId, opts){
   opts = opts || {};
@@ -364,8 +399,8 @@ function commentListHTML(project, sem, itemId, opts){
     const acts = canAct
       ? `<div class="cm-acts"><button data-do="reply" data-id="${escapeHtml(c.id)}" type="button">Répondre</button>${mine ? `<button data-do="edit" data-id="${escapeHtml(c.id)}" type="button">Modifier</button><button data-do="del" data-id="${escapeHtml(c.id)}" type="button">Supprimer</button>` : ""}</div>` : "";
     const head = `<div class="cm-mh"><span class="cm-who">${escapeHtml(c.author)}</span><span class="cm-when">${escapeHtml(fmtCommentDate(c.created))}</span>${edited ? `<span class="cm-edited">modifié · ${escapeHtml(fmtCommentDate(c.updated))}</span>` : ""}</div>`;
-    const av = c.legacy ? `<span class="cm-av legacy">…</span>` : `<span class="cm-av" style="background:${authorColor(c.author)}">${escapeHtml(authorInitials(c.author))}</span>`;
-    return `<div class="cm-msg${deleted ? " deleted" : ""}">${av}<div class="cm-mb">${head}${body}${acts}</div></div>`;
+    const av = c.legacy ? `<span class="cm-av legacy">…</span>` : `<span class="cm-av">${escapeHtml(authorInitials(c.author))}</span>`;
+    return `<div class="cm-msg${deleted ? " deleted" : ""}"${c.legacy ? "" : ` style="${authorStyle(c.author)}"`}>${av}<div class="cm-mb">${head}${body}${acts}</div></div>`;
   };
   return roots.map(r => {
     const kids = all.filter(k => k !== r && k.parent && rootOf(k) === r);
