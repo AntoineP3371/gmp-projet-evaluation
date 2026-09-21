@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.49">
+<link rel="stylesheet" href="style.css?v=0.50">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.49"></script>
+<script src="app-common.js?v=0.50"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.49</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.50</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -32,6 +32,11 @@
     </button>
 
     <div id="side-me"></div>
+
+    <button class="nav-item agenda-link" id="nav-agenda" type="button">
+      <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      Mes prochaines évaluations
+    </button>
 
     <div class="admin-nav" id="admin-nav" hidden>
       <span class="admin-nav-eyebrow">Administration</span>
@@ -69,10 +74,6 @@
     <input type="file" id="file-import" accept=".xlsx,.xls" style="display:none">
 
     <div class="sidebar-admin">
-      <button class="nav-item agenda-link" id="nav-agenda" type="button">
-        <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-        Mes prochaines évaluations
-      </button>
       <div class="theme-status" id="theme-status">
         <span>Affichage</span>
         <button class="btn btn-ghost btn-sm" id="btn-theme-toggle" type="button"></button>
