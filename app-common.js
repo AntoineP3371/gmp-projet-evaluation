@@ -135,7 +135,13 @@ function collectTimelineItems(project, sems){
       out.push({ id: item.id, sem, titre: item.titre, date: ev.date, note: ev.note, status: timelineItemStatus(ev, today) });
     }
   }
-  out.sort((a,b) => a.date.localeCompare(b.date));
+  // événements ajoutés par les encadrants pour ce projet, dans la période affichée
+  const dans = d => sems.some(sem => { const r = semRange(project, sem); return d >= r[0] && d <= r[1]; });
+  for(const ev of eventsOfProject(project.slug)){
+    const day = String(ev.date).slice(0, 10);
+    if(dans(new Date(day + "T00:00:00"))) out.push({ event:true, id:ev.id, titre:ev.titre, date:day, author:ev.author, status:{color:"var(--ink)", text:"var(--ink)"} });
+  }
+  out.sort((a,b) => a.date.slice(0,10).localeCompare(b.date.slice(0,10)) || (a.event ? 1 : 0) - (b.event ? 1 : 0));
   return assignTimelineStacks(out);
 }
 function fmtTlDate(d){
@@ -161,7 +167,7 @@ function layoutTimeline(items, w, range, size){
     if(!g) return;
     const x = xPos(g[0].date);
     const head = fmtTlDate(g[0].date);
-    const lines = g.map(it => ({ it, txt: it.titre.length > 32 ? it.titre.slice(0, 31) + "…" : it.titre }));
+    const lines = g.map(it => { const t = (it.event ? "◆ " : "") + it.titre; return { it, txt: t.length > 32 ? t.slice(0, 31) + "…" : t }; });
     const wd = Math.max(head.length, ...lines.map(l => l.txt.length)) * cw + 8;
     const right = x + wd > x1;
     const a = right ? x - wd + 4 : x - 4, b = a + wd;
@@ -226,8 +232,13 @@ function buildTimelineSVG(items, range, opts){
     svg.appendChild(tlbl);
   }
 
-  const goTo = it => () => { if(typeof goToLivrable === "function") goToLivrable(it.id, it.sem); };
+  const cliquable = it => it.event ? typeof onTimelineEvent === "function" : typeof goToLivrable === "function";
+  const goTo = it => () => {
+    if(it.event){ if(typeof onTimelineEvent === "function") onTimelineEvent(it.id); }
+    else if(typeof goToLivrable === "function") goToLivrable(it.id, it.sem);
+  };
   const tipOf = it => {
+    if(it.event) return "Événement : " + it.titre + "\n" + fmtTlDate(it.date) + (it.author ? " — " + it.author : "") + (cliquable(it) ? "\n(cliquer pour ouvrir)" : "");
     const noteTxt = (it.note !== undefined && it.note !== null && it.note !== "") ? it.note + "/20" : "Pas encore noté";
     return it.titre + "\n" + fmtTlDate(it.date) + " — " + noteTxt + "\n(cliquer pour aller au livrable)";
   };
@@ -245,7 +256,8 @@ function buildTimelineSVG(items, range, opts){
     hd.textContent = bk.head;
     svg.appendChild(hd);
     bk.lines.forEach((l, i) => {
-      const t = tlEl('text', {x:tx, y:top + lay.lh * (i + 2) - 4, 'text-anchor':anchor, fill:l.it.status.text, class:'tl-link', style:'font-size:'+size+'px;'});
+      const t = tlEl('text', {x:tx, y:top + lay.lh * (i + 2) - 4, 'text-anchor':anchor, fill:l.it.status.text, style:'font-size:'+size+'px;' + (l.it.event ? ' font-weight:600;' : '')});
+      if(cliquable(l.it)) t.setAttribute('class', 'tl-link');
       t.textContent = l.txt;
       t.addEventListener('click', goTo(l.it));
       addTip(t, tipOf(l.it));
@@ -253,7 +265,10 @@ function buildTimelineSVG(items, range, opts){
     });
     // point sur l'axe : rouge dès qu'un livrable du jour est en retard, sinon couleur du premier
     const worst = bk.group.find(it => it.status.color === "var(--danger)") || bk.group[0];
-    const dot = tlEl('circle', {cx:bk.x, cy:axisY, r:opts.r||5.5, fill:worst.status.color, class:'tl-dot tl-link'});
+    const r = opts.r || 5.5;
+    const dot = worst.event
+      ? tlEl('polygon', {points:[[bk.x, axisY - r - 1], [bk.x + r + 1, axisY], [bk.x, axisY + r + 1], [bk.x - r - 1, axisY]].map(p => p.join(',')).join(' '), fill:worst.status.color, class:'tl-dot' + (cliquable(worst) ? ' tl-link' : '')})
+      : tlEl('circle', {cx:bk.x, cy:axisY, r, fill:worst.status.color, class:'tl-dot tl-link'});
     dot.addEventListener('click', goTo(worst));
     addTip(dot, bk.group.map(tipOf).join("\n\n"));
     svg.appendChild(dot);
@@ -414,13 +429,18 @@ function commentListHTML(project, sem, itemId, opts){
   if(!all.length) return `<p class="cm-none">Aucun commentaire pour l'instant.</p>`;
   const byId = new Map(all.map(c => [c.id, c]));
   const rootOf = c => { let x = c, n = 0; while(x.parent && byId.has(x.parent) && n++ < 30) x = byId.get(x.parent); return x; };
-  const roots = all.filter(c => !c.parent || !byId.has(c.parent));
+  // un message supprimé disparaît complètement, sauf s'il a encore des réponses (il reste alors un repère « supprimé »)
+  const vivants = new Set();
+  for(const c of all) if(!c.deleted_by){ let x = c, n = 0; while(x && n++ < 30){ vivants.add(x.id); x = x.parent ? byId.get(x.parent) : null; } }
+  const shown = all.filter(c => c.legacy || vivants.has(c.id));
+  if(!shown.length) return `<p class="cm-none">Aucun commentaire pour l'instant.</p>`;
+  const roots = shown.filter(c => !c.parent || !byId.has(c.parent));
   const msg = (c, isReply) => {
     const deleted = !!c.deleted_by;
     const mine = !!me && !c.legacy && commentNorm(c.author) === commentNorm(me);
     const edited = !deleted && !c.legacy && c.updated && c.created && (commentDate(c.updated) - commentDate(c.created)) > 2000;
     const parent = c.parent ? byId.get(c.parent) : null;
-    const quote = (isReply && parent && !deleted && rootOf(c) !== parent)
+    const quote = (isReply && parent && !deleted && !parent.deleted_by && rootOf(c) !== parent)
       ? `<div class="cm-quote">↪ ${escapeHtml(authorShort(parent.author))} : ${escapeHtml(parent.text.slice(0,60))}${parent.text.length > 60 ? "…" : ""}</div>` : "";
     let body;
     if(opts.editingId === c.id){
@@ -439,7 +459,7 @@ function commentListHTML(project, sem, itemId, opts){
     return `<div class="cm-msg${deleted ? " deleted" : ""}"${c.legacy ? "" : ` style="${authorStyle(c.author)}"`}>${av}<div class="cm-mb">${head}${body}${acts}</div></div>`;
   };
   return roots.map(r => {
-    const kids = all.filter(k => k !== r && k.parent && rootOf(k) === r);
+    const kids = shown.filter(k => k !== r && k.parent && rootOf(k) === r);
     return msg(r, false) + (kids.length ? `<div class="cm-replies">${kids.map(k => msg(k, true)).join("")}</div>` : "");
   }).join("");
 }
@@ -453,4 +473,19 @@ function scrollToLivrable(itemId){
   clearTimeout(card._flashTimer);
   card._flashTimer = setTimeout(() => card.classList.remove("flash"), 2200);
   return true;
+}
+
+/* ---------------- événements ajoutés par les encadrants (calendrier et frises) ---------------- */
+let eventsAll = [];
+async function loadEvents(){
+  try{ eventsAll = await pb.collection("sae_events").getFullList({ sort:"date" }); }
+  catch(e){ eventsAll = []; }
+}
+function upsertEvent(rec){
+  const i = eventsAll.findIndex(x => x.id === rec.id);
+  if(i >= 0) eventsAll[i] = rec; else eventsAll.push(rec);
+}
+// événements (non supprimés) rattachés à un projet
+function eventsOfProject(slug){
+  return eventsAll.filter(e => !e.deleted_by && e.date && Array.isArray(e.projets) && e.projets.includes(slug));
 }

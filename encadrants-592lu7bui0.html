@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.44">
+<link rel="stylesheet" href="style.css?v=0.45">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.44"></script>
+<script src="app-common.js?v=0.45"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.44</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.45</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -63,6 +63,10 @@
     <input type="file" id="file-import" accept=".xlsx,.xls" style="display:none">
 
     <div class="sidebar-admin">
+      <button class="nav-item agenda-link" id="nav-agenda" type="button">
+        <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        Mes prochaines évaluations
+      </button>
       <div class="theme-status" id="theme-status">
         <span>Affichage</span>
         <button class="btn btn-ghost btn-sm" id="btn-theme-toggle" type="button"></button>
@@ -92,6 +96,22 @@
     <div class="modal-actions">
       <button class="btn" id="unlock-cancel">Annuler</button>
       <button class="btn btn-accent" id="unlock-submit">Débloquer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-event">
+  <div class="modal">
+    <h2 id="event-title">Ajouter un événement</h2>
+    <p class="hint" id="event-hint"></p>
+    <div class="field-full"><label for="event-date">Date</label><input type="date" id="event-date"></div>
+    <div class="field-full"><label for="event-name">Intitulé</label><input type="text" id="event-name" maxlength="120" placeholder="Ex. Soutenance intermédiaire"></div>
+    <div class="field-full"><label>Projets concernés (facultatif)</label><div class="ev-projects" id="event-projects"></div></div>
+    <p class="modal-error" id="event-error" hidden></p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="event-delete" type="button" hidden>Supprimer</button>
+      <button class="btn" id="event-cancel" type="button">Annuler</button>
+      <button class="btn btn-accent" id="event-submit" type="button">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -343,6 +363,11 @@ function onProjectEvent(e){
 function subscribeRealtime(){
   pb.collection("sae_projects").subscribe("*", onProjectEvent).catch(()=>{});
   pb.collection("sae_comments").subscribe("*", onCommentEvent).catch(()=>{});
+  pb.collection("sae_events").subscribe("*", (e) => {
+    if(e.action === "delete") eventsAll = eventsAll.filter(x => x.id !== e.record.id);
+    else upsertEvent(e.record);
+    softRender();
+  }).catch(()=>{});
   pb.collection("sae_config").subscribe("*", (e) => {
     if(e.record.key === "referentiel"){
       if(refPendingTimer) return;
@@ -405,6 +430,7 @@ function renderAll(){
   else if(view === "referentiel") renderReferentielView();
   else if(view === "projets") renderProjectsManagementView();
   else if(view === "encadrants") renderEncadrantsManagementView();
+  else if(view === "agenda") renderAgendaView();
   else renderEmpty();
   syncPresence();
 }
@@ -471,6 +497,7 @@ function renderSidebar(){
   document.getElementById("nav-referentiel").classList.toggle("active", view==="referentiel");
   document.getElementById("nav-projets").classList.toggle("active", view==="projets");
   document.getElementById("nav-encadrants").classList.toggle("active", view==="encadrants");
+  document.getElementById("nav-agenda").classList.toggle("active", view==="agenda");
   document.getElementById("admin-nav").hidden = !adminUnlocked;
   document.getElementById("brand-sub").textContent = adminUnlocked ? "Espace administrateur" : "Espace encadrants";
   const st = document.getElementById("admin-status");
@@ -484,6 +511,228 @@ function renderEmpty(){
     <p>Choisissez un projet à gauche${projects.size===0 ? ", ou importez le fichier Excel des projets (mode administrateur)" : ""}.</p>
   </div>`;
 }
+/* ---------------- Mes prochaines évaluations : calendrier de l'encadrant ---------------- */
+let agendaUser = null;   // encadrant identifié par son code (le temps de la session)
+let agendaMonth = null;  // premier jour du mois affiché
+function loadAgendaSession(){ try{ agendaUser = sessionStorage.getItem("sae-agenda-user") || null; }catch(e){} }
+function saveAgendaSession(){
+  try{ if(agendaUser) sessionStorage.setItem("sae-agenda-user", agendaUser); else sessionStorage.removeItem("sae-agenda-user"); }catch(e){}
+}
+const agendaVisible = p => !p.archived && p.visible_eleves !== false;
+function agendaNames(){
+  const m = new Map();
+  for(const p of projects.values()){
+    if(!agendaVisible(p)) continue;
+    for(const n of (p.encadrants || [])) if(n) m.set(normName(n), canonicalEncadrantName(n));
+  }
+  return [...m.values()].sort((a, b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
+}
+// jour (AAAA-MM-JJ) -> projet -> livrables prévus ce jour, avec le code couleur de la frise
+function agendaEvents(){
+  const today = new Date(), days = new Map();
+  for(const p of projects.values()){
+    if(!agendaVisible(p) || !rosterHasName(p.encadrants, agendaUser)) continue;
+    for(const sem of ["S3", "S4"]){
+      const evals = (p.evals && p.evals[sem]) || {};
+      for(const item of allItems){
+        const ev = evals[item.id];
+        if(!ev || !ev.date) continue;
+        const day = String(ev.date).slice(0, 10);
+        if(!days.has(day)) days.set(day, new Map());
+        const byProj = days.get(day);
+        if(!byProj.has(p.slug)) byProj.set(p.slug, { p, items: [] });
+        byProj.get(p.slug).items.push({ id:item.id, titre:item.titre, sem, status: timelineItemStatus(ev, today) });
+      }
+    }
+  }
+  return days;
+}
+function goToAgendaItem(slug, sem, itemId){
+  const p = projects.get(slug);
+  if(!p) return;
+  // l'encadrant s'est identifié par son code : le projet est débloqué à son nom
+  const label = (p.encadrants || []).find(n => normName(n) === normName(agendaUser)) || agendaUser;
+  unlockedProjects.set(slug, label);
+  saveSession();
+  currentProjectId = slug; currentSemestre = sem; currentVue = sem; view = "project";
+  renderAll();
+  requestAnimationFrame(() => requestAnimationFrame(() => scrollToLivrable(itemId)));
+  showToast("Écriture activée — " + p.nom);
+}
+async function agendaLogin(){
+  const err = document.getElementById("agenda-error");
+  err.hidden = true;
+  const nom = document.getElementById("agenda-who").value;
+  const code = document.getElementById("agenda-code").value;
+  if(!nom){ err.textContent = "Choisissez votre nom."; err.hidden = false; return; }
+  const rec = findEncadrantRec(nom);
+  if(!rec || !rec.hash){ err.textContent = "Aucun code n'existe encore à votre nom : ouvrez un de vos projets et créez-le."; err.hidden = false; return; }
+  if(!code){ err.textContent = "Code requis."; err.hidden = false; return; }
+  if(rec.hash !== await sha256Hex(code)){ err.textContent = "Code incorrect."; err.hidden = false; return; }
+  agendaUser = nom;
+  agendaMonth = null;
+  saveAgendaSession();
+  renderAgendaView();
+}
+function renderAgendaLogin(main){
+  const names = agendaNames();
+  main.innerHTML = `<div class="ag-head"><h2>Mes prochaines évaluations</h2></div>
+    <div class="ag-login">
+      <p class="ag-hint">Choisissez votre nom et saisissez votre code personnel (le même que pour saisir les notes) : le calendrier affiche les évaluations prévues dans les projets que vous encadrez.</p>
+      <div class="ag-login-row">
+        <div class="ag-field"><label for="agenda-who">Votre nom</label>
+          <select id="agenda-who"><option value="">— Choisir —</option>${names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")}</select></div>
+        <div class="ag-field"><label for="agenda-code">Code</label><input id="agenda-code" type="password" autocomplete="off"></div>
+        <button class="btn btn-accent" id="agenda-go" type="button">Voir mes évaluations</button>
+      </div>
+      <p class="modal-error" id="agenda-error" hidden></p>
+    </div>`;
+  document.getElementById("agenda-go").addEventListener("click", agendaLogin);
+  document.getElementById("agenda-code").addEventListener("keydown", e => { if(e.key === "Enter") agendaLogin(); });
+}
+function renderAgendaView(){
+  const main = document.getElementById("main");
+  main.removeAttribute("data-sem");
+  if(!agendaUser){ renderAgendaLogin(main); return; }
+  const now = new Date();
+  if(!agendaMonth) agendaMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const y = agendaMonth.getFullYear(), m = agendaMonth.getMonth();
+  const days = agendaEvents();
+  const evByDay = agendaEventsByDay();
+  const dayKey = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const todayKey = dayKey(now);
+  const first = new Date(y, m, 1);
+  const start = new Date(y, m, 1 - ((first.getDay() + 6) % 7));
+  const nProj = [...projects.values()].filter(p => agendaVisible(p) && rosterHasName(p.encadrants, agendaUser)).length;
+  let late = 0;
+  for(const bp of days.values()) for(const {items} of bp.values()) for(const it of items) if(it.status.color === "var(--danger)") late++;
+  let cells = "";
+  for(let i = 0; i < 42; i++){
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    if(i >= 35 && d.getMonth() !== m) break;
+    const key = dayKey(d);
+    const bp = days.get(key);
+    const labels = bp ? [...bp.values()].sort((a, b) => a.p.nom.localeCompare(b.p.nom, "fr")).map(({p, items}) => {
+      const worst = items.find(it => it.status.color === "var(--danger)") || items[0];
+      return `<div class="ag-lab" style="--st:${worst.status.color}">
+        <button class="ag-proj" type="button" data-slug="${escapeHtml(p.slug)}" data-sem="${items[0].sem}" data-item="${escapeHtml(items[0].id)}" title="Ouvrir ${escapeHtml(p.nom)}">${escapeHtml(p.nom)}</button>
+        ${items.map(it => `<button class="ag-liv" type="button" data-slug="${escapeHtml(p.slug)}" data-sem="${it.sem}" data-item="${escapeHtml(it.id)}" style="--tx:${it.status.text}" title="${escapeHtml(it.titre)} — ${it.sem}"><i style="background:${it.status.color}"></i><span>${escapeHtml(it.titre)}</span></button>`).join("")}
+      </div>`;
+    }).join("") : "";
+    const evs = (evByDay.get(key) || []).map(ev => `<div class="ag-lab ag-ev"><button class="ag-evb" type="button" data-ev="${escapeHtml(ev.id)}" title="${escapeHtml(ev.titre)}">◆ ${escapeHtml(ev.titre)}</button><span class="ag-evp">${escapeHtml(agendaEventScope(ev))}</span></div>`).join("");
+    const ajout = `Ajouter un événement le ${d.toLocaleDateString("fr-FR", {day:"numeric", month:"long"})}`;
+    cells += `<div class="ag-cell${d.getMonth() !== m ? " off" : ""}${key === todayKey ? " today" : ""}"><div class="ag-cellh"><span class="ag-n">${d.getDate()}</span><button class="ag-add" type="button" data-day="${key}" title="${ajout}" aria-label="${ajout}">+</button></div>${labels}${evs}</div>`;
+  }
+  const monthLabel = agendaMonth.toLocaleDateString("fr-FR", {month:"long", year:"numeric"});
+  main.innerHTML = `<div class="ag-head">
+      <h2>Mes prochaines évaluations</h2>
+      <div class="ag-who"><span>${escapeHtml(agendaUser)}</span><button class="btn btn-sm" id="agenda-logout" type="button">Changer d'encadrant</button></div>
+    </div>
+    <p class="ag-sum">${nProj ? nProj + " projet" + (nProj > 1 ? "s" : "") + " encadré" + (nProj > 1 ? "s" : "") : "Aucun projet visible dont vous soyez encadrant"}${late ? ` · <b class="ag-late">${late} livrable${late > 1 ? "s" : ""} sans note dont la date est passée</b>` : ""}. Un clic sur une étiquette ouvre le livrable et débloque le projet ; le « + » d'une case ajoute un événement.</p>
+    <div class="ag-nav">
+      <button class="btn btn-sm" id="agenda-prev" type="button" aria-label="Mois précédent">‹</button>
+      <h3>${escapeHtml(monthLabel)}</h3>
+      <button class="btn btn-sm" id="agenda-next" type="button" aria-label="Mois suivant">›</button>
+      <button class="btn btn-sm" id="agenda-today" type="button">Aujourd'hui</button>
+    </div>
+    <div class="ag-legend"><span><i style="background:var(--good)"></i>noté 12 et plus</span><span><i style="background:var(--logo-blue)"></i>de 8 à 12</span><span><i style="background:var(--warn)"></i>moins de 8</span><span><i style="background:var(--danger)"></i>en retard, sans note</span><span><i style="background:var(--rule-strong)"></i>à venir</span></div>
+    <div class="ag-grid">${["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map(j => `<div class="ag-dow">${j}</div>`).join("")}${cells}</div>`;
+  const shift = n => { agendaMonth = new Date(y, m + n, 1); renderAgendaView(); };
+  document.getElementById("agenda-prev").addEventListener("click", () => shift(-1));
+  document.getElementById("agenda-next").addEventListener("click", () => shift(1));
+  document.getElementById("agenda-today").addEventListener("click", () => { agendaMonth = null; renderAgendaView(); });
+  document.getElementById("agenda-logout").addEventListener("click", () => { agendaUser = null; agendaMonth = null; saveAgendaSession(); renderAgendaView(); });
+  main.querySelectorAll(".ag-proj, .ag-liv").forEach(b => b.addEventListener("click", () => goToAgendaItem(b.dataset.slug, b.dataset.sem, b.dataset.item)));
+  main.querySelectorAll(".ag-add").forEach(b => b.addEventListener("click", () => openEventModal(null, b.dataset.day)));
+  main.querySelectorAll(".ag-evb").forEach(b => b.addEventListener("click", () => openEventModal(b.dataset.ev)));
+}
+
+/* ---------------- événements : ajout depuis le calendrier, ouverture depuis la frise ---------------- */
+let eventEditId = null;
+const eventMe = () => agendaUser || (currentProjectId && unlockedProjects.get(currentProjectId)) || null;
+// visibles : ceux qu'on a écrits, et ceux rattachés à l'un de ses projets
+function agendaEventsByDay(){
+  const mine = new Set([...projects.values()].filter(p => agendaVisible(p) && rosterHasName(p.encadrants, agendaUser)).map(p => p.slug));
+  const out = new Map();
+  for(const ev of eventsAll){
+    if(ev.deleted_by || !ev.date) continue;
+    const mien = normName(ev.author) === normName(agendaUser);
+    if(!mien && !(Array.isArray(ev.projets) && ev.projets.some(s => mine.has(s)))) continue;
+    const day = String(ev.date).slice(0, 10);
+    if(!out.has(day)) out.set(day, []);
+    out.get(day).push(ev);
+  }
+  return out;
+}
+function agendaEventScope(ev){
+  const noms = (ev.projets || []).map(s => projects.get(s)).filter(Boolean).map(p => p.nom);
+  return noms.length ? noms.join(", ") : "Sans projet";
+}
+function openEventModal(id, day){
+  const ev = id ? eventsAll.find(x => x.id === id) : null;
+  if(id && !ev) return;
+  const me = eventMe();
+  if(!ev && !me) return;
+  eventEditId = ev ? ev.id : null;
+  const canEdit = !ev || normName(ev.author) === normName(me);
+  document.getElementById("event-title").textContent = !ev ? "Ajouter un événement" : (canEdit ? "Modifier l'événement" : "Événement");
+  document.getElementById("event-hint").textContent = !ev
+    ? `Sous le nom de ${me}. Cochez les projets concernés : l'événement apparaît sur leur frise, côté encadrants et côté étudiants. Sans projet, il reste dans votre calendrier.`
+    : `Ajouté par ${ev.author}${canEdit ? "" : " — seul son auteur peut le modifier ou le supprimer."}`;
+  const dateEl = document.getElementById("event-date"), nameEl = document.getElementById("event-name");
+  dateEl.value = ev ? String(ev.date).slice(0, 10) : day;
+  nameEl.value = ev ? ev.titre : "";
+  dateEl.disabled = nameEl.disabled = !canEdit;
+  const dejaChoisis = new Set(ev && Array.isArray(ev.projets) ? ev.projets : []);
+  const candidats = [...projects.values()].filter(p => dejaChoisis.has(p.slug) || (agendaVisible(p) && rosterHasName(p.encadrants, me)))
+    .sort((a, b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
+  document.getElementById("event-projects").innerHTML = candidats.length
+    ? candidats.map((p, i) => `<label class="ev-proj" for="event-p${i}"><input type="checkbox" id="event-p${i}" value="${escapeHtml(p.slug)}"${dejaChoisis.has(p.slug) ? " checked" : ""}${canEdit ? "" : " disabled"}> ${escapeHtml(p.nom)}</label>`).join("")
+    : `<span class="ag-hint">Aucun projet à votre nom.</span>`;
+  document.getElementById("event-error").hidden = true;
+  document.getElementById("event-delete").hidden = !(ev && canEdit);
+  document.getElementById("event-submit").hidden = !canEdit;
+  document.getElementById("event-cancel").textContent = canEdit ? "Annuler" : "Fermer";
+  document.getElementById("modal-event").classList.add("open");
+  if(canEdit) nameEl.focus();
+}
+function closeEventModal(){ document.getElementById("modal-event").classList.remove("open"); eventEditId = null; }
+async function saveEvent(){
+  const err = document.getElementById("event-error");
+  err.hidden = true;
+  const me = eventMe();
+  const date = document.getElementById("event-date").value;
+  const titre = document.getElementById("event-name").value.trim();
+  if(!date){ err.textContent = "Choisissez une date."; err.hidden = false; return; }
+  if(!titre){ err.textContent = "Donnez un intitulé."; err.hidden = false; return; }
+  const projets = [...document.querySelectorAll("#event-projects input:checked")].map(i => i.value);
+  try{
+    const rec = eventEditId
+      ? await pb.collection("sae_events").update(eventEditId, { date, titre, projets })
+      : await pb.collection("sae_events").create({ date, titre, projets, author: me });
+    upsertEvent(rec);
+    closeEventModal();
+    showToast("Événement enregistré");
+    softRender();
+  }catch(e){ err.textContent = "Enregistrement impossible (réseau ou serveur). Réessayez."; err.hidden = false; }
+}
+async function deleteEvent(){
+  if(!eventEditId || !confirm("Supprimer cet événement ?")) return;
+  try{
+    const rec = await pb.collection("sae_events").update(eventEditId, { deleted_by: eventMe() });
+    upsertEvent(rec);
+    closeEventModal();
+    showToast("Événement supprimé");
+    softRender();
+  }catch(e){ const err = document.getElementById("event-error"); err.textContent = "Suppression impossible. Réessayez."; err.hidden = false; }
+}
+// clic sur un événement de la frise
+function onTimelineEvent(id){ openEventModal(id); }
+document.getElementById("event-cancel").addEventListener("click", closeEventModal);
+document.getElementById("event-submit").addEventListener("click", saveEvent);
+document.getElementById("event-delete").addEventListener("click", deleteEvent);
+document.getElementById("event-name").addEventListener("keydown", e => { if(e.key === "Enter") saveEvent(); });
+
 function renderProjectsManagementView(){
   const main = document.getElementById("main");
   if(!adminUnlocked){
@@ -1366,9 +1615,9 @@ function initThread(card, itemId, readOnly){
       }catch(err){ showToast("Échec de l'enregistrement"); }
     }
     else if(a === "del"){
-      if(!confirm("Supprimer ce message ? Il sera remplacé par « Message supprimé ».")) return;
+      if(!confirm("Supprimer ce message ? Il disparaît ; s'il a des réponses, il est remplacé par « Message supprimé ».")) return;
       try{
-        upsertComment(await pb.collection("sae_comments").update(id, { deleted_by: who }));
+        upsertComment(await pb.collection("sae_comments").update(id, { deleted_by: who, text: "—" }));
         drawList();
         showToast("Message supprimé");
       }catch(err){ showToast("Échec de la suppression"); }
@@ -1666,6 +1915,7 @@ updateThemeToggleBtn();
 document.getElementById("brand-home").addEventListener("click", () => { currentProjectId = null; view = "empty"; renderAll(); });
 document.getElementById("nav-referentiel").addEventListener("click", () => { if(!refDirty && !refPendingTimer) refDraft = null; view = "referentiel"; renderAll(); });
 document.getElementById("nav-projets").addEventListener("click", () => { view = "projets"; renderAll(); });
+document.getElementById("nav-agenda").addEventListener("click", () => { view = "agenda"; renderAll(); });
 document.getElementById("nav-encadrants").addEventListener("click", () => { view = "encadrants"; renderAll(); });
 document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
 document.getElementById("filter-annee").addEventListener("change", e => { filterAnnee = e.target.value; renderSidebar(); });
@@ -1948,7 +2198,7 @@ function exportNotesExcel(){
   XLSX.writeFile(wb, `carnet-sae-notes-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 function exportJsonBackup(){
-  const bundle = { referentiel, projects: Object.fromEntries(projects), commentaires: commentsAll };
+  const bundle = { referentiel, projects: Object.fromEntries(projects), commentaires: commentsAll, evenements: eventsAll };
   const blob = new Blob([JSON.stringify(bundle, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1960,8 +2210,9 @@ function exportJsonBackup(){
 /* ---------------- init ---------------- */
 async function init(){
   loadSession();
+  loadAgendaSession();
   renderAll();
-  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects(), loadEncadrantCodes(), loadComments()]);
+  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects(), loadEncadrantCodes(), loadComments(), loadEvents()]);
   subscribeRealtime();
 }
 init();
