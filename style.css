@@ -390,3 +390,13 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .ev-projects{ display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto; border:1px solid var(--rule); border-radius:var(--radius); padding:8px 10px; background:var(--surface-2); }
 .ev-proj{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:400; color:var(--ink); cursor:pointer; }
 .modal-actions .btn-danger{ border-color:var(--danger); margin-right:auto; }
+
+/* connexion unique */
+.side-me{ display:flex; align-items:center; gap:9px; border:1px solid var(--good); background:color-mix(in srgb, var(--good) 8%, var(--surface)); border-radius:var(--radius); padding:8px 10px; }
+.side-me-dot{ width:9px; height:9px; border-radius:50%; background:var(--good); flex:none; }
+.side-me-txt b{ display:block; font-size:13px; line-height:1.2; }
+.side-me-txt small{ color:var(--ink-muted); font-size:11.5px; }
+.side-me .btn{ margin-left:auto; }
+.side-connect{ align-self:flex-start; }
+.team-group{ list-style:none; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); padding:8px 2px 2px; }
+.encadrant-btn.mine{ cursor:default; }
