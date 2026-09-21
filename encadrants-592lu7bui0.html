@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.46">
+<link rel="stylesheet" href="style.css?v=0.47">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.46"></script>
+<script src="app-common.js?v=0.47"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.46</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.47</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -46,6 +46,10 @@
       <button class="nav-item" id="nav-encadrants">
         <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6"/><circle cx="18" cy="9" r="2.4"/><path d="M16.2 14c2.8.4 4.8 2.5 4.8 5.6"/></svg>
         Encadrants
+      </button>
+      <button class="nav-item" id="nav-journal">
+        <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+        Journal <span class="nav-badge" id="journal-badge" hidden></span>
       </button>
     </div>
 
@@ -363,6 +367,10 @@ function onProjectEvent(e){
 function subscribeRealtime(){
   pb.collection("sae_projects").subscribe("*", onProjectEvent).catch(()=>{});
   pb.collection("sae_comments").subscribe("*", onCommentEvent).catch(()=>{});
+  pb.collection("sae_journal").subscribe("*", (e) => {
+    if(e.action !== "delete") upsertJournal(e.record);
+    if(view === "journal") softRender(); else renderSidebar();
+  }).catch(()=>{});
   pb.collection("sae_events").subscribe("*", (e) => {
     if(e.action === "delete") eventsAll = eventsAll.filter(x => x.id !== e.record.id);
     else upsertEvent(e.record);
@@ -432,6 +440,7 @@ function renderAll(){
   else if(view === "projets") renderProjectsManagementView();
   else if(view === "encadrants") renderEncadrantsManagementView();
   else if(view === "agenda") renderAgendaView();
+  else if(view === "journal") renderJournalView();
   else renderEmpty();
   syncPresence();
 }
@@ -523,6 +532,10 @@ function renderSidebar(){
   document.getElementById("nav-projets").classList.toggle("active", view==="projets");
   document.getElementById("nav-encadrants").classList.toggle("active", view==="encadrants");
   document.getElementById("nav-agenda").classList.toggle("active", view==="agenda");
+  document.getElementById("nav-journal").classList.toggle("active", view==="journal");
+  const jb = document.getElementById("journal-badge");
+  const nEcarts = adminUnlocked ? journalCheck().ecarts.length : 0;
+  jb.hidden = !nEcarts; jb.textContent = nEcarts;
   document.getElementById("admin-nav").hidden = !adminUnlocked;
   document.getElementById("brand-sub").textContent = adminUnlocked ? "Espace administrateur" : "Espace encadrants";
   const st = document.getElementById("admin-status");
@@ -726,6 +739,136 @@ document.getElementById("event-cancel").addEventListener("click", closeEventModa
 document.getElementById("event-submit").addEventListener("click", saveEvent);
 document.getElementById("event-delete").addEventListener("click", deleteEvent);
 document.getElementById("event-name").addEventListener("keydown", e => { if(e.key === "Enter") saveEvent(); });
+
+/* ---------------- journal des modifications de notes (surveillance) ---------------- */
+// Chaque note, date ou note individuelle enregistrée par l'application laisse une trace (qui, quand, avant, après).
+// Une valeur qui a changé sans laisser de trace (écriture directe dans la base) apparaît comme « écart ».
+let journalAll = [];
+async function loadJournal(){
+  try{ journalAll = await pb.collection("sae_journal").getFullList({ sort:"created", batch:500 }); }
+  catch(e){ journalAll = []; }
+}
+function upsertJournal(rec){
+  if(!journalAll.some(x => x.id === rec.id)) journalAll.push(rec);
+}
+const jNorm = v => {
+  if(v === undefined || v === null) return "";
+  const s = String(v).trim();
+  return s !== "" && !isNaN(Number(s)) ? String(Number(s)) : s;
+};
+function journalRecord(slug, fresh, evalDiff, indivDiff){
+  const rows = [];
+  for(const sem of Object.keys(evalDiff)) for(const id of Object.keys(evalDiff[sem])) for(const f of ["note", "date"]){
+    if(!(f in evalDiff[sem][id])) continue;
+    const avant = jNorm(fresh.evals && fresh.evals[sem] && fresh.evals[sem][id] && fresh.evals[sem][id][f]);
+    const apres = jNorm(evalDiff[sem][id][f]);
+    if(avant !== apres) rows.push({ sem, cle:`item:${id}:${f}`, avant, apres });
+  }
+  for(const sem of Object.keys(indivDiff)) for(const idx of Object.keys(indivDiff[sem])) for(const comp of Object.keys(indivDiff[sem][idx])){
+    const avant = jNorm(fresh.individualisation && fresh.individualisation[sem] && fresh.individualisation[sem][idx] && fresh.individualisation[sem][idx][comp]);
+    const apres = jNorm(indivDiff[sem][idx][comp]);
+    if(avant !== apres) rows.push({ sem, cle:`indiv:${idx}:${comp}`, avant, apres });
+  }
+  const author = connectedUser || "inconnu";
+  rows.forEach(r => pb.collection("sae_journal").create({ project:slug, ...r, author }).then(upsertJournal).catch(() => {}));
+}
+function journalValues(p){
+  const m = new Map();
+  for(const sem of ["S3", "S4"]){
+    const evals = (p.evals && p.evals[sem]) || {};
+    for(const id of Object.keys(evals)) for(const f of ["note", "date"]){
+      const v = jNorm(evals[id] && evals[id][f]);
+      if(v !== "") m.set(`${sem}|item:${id}:${f}`, v);
+    }
+    const ind = (p.individualisation && p.individualisation[sem]) || {};
+    for(const idx of Object.keys(ind)) for(const comp of Object.keys(ind[idx] || {})){
+      const v = jNorm(ind[idx][comp]);
+      if(v !== "") m.set(`${sem}|indiv:${idx}:${comp}`, v);
+    }
+  }
+  return m;
+}
+// écarts : valeur actuelle différente de la dernière valeur tracée ; sans trace : valeur jamais journalisée
+function journalCheck(){
+  const last = new Map();
+  for(const e of journalAll) last.set(`${e.project}|${e.sem}|${e.cle}`, jNorm(e.apres));
+  const ecarts = [], sansTrace = [];
+  for(const p of projects.values()){
+    const cur = journalValues(p);
+    for(const [k, v] of cur){
+      const t = last.get(`${p.slug}|${k}`);
+      if(t === undefined) sansTrace.push({ p, sem:k.split("|")[0], cle:k.split("|")[1], courant:v });
+      else if(t !== v) ecarts.push({ p, sem:k.split("|")[0], cle:k.split("|")[1], trace:t, courant:v });
+    }
+    for(const [k, t] of last){
+      if(!k.startsWith(p.slug + "|") || t === "") continue;
+      const sk = k.slice(p.slug.length + 1);
+      if(!cur.has(sk)) ecarts.push({ p, sem:sk.split("|")[0], cle:sk.split("|")[1], trace:t, courant:"" });
+    }
+  }
+  return { ecarts, sansTrace };
+}
+function journalLabel(p, cle){
+  const [type, a, b] = cle.split(":");
+  if(type === "item"){
+    const it = allItems.find(i => i.id === a);
+    return (it ? it.titre : a) + " — " + (b === "note" ? "note" : "date");
+  }
+  return "Note individuelle — " + ((p.etudiants || [])[Number(a)] || "étudiant " + a) + " · " + b;
+}
+function journalFmt(cle, v){
+  if(v === "") return "—";
+  return cle.endsWith(":date") ? new Date(v + "T00:00:00").toLocaleDateString("fr-FR") : v;
+}
+async function journalWrite(rows, author){
+  for(let i = 0; i < rows.length; i += 20){
+    await Promise.all(rows.slice(i, i + 20).map(r => pb.collection("sae_journal").create({ project:r.p.slug, sem:r.sem, cle:r.cle, avant:r.avant || "", apres:r.courant, author }).then(upsertJournal)));
+  }
+}
+function renderJournalView(){
+  const main = document.getElementById("main");
+  main.removeAttribute("data-sem");
+  if(!adminUnlocked){
+    main.innerHTML = `<div class="empty-state"><h2>Journal des modifications</h2><p>Réservé à l'administrateur.</p><button class="btn btn-accent" id="jr-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
+    main.querySelector("#jr-unlock-admin").addEventListener("click", openAdminModal);
+    return;
+  }
+  const { ecarts, sansTrace } = journalCheck();
+  const fmtDate = s => s ? new Date(String(s).replace(" ", "T")).toLocaleString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"}) : "";
+  const recents = [...journalAll].reverse().slice(0, 200);
+  const nomProj = slug => { const p = projects.get(slug); return p ? p.nom : slug; };
+  main.innerHTML = `<div class="ag-head"><h2>Journal des modifications</h2></div>
+    <p class="ag-sum">Chaque note, date ou note individuelle enregistrée par l'application est tracée (auteur, date et heure, avant, après). Une valeur qui change <b>sans laisser de trace</b> vient d'une écriture directe dans la base : elle apparaît ci-dessous comme écart.</p>
+    <div class="jr-cards">
+      <div class="jr-card ${ecarts.length ? "bad" : "ok"}"><b>${ecarts.length}</b><span>écart${ecarts.length > 1 ? "s" : ""} à vérifier</span></div>
+      <div class="jr-card"><b>${journalAll.length}</b><span>modification${journalAll.length > 1 ? "s" : ""} tracée${journalAll.length > 1 ? "s" : ""}</span></div>
+      <div class="jr-card ${sansTrace.length ? "warn" : ""}"><b>${sansTrace.length}</b><span>valeur${sansTrace.length > 1 ? "s" : ""} sans trace${sansTrace.length ? ` <button class="btn btn-sm" id="jr-baseline" type="button">Créer le point de référence</button>` : ""}</span></div>
+    </div>
+    ${ecarts.length ? `<h3 class="jr-h">Écarts à vérifier</h3>
+    <div class="jr-scroll"><table class="jr-table"><thead><tr><th>Projet</th><th>Sem.</th><th>Élément</th><th>Dernière valeur tracée</th><th>Valeur actuelle</th><th></th></tr></thead><tbody>
+      ${ecarts.map((e, i) => `<tr class="bad"><td>${escapeHtml(e.p.nom)}</td><td>${e.sem}</td><td>${escapeHtml(journalLabel(e.p, e.cle))}</td><td>${escapeHtml(journalFmt(e.cle, e.trace))}</td><td><b>${escapeHtml(journalFmt(e.cle, e.courant))}</b></td><td><button class="btn btn-sm" data-valide="${i}" type="button">Valider la valeur actuelle</button></td></tr>`).join("")}
+    </tbody></table></div>` : ""}
+    <h3 class="jr-h">Historique (200 dernières)</h3>
+    ${recents.length ? `<div class="jr-scroll"><table class="jr-table"><thead><tr><th>Date</th><th>Auteur</th><th>Projet</th><th>Sem.</th><th>Élément</th><th>Avant</th><th>Après</th></tr></thead><tbody>
+      ${recents.map(e => { const p = projects.get(e.project); return `<tr><td>${escapeHtml(fmtDate(e.created))}</td><td>${escapeHtml(e.author)}</td><td>${escapeHtml(nomProj(e.project))}</td><td>${escapeHtml(e.sem)}</td><td>${escapeHtml(p ? journalLabel(p, e.cle) : e.cle)}</td><td>${escapeHtml(journalFmt(e.cle, jNorm(e.avant)))}</td><td><b>${escapeHtml(journalFmt(e.cle, jNorm(e.apres)))}</b></td></tr>`; }).join("")}
+    </tbody></table></div>` : `<p class="ag-hint">Aucune modification tracée pour l'instant.</p>`}`;
+  const bl = main.querySelector("#jr-baseline");
+  if(bl) bl.addEventListener("click", async () => {
+    if(!confirm(`Enregistrer la valeur actuelle de ${sansTrace.length} note(s) et date(s) comme point de départ du journal ?`)) return;
+    bl.disabled = true;
+    try{ await journalWrite(sansTrace, "Point de référence"); showToast("Point de référence créé"); }
+    catch(e){ showToast("Échec (réessayez)"); }
+    renderJournalView(); renderSidebar();
+  });
+  main.querySelectorAll("[data-valide]").forEach(b => b.addEventListener("click", async () => {
+    const e = ecarts[Number(b.dataset.valide)];
+    if(!e || !confirm("Valider la valeur actuelle comme légitime ?")) return;
+    b.disabled = true;
+    try{ await journalWrite([{ p:e.p, sem:e.sem, cle:e.cle, avant:e.trace, courant:e.courant }], "Validé par " + (connectedUser || "l'administrateur")); showToast("Écart validé"); }
+    catch(err){ showToast("Échec (réessayez)"); }
+    renderJournalView(); renderSidebar();
+  }));
+}
 
 function renderProjectsManagementView(){
   const main = document.getElementById("main");
@@ -1159,14 +1302,8 @@ function renderProjectView(){
 
   const banner = document.createElement("div");
   banner.className = "lock-banner" + (unlocked ? " rw" : "");
-  banner.innerHTML = `<span class="lock-banner-label">${lockIconSvg(!!unlocked)} ${unlocked ? "Modification activée — " + escapeHtml(unlocked) : (connectedUser ? "Lecture seule : vous n'êtes pas encadrant de ce projet." : "Lecture seule — connectez-vous pour saisir les notes et les commentaires.")}</span>`;
-  if(unlocked){
-    const bannerBtn = document.createElement("button");
-    bannerBtn.className = "btn btn-sm";
-    bannerBtn.textContent = "Se déconnecter";
-    bannerBtn.addEventListener("click", () => disconnect(false));
-    banner.appendChild(bannerBtn);
-  } else if(!connectedUser){
+  banner.innerHTML = unlocked ? "" : `<span class="lock-banner-label">${lockIconSvg(false)} ${(connectedUser ? "Lecture seule : vous n'êtes pas encadrant de ce projet." : "Lecture seule — connectez-vous pour saisir les notes et les commentaires.")}</span>`;
+  if(!unlocked && !connectedUser){
     const bannerBtn = document.createElement("button");
     bannerBtn.className = "btn btn-sm btn-accent";
     bannerBtn.textContent = "Se connecter";
@@ -1180,6 +1317,7 @@ function renderProjectView(){
     editBtn.addEventListener("click", () => openProjectEditModal(currentProjectId, "encadrant"));
     banner.appendChild(editBtn);
   }
+  if(!banner.childNodes.length) banner.hidden = true;
   main.appendChild(banner);
 
   const activeEditors = getActiveEditors(p, unlocked || null);
@@ -1714,6 +1852,7 @@ async function flushProjectPatch(slug){
     const mergedIndiv = mergeSparse(fresh.individualisation || {S3:{},S4:{}}, indivDiff);
     const updated = await pb.collection("sae_projects").update(recordId, { evals: mergedEvals, individualisation: mergedIndiv });
     projects.set(updated.slug, updated);
+    journalRecord(slug, fresh, evalDiff, indivDiff);
     if(currentProjectId === slug && view === "project") softRender();
     showToast("Enregistré");
   }catch(e){
@@ -1953,6 +2092,7 @@ document.getElementById("nav-referentiel").addEventListener("click", () => { if(
 document.getElementById("nav-projets").addEventListener("click", () => { view = "projets"; renderAll(); });
 document.getElementById("nav-agenda").addEventListener("click", () => { view = "agenda"; renderAll(); if(!connectedUser) openConnectModal(); });
 document.getElementById("nav-encadrants").addEventListener("click", () => { view = "encadrants"; renderAll(); });
+document.getElementById("nav-journal").addEventListener("click", () => { view = "journal"; renderAll(); });
 document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
 document.getElementById("filter-annee").addEventListener("change", e => { filterAnnee = e.target.value; renderSidebar(); });
 document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
@@ -2234,7 +2374,7 @@ function exportNotesExcel(){
   XLSX.writeFile(wb, `carnet-sae-notes-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 function exportJsonBackup(){
-  const bundle = { referentiel, projects: Object.fromEntries(projects), commentaires: commentsAll, evenements: eventsAll };
+  const bundle = { referentiel, projects: Object.fromEntries(projects), commentaires: commentsAll, evenements: eventsAll, journal: journalAll };
   const blob = new Blob([JSON.stringify(bundle, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -2248,7 +2388,7 @@ async function init(){
   loadSession();
   loadAgendaSession();
   renderAll();
-  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects(), loadEncadrantCodes(), loadComments(), loadEvents()]);
+  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects(), loadEncadrantCodes(), loadComments(), loadEvents(), loadJournal()]);
   subscribeRealtime();
   let ignore = false;
   try{ ignore = sessionStorage.getItem("sae-welcome-skip") === "1"; }catch(e){}

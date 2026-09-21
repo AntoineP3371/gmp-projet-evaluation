@@ -149,7 +149,7 @@ h1,h2,h3{ text-wrap:balance; }
 .tab.active{ background:var(--ink); color:var(--bg); }
 
 .lock-banner{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:var(--surface-2); border:1px solid var(--rule); border-radius:var(--radius); padding:10px 14px; margin-bottom:18px; }
-.lock-banner.rw{ border-color:var(--accent); }
+.lock-banner.rw{ border-color:var(--accent); justify-content:flex-end; }
 .lock-banner-label{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-muted); }
 .lock-banner.rw .lock-banner-label{ color:var(--ink); font-weight:600; }
 .lock-banner-instructions{ color:var(--danger); font-weight:700; }
@@ -400,3 +400,19 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .side-connect{ align-self:flex-start; }
 .team-group{ list-style:none; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); padding:8px 2px 2px; }
 .encadrant-btn.mine{ cursor:default; }
+
+/* journal des modifications */
+.nav-badge{ margin-left:auto; background:var(--danger); color:#fff; font-size:10.5px; font-weight:700; border-radius:9px; padding:0 6px; }
+.jr-cards{ display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
+.jr-card{ border:1px solid var(--rule); background:var(--surface); border-radius:var(--radius); padding:10px 14px; min-width:170px; display:flex; flex-direction:column; }
+.jr-card b{ font-size:22px; line-height:1.1; }
+.jr-card span{ font-size:12px; color:var(--ink-muted); }
+.jr-card.bad{ border-color:var(--danger); } .jr-card.bad b{ color:var(--danger); }
+.jr-card.ok b{ color:var(--good); }
+.jr-card.warn{ border-color:var(--warn); }
+.jr-h{ font-size:14px; margin:18px 0 8px; }
+.jr-scroll{ overflow-x:auto; border:1px solid var(--rule); border-radius:var(--radius); background:var(--surface); }
+.jr-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+.jr-table th{ text-align:left; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); background:var(--surface-2); padding:6px 10px; white-space:nowrap; }
+.jr-table td{ padding:6px 10px; border-top:1px solid var(--rule); vertical-align:top; }
+.jr-table tr.bad td{ background:color-mix(in srgb, var(--danger) 7%, var(--surface)); }
