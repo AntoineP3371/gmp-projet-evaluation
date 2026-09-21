@@ -133,7 +133,7 @@ function collectTimelineItems(project, sems){
     for(const item of allItems){
       const ev = evals[item.id];
       if(!ev || !ev.date) continue;
-      out.push({ titre: item.titre, date: ev.date, note: ev.note, status: timelineItemStatus(ev, today) });
+      out.push({ id: item.id, sem, titre: item.titre, date: ev.date, note: ev.note, status: timelineItemStatus(ev, today) });
     }
   }
   out.sort((a,b) => a.date.localeCompare(b.date));
@@ -185,13 +185,15 @@ function buildTimelineSVG(items, range, opts){
   items.forEach((it, idx) => {
     const x = xPos(it.date);
     const noteTxt = (it.note !== undefined && it.note !== null && it.note !== "") ? `${it.note}/20` : "Pas encore noté";
-    const tipTxt = `${it.titre}\n${fmtTlDate(it.date)} — ${noteTxt}`;
+    const tipTxt = `${it.titre}\n${fmtTlDate(it.date)} — ${noteTxt}\n(cliquer pour aller au livrable)`;
 
     const above = opts.alternate && (it.group % 2 === 1);
     const dir = above ? -1 : 1;
     const cy = axisY + dir * TL_STACK * it.stack;
     if(it.stack > 0) svg.appendChild(tlEl('line', {x1:x, y1:axisY, x2:x, y2:cy, stroke:'var(--rule-strong)', 'stroke-width':1}));
-    const dot = tlEl('circle', {cx:x, cy:cy, r:opts.r||5.5, fill:it.status.color, class:'tl-dot'});
+    const clic = () => { if(typeof goToLivrable === "function") goToLivrable(it.id, it.sem); };
+    const dot = tlEl('circle', {cx:x, cy:cy, r:opts.r||5.5, fill:it.status.color, class:'tl-dot tl-link'});
+    dot.addEventListener('click', clic);
     const dotTip = tlEl('title', {});
     dotTip.textContent = tipTxt;
     dot.appendChild(dotTip);
@@ -199,8 +201,10 @@ function buildTimelineSVG(items, range, opts){
 
     const ly = above ? cy - 11 : cy + 16;
     const rot = above ? -45 : 45;
-    const label = tlEl('text', {x:x, y:ly, fill:it.status.text, style:'font-size:'+(opts.labelSize||10)+'px; cursor:default;', transform:'rotate('+rot+' '+x+' '+ly+')'});
+    const label = tlEl('text', {x:x, y:ly, fill:it.status.text, style:'font-size:'+(opts.labelSize||10)+'px;', transform:'rotate('+rot+' '+x+' '+ly+')'});
     label.textContent = it.titre + " · " + fmtTlDate(it.date);
+    label.setAttribute('class', 'tl-link');
+    label.addEventListener('click', clic);
     const labelTip = tlEl('title', {});
     labelTip.textContent = tipTxt;
     label.appendChild(labelTip);
@@ -406,4 +410,14 @@ function commentListHTML(project, sem, itemId, opts){
     const kids = all.filter(k => k !== r && k.parent && rootOf(k) === r);
     return msg(r, false) + (kids.length ? `<div class="cm-replies">${kids.map(k => msg(k, true)).join("")}</div>` : "");
   }).join("");
+}
+
+/* clic sur la frise : défile jusqu'à la case du livrable et la met brièvement en évidence */
+function scrollToLivrable(itemId){
+  const card = document.querySelector('.livrable-card[data-item="' + CSS.escape(itemId) + '"]');
+  if(!card) return false;
+  card.scrollIntoView({ behavior:"smooth", block:"center" });
+  card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash");
+  setTimeout(() => card.classList.remove("flash"), 2200);
+  return true;
 }

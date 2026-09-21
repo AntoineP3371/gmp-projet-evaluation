@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.42</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.43</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -1226,6 +1226,15 @@ function renderVueBar(){
   bar.append(sel, toggles);
   return bar;
 }
+function goToLivrable(itemId, sem){
+  // la vue Année n'affiche pas (encadrants) ou pas toujours (étudiants) les cases du bon semestre : on bascule sur le semestre du livrable
+  if(sem && (sem !== currentSemestre || currentVue === "ANNEE")){
+    currentSemestre = sem;
+    currentVue = sem;
+    renderProjectView();
+  }
+  scrollToLivrable(itemId);
+}
 function renderPanel(project){
   const def = VUE_DEFS[currentVue];
   const panel = document.createElement("section");
@@ -1262,6 +1271,7 @@ function renderItem(item, idx, project, readOnly){
   const ev = evals[item.id] || {};
   const card = document.createElement("div");
   card.className = "livrable-card";
+  card.dataset.item = item.id;
   const chips = Object.keys(item.coef||{}).map(c => `<span class="chip" style="background:${COMPETENCES[c].couleur}">${c}·${item.coef[c]}</span>`).join("");
   const hasBareme = !item.editable;
   const showBareme = hasBareme && baremeVisible;

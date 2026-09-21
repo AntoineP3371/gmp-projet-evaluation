@@ -336,3 +336,10 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .cm-edit textarea, .cm-composer textarea{ width:100%; min-height:54px; padding:8px 10px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface); resize:vertical; font-family:inherit; font-size:13px; }
 .cm-btns{ display:flex; gap:8px; align-items:center; margin-top:6px; }
 .cm-composer{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--rule-strong); }
+
+.tl-link{ cursor:pointer; }
+.tl-dot.tl-link:hover{ stroke:var(--ink); }
+.timeline-svg text.tl-link:hover{ text-decoration:underline; }
+.livrable-card.flash{ animation:livrable-flash 2.2s ease-out; }
+@keyframes livrable-flash{ 0%,35%{ box-shadow:0 0 0 3px var(--logo-blue); } 100%{ box-shadow:0 0 0 3px transparent; } }
+@media (prefers-reduced-motion: reduce){ .livrable-card.flash{ animation:none; box-shadow:0 0 0 3px var(--logo-blue); } }
