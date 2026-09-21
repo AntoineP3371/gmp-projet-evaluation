@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.40</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.41</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -328,19 +328,27 @@ async function loadEncadrantCodes(){
     for(const r of list) encadrantCodes.set(r.nom, r);
   }catch(e){}
 }
+function onProjectEvent(e){
+  const avant = projects.get(e.record.slug);
+  if(e.action === "delete") projects.delete(e.record.slug);
+  else projects.set(e.record.slug, e.record);
+  // seule la présence des collègues a changé (ou écho de notre propre enregistrement) : on ne redessine pas la page
+  if(e.action !== "delete" && avant && sansPresence(avant) === sansPresence(e.record)){
+    renderSidebar();
+    refreshPresenceBanner();
+    return;
+  }
+  softRender();
+}
 function subscribeRealtime(){
-  pb.collection("sae_projects").subscribe("*", (e) => {
-    if(e.action === "delete") projects.delete(e.record.slug);
-    else projects.set(e.record.slug, e.record);
-    if(pendingSaves.has(currentProjectId)) return;
-    renderAll();
-  }).catch(()=>{});
+  pb.collection("sae_projects").subscribe("*", onProjectEvent).catch(()=>{});
+  pb.collection("sae_comments").subscribe("*", onCommentEvent).catch(()=>{});
   pb.collection("sae_config").subscribe("*", (e) => {
     if(e.record.key === "referentiel"){
       if(refPendingTimer) return;
       referentiel = e.record.value; referentielRecordId = e.record.id;
       allItems = allItemsFromReferentiel(referentiel);
-      renderAll();
+      softRender();
     } else if(e.record.key === "admin"){
       adminConfigCache = e.record.value; adminRecordId = e.record.id;
     }
@@ -348,11 +356,49 @@ function subscribeRealtime(){
   pb.collection("sae_encadrants").subscribe("*", (e) => {
     if(e.action === "delete") encadrantCodes.delete(e.record.nom);
     else encadrantCodes.set(e.record.nom, e.record);
-    renderAll();
+    softRender();
   }).catch(()=>{});
 }
 
 /* ---------------- rendering ---------------- */
+function isEditing(){
+  const a = document.activeElement;
+  return !!a && !a.disabled && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && document.getElementById("main").contains(a);
+}
+let refreshPending = false;
+// rafraîchissement automatique (temps réel, enregistrement) : jamais pendant la saisie, et sans faire remonter la page
+function softRender(){
+  if(pendingSaves.size || isEditing()){ refreshPending = true; renderSidebar(); return; }
+  const st = captureViewState();
+  renderAll();
+  restoreViewState(st);
+}
+document.addEventListener("focusout", () => {
+  setTimeout(() => {
+    if(refreshPending && !pendingSaves.size && !isEditing()){ refreshPending = false; softRender(); }
+  }, 250);
+});
+function presenceMessage(editors){
+  const names = editors.map(e => e.label || "un encadrant").join(", ");
+  return `⚠ ${names} ${editors.length > 1 ? "modifient" : "modifie"} actuellement ce projet — vos modifications peuvent se croiser.`;
+}
+function refreshPresenceBanner(){
+  if(view !== "project") return;
+  const p = projects.get(currentProjectId);
+  const main = document.getElementById("main");
+  if(!p) return;
+  const editors = getActiveEditors(p, unlockedProjects.get(currentProjectId) || null);
+  let warn = main.querySelector(".presence-warning");
+  if(!editors.length){ if(warn) warn.remove(); return; }
+  if(!warn){
+    const anchor = main.querySelector(".lock-banner");
+    if(!anchor) return;
+    warn = document.createElement("div");
+    warn.className = "presence-warning";
+    anchor.after(warn);
+  }
+  warn.textContent = presenceMessage(editors);
+}
 function renderAll(){
   renderSidebar();
   if(view === "project") renderProjectView();
@@ -773,7 +819,7 @@ function syncPresence(){
   }
   const wantPoll = view === "project" && !!currentProjectId;
   if(wantPoll && !projectPollTimer){
-    projectPollTimer = setInterval(() => { if(view === "project") renderProjectView(); }, PROJECT_POLL_MS);
+    projectPollTimer = setInterval(() => { if(view === "project"){ renderSidebar(); refreshPresenceBanner(); } }, PROJECT_POLL_MS);
   } else if(!wantPoll && projectPollTimer){
     clearInterval(projectPollTimer); projectPollTimer = null;
   }
@@ -895,8 +941,7 @@ function renderProjectView(){
   if(activeEditors.length){
     const warn = document.createElement("div");
     warn.className = "presence-warning";
-    const names = activeEditors.map(e => escapeHtml(e.label || "un encadrant")).join(", ");
-    warn.textContent = `⚠ ${names} ${activeEditors.length > 1 ? "modifient" : "modifie"} actuellement ce projet — vos modifications peuvent se croiser.`;
+    warn.textContent = presenceMessage(activeEditors);
     main.appendChild(warn);
   }
   if(adminUnlocked) main.appendChild(renderEncadrantsAdminPanel(p));
@@ -905,12 +950,12 @@ function renderProjectView(){
   main.appendChild(renderVueBar());
   const panel = renderPanel(p);
   main.appendChild(panel);
-  drawFrameTimeline(panel);
   if(currentVue === "ANNEE"){
     const rappel = document.createElement("div");
     rappel.className = "liv-reminder";
     rappel.innerHTML = "<b>Vue de synthèse.</b> Choisissez Semestre 3 ou Semestre 4 pour saisir les notes.";
     main.appendChild(rappel);
+    drawFrameTimeline(panel);
     return;
   }
 
@@ -919,6 +964,7 @@ function renderProjectView(){
     main.appendChild(renderSection(section, p, readOnly));
   }
   main.appendChild(renderIndividualisation(p, readOnly));
+  drawFrameTimeline(panel);
 }
 function renderEncadrantsAdminPanel(project){
   const wrap = document.createElement("div");
@@ -1232,12 +1278,101 @@ function renderItem(item, idx, project, readOnly){
     <div class="livrable-foot">
       <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}></div>
       <div class="livrable-field"><label for="date-${item.id}">Date d'évaluation prévue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
-      <div class="livrable-comment"><label for="comment-${item.id}">Commentaire</label><textarea id="comment-${item.id}" placeholder="Commentaire pour l'équipe…" ${readOnly?"disabled":""}>${escapeHtml(ev.commentaire||"")}</textarea></div>
-    </div>`;
+    </div>
+    ${threadShellHTML(item.id)}`;
   card.querySelector('input[type=number]').addEventListener("change", e => updateEval(item.id, "note", e.target.value));
   card.querySelector('input[type=date]').addEventListener("change", e => updateEval(item.id, "date", e.target.value));
-  card.querySelector('.livrable-comment textarea').addEventListener("change", e => updateEval(item.id, "commentaire", e.target.value));
+  initThread(card, item.id, readOnly);
   return card;
+}
+/* ---------------- fil de commentaires (côté encadrants) ---------------- */
+const commentDrafts = new Map();
+function initThread(card, itemId, readOnly){
+  const th = card.querySelector(".cm-thread");
+  const st = { reply:null, editing:null };
+  th._st = st;
+  const cur = () => projects.get(currentProjectId);
+  const me = () => (readOnly ? null : (unlockedProjects.get(currentProjectId) || null));
+  const draftKey = () => `${currentProjectId}|${currentSemestre}|${itemId}`;
+
+  function drawList(){
+    const p = cur();
+    if(!p) return;
+    drawThreadList(th, p, currentSemestre, itemId, { me: me(), readOnly, editingId: st.editing });
+    if(st.editing){ const ta = th.querySelector("[data-edit]"); if(ta && document.activeElement !== ta) ta.focus(); }
+  }
+  function drawComposer(){
+    const box = th.querySelector("[data-composer]");
+    const who = me();
+    if(!who){
+      box.innerHTML = `<p class="cm-hint">Saisissez votre code pour commenter ou répondre.</p>`;
+      return;
+    }
+    const target = st.reply ? (commentsAll.find(c => c.id === st.reply) || (st.reply === "legacy" ? { author:"Ancien commentaire" } : null)) : null;
+    box.innerHTML = `<div class="cm-composer">
+      ${target ? `<div class="cm-ctx">Réponse à <b>${escapeHtml(authorShort(target.author))}</b> <button data-do="cancelReply" type="button">annuler</button></div>` : ""}
+      <textarea data-new placeholder="${target ? "Votre réponse…" : "Ajouter un commentaire…"}" aria-label="${target ? "Votre réponse" : "Nouveau commentaire"}"></textarea>
+      <div class="cm-btns"><button class="btn btn-accent btn-sm" data-do="publish" type="button" disabled>${target ? "Répondre" : "Publier"}</button>
+        <span class="cm-hint">Publié sous le nom de <b>${escapeHtml(who)}</b> · Ctrl + Entrée</span></div></div>`;
+    const ta = box.querySelector("[data-new]"), pub = box.querySelector("[data-do=publish]");
+    ta.value = commentDrafts.get(draftKey()) || "";
+    pub.disabled = !ta.value.trim();
+    ta.addEventListener("input", () => { commentDrafts.set(draftKey(), ta.value); pub.disabled = !ta.value.trim(); });
+    ta.addEventListener("keydown", e => { if(e.key === "Enter" && (e.ctrlKey || e.metaKey) && ta.value.trim()) pub.click(); });
+    if(st.reply) ta.focus();
+  }
+  th._draw = drawList;
+
+  th.addEventListener("click", async e => {
+    const b = e.target.closest("[data-do]");
+    if(!b) return;
+    const a = b.dataset.do, id = b.dataset.id, p = cur(), who = me();
+    if(!p || !who) return;
+    if(a === "reply"){ st.reply = id; drawComposer(); }
+    else if(a === "cancelReply"){ st.reply = null; drawComposer(); }
+    else if(a === "edit"){ st.editing = id; drawList(); }
+    else if(a === "cancelEdit"){ st.editing = null; drawList(); }
+    else if(a === "publish"){
+      const ta = th.querySelector("[data-new]");
+      const text = ta.value.trim();
+      if(!text) return;
+      b.disabled = true;
+      try{
+        const rec = await pb.collection("sae_comments").create({ project:p.slug, sem:currentSemestre, item:itemId, author:who, text, parent: st.reply || "" });
+        upsertComment(rec);
+        commentDrafts.delete(draftKey());
+        st.reply = null;
+        drawList(); drawComposer();
+        showToast("Message publié");
+      }catch(err){ showToast("Échec de l'envoi"); b.disabled = false; }
+    }
+    else if(a === "saveEdit"){
+      const text = th.querySelector("[data-edit]").value.trim();
+      if(!text) return;
+      try{
+        upsertComment(await pb.collection("sae_comments").update(id, { text }));
+        st.editing = null; drawList();
+        showToast("Message modifié");
+      }catch(err){ showToast("Échec de l'enregistrement"); }
+    }
+    else if(a === "del"){
+      if(!confirm("Supprimer ce message ? Il sera remplacé par « Message supprimé ».")) return;
+      try{
+        upsertComment(await pb.collection("sae_comments").update(id, { deleted_by: who }));
+        drawList();
+        showToast("Message supprimé");
+      }catch(err){ showToast("Échec de la suppression"); }
+    }
+  });
+  drawList();
+  drawComposer();
+}
+function onCommentEvent(e){
+  if(e.action === "delete") commentsAll = commentsAll.filter(c => c.id !== e.record.id);
+  else upsertComment(e.record);
+  if(view !== "project" || e.record.project !== currentProjectId || e.record.sem !== currentSemestre) return;
+  const th = document.querySelector(`.cm-thread[data-item="${CSS.escape(e.record.item)}"]`);
+  if(th && th._draw && !th._st.editing) th._draw();
 }
 function renderIndividualisation(project, readOnly){
   const etuIdx = (project.etudiants||[]).map((n,i)=>({n,i}));
@@ -1324,7 +1459,7 @@ async function flushProjectPatch(slug){
     const mergedIndiv = mergeSparse(fresh.individualisation || {S3:{},S4:{}}, indivDiff);
     const updated = await pb.collection("sae_projects").update(recordId, { evals: mergedEvals, individualisation: mergedIndiv });
     projects.set(updated.slug, updated);
-    if(currentProjectId === slug && view === "project") renderProjectView();
+    if(currentProjectId === slug && view === "project") softRender();
     showToast("Enregistré");
   }catch(e){
     const retry = queuePendingSave(slug, recordId);
@@ -1803,7 +1938,7 @@ function exportNotesExcel(){
   XLSX.writeFile(wb, `carnet-sae-notes-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 function exportJsonBackup(){
-  const bundle = { referentiel, projects: Object.fromEntries(projects) };
+  const bundle = { referentiel, projects: Object.fromEntries(projects), commentaires: commentsAll };
   const blob = new Blob([JSON.stringify(bundle, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1816,7 +1951,7 @@ function exportJsonBackup(){
 async function init(){
   loadSession();
   renderAll();
-  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects(), loadEncadrantCodes()]);
+  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects(), loadEncadrantCodes(), loadComments()]);
   subscribeRealtime();
 }
 init();

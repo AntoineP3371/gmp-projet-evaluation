@@ -33,7 +33,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.40</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.41</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -108,9 +108,21 @@ async function loadProjects(){
 }
 function subscribeRealtime(){
   pb.collection("sae_projects").subscribe("*", (e) => {
+    const avant = projects.get(e.record.id);
     if(e.action === "delete") projects.delete(e.record.id);
     else projects.set(e.record.id, e.record);
+    if(e.action !== "delete" && avant && sansPresence(avant) === sansPresence(e.record)){ renderSidebar(); return; }
+    const st = captureViewState();
     renderAll();
+    restoreViewState(st);
+  }).catch(()=>{});
+  pb.collection("sae_comments").subscribe("*", (e) => {
+    if(e.action === "delete") commentsAll = commentsAll.filter(c => c.id !== e.record.id);
+    else upsertComment(e.record);
+    const p = projects.get(currentProjectId);
+    if(!p || p.slug !== e.record.project || e.record.sem !== currentSemestre) return;
+    const th = document.querySelector('.cm-thread[data-item="' + CSS.escape(e.record.item) + '"]');
+    if(th) drawThreadList(th, p, currentSemestre, e.record.item, { readOnly:true });
   }).catch(()=>{});
   pb.collection("sae_config").subscribe("*", (e) => {
     if(e.record.key === "referentiel"){ referentiel = e.record.value; allItems = allItemsFromReferentiel(referentiel); renderAll(); }
@@ -217,7 +229,6 @@ function renderProjectView(){
 
   const timelineEl = renderTimeline(p, currentVue);
   main.appendChild(timelineEl);
-  populateTimelineSVG(timelineEl);
 
   if(currentVue === "ANNEE"){
     main.appendChild(renderScorecard(p, ["S3","S4"], "Notes — cumul annuel (S3 + S4)"));
@@ -230,6 +241,7 @@ function renderProjectView(){
     main.appendChild(renderSection(section, p));
   }
   main.appendChild(renderIndividualisation(p));
+  populateTimelineSVG(timelineEl);
 }
 function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
@@ -277,8 +289,9 @@ function renderItem(item, idx, project){
     <div class="livrable-foot">
       <div class="livrable-field"><label>Note /20</label><input type="number" value="${ev.note ?? ""}" disabled></div>
       <div class="livrable-field"><label>Date d'évaluation prévue</label><input type="date" value="${ev.date||""}" disabled></div>
-      <div class="livrable-comment"><label>Commentaire</label><textarea placeholder="Aucun commentaire" disabled>${escapeHtml(ev.commentaire||"")}</textarea></div>
-    </div>`;
+    </div>
+    ${threadShellHTML(item.id)}`;
+  drawThreadList(card.querySelector(".cm-thread"), project, currentSemestre, item.id, { readOnly:true });
   return card;
 }
 function renderIndividualisation(project){
@@ -326,7 +339,7 @@ updateThemeToggleBtn();
 
 async function init(){
   renderEmpty();
-  await Promise.all([loadReferentiel(), loadProjects()]);
+  await Promise.all([loadReferentiel(), loadProjects(), loadComments()]);
   subscribeRealtime();
 }
 init();
