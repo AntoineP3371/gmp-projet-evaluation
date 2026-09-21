@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.48">
+<link rel="stylesheet" href="style.css?v=0.49">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.48"></script>
+<script src="app-common.js?v=0.49"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.48</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.49</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -122,22 +122,15 @@
   </div>
 </div>
 
-<div class="modal-backdrop" id="modal-admin">
+<div class="modal-backdrop" id="modal-tempcode">
   <div class="modal">
-    <h2 id="admin-modal-title">Mode administrateur</h2>
-    <p class="hint" id="admin-modal-hint"></p>
-    <div class="field-full">
-      <label for="admin-code-input">Code administrateur</label>
-      <input type="password" id="admin-code-input">
-    </div>
-    <div class="field-full" id="admin-code-confirm-wrap" hidden>
-      <label for="admin-code-confirm">Confirmer le code</label>
-      <input type="password" id="admin-code-confirm">
-    </div>
-    <p class="modal-error" id="admin-modal-error" hidden></p>
+    <h2>Code provisoire</h2>
+    <p class="hint" id="tc-hint"></p>
+    <div class="tc-code" id="tc-code"></div>
+    <p class="hint" style="margin-top:12px;">Ce code ne sera plus affiché une fois cette fenêtre fermée : notez-le ou copiez-le maintenant.</p>
     <div class="modal-actions">
-      <button class="btn" id="admin-modal-cancel">Annuler</button>
-      <button class="btn btn-accent" id="admin-modal-submit">Valider</button>
+      <button class="btn" id="tc-copy" type="button">Copier</button>
+      <button class="btn btn-accent" id="tc-close" type="button">Fermer</button>
     </div>
   </div>
 </div>
@@ -172,10 +165,8 @@
 <div class="modal-backdrop" id="modal-add-encadrant">
   <div class="modal wide">
     <h2>Ajouter un encadrant</h2>
-    <p class="hint">Créez son code d'écriture et cochez les projets sur lesquels il ou elle doit apparaître.</p>
+    <p class="hint">Indiquez son nom et cochez les projets sur lesquels il ou elle doit apparaître. Un code provisoire est généré, à lui transmettre.</p>
     <div class="field-full"><label for="ae-nom">Nom Prénom</label><input type="text" id="ae-nom"></div>
-    <div class="field-full"><label for="ae-code">Code d'écriture</label><input type="password" id="ae-code"></div>
-    <div class="field-full"><label for="ae-code-confirm">Confirmer le code</label><input type="password" id="ae-code-confirm"></div>
     <div class="field-full">
       <label>Projets</label>
       <div class="ae-project-list" id="ae-project-list"></div>
@@ -240,14 +231,31 @@ const COMPETENCES = {
   C5: { nom: "Parcours",   couleur: "var(--c5)" },
 };
 
-const pb = new PocketBase(PB_URL);
+// jeton d'authentification conservé dans l'onglet (sessionStorage), jamais dans le navigateur de façon durable
+class SessionAuthStore {
+  constructor(){
+    this._cb = []; this.token = ""; this.model = null;
+    try{ const r = JSON.parse(sessionStorage.getItem("sae-auth") || "null"); if(r){ this.token = r.token || ""; this.model = r.model || null; } }catch(e){}
+  }
+  get exp(){ try{ return JSON.parse(atob(this.token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).exp * 1000; }catch(e){ return 0; } }
+  get isValid(){ return !!this.token && this.exp > Date.now(); }
+  save(token, model){
+    this.token = token || ""; this.model = model || null;
+    try{ sessionStorage.setItem("sae-auth", JSON.stringify({ token:this.token, model:this.model })); }catch(e){}
+    this._cb.forEach(f => f(this.token, this.model));
+  }
+  clear(){
+    this.token = ""; this.model = null;
+    try{ sessionStorage.removeItem("sae-auth"); }catch(e){}
+    this._cb.forEach(f => f("", null));
+  }
+  onChange(cb, fire){ this._cb.push(cb); if(fire) cb(this.token, this.model); return () => { this._cb = this._cb.filter(f => f !== cb); }; }
+}
+const pb = new PocketBase(PB_URL, new SessionAuthStore());
 let referentiel = null;
 let referentielRecordId = null;
-let adminRecordId = null;
-let adminConfigCache = null;
 let allItems = [];
 let projects = new Map(); // keyed by slug
-let encadrantCodes = new Map(); // keyed by nom -> sae_encadrants record
 let currentProjectId = null; // slug
 let currentSemestre = "S3";
 let currentVue = "S3";
@@ -281,11 +289,6 @@ function slugify(s){
   return base || ("projet-" + Date.now().toString(36));
 }
 function normName(s){ return String(s||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
-function findEncadrantRec(nom){
-  const key = normName(nom);
-  for(const [k,v] of encadrantCodes) if(normName(k) === key) return v;
-  return null;
-}
 function rosterHasName(list, nom){
   const key = normName(nom);
   return (list||[]).some(n => normName(n) === key);
@@ -294,8 +297,8 @@ const canonNameCache = new Map();
 function canonicalEncadrantName(n){
   const norm = normName(n);
   if(canonNameCache.has(norm)) return canonNameCache.get(norm);
-  const rec = findEncadrantRec(n);
-  const canon = rec ? rec.nom : n;
+  const u = usersAll.find(x => x.login === norm);
+  const canon = u ? u.name : n;
   canonNameCache.set(norm, canon);
   return canon;
 }
@@ -330,12 +333,6 @@ async function loadReferentiel(){
   }catch(e){ referentiel = null; referentielRecordId = null; allItems = []; }
   renderAll();
 }
-async function loadAdminConfig(){
-  try{
-    const rec = await pb.collection("sae_config").getFirstListItem('key="admin"');
-    adminConfigCache = rec.value; adminRecordId = rec.id;
-  }catch(e){ adminConfigCache = null; adminRecordId = null; }
-}
 async function loadProjects(){
   try{
     const list = await pb.collection("sae_projects").getFullList({ sort: "nom" });
@@ -344,13 +341,6 @@ async function loadProjects(){
     showConnError(false);
   }catch(e){ showConnError(true); return; }
   renderAll();
-}
-async function loadEncadrantCodes(){
-  try{
-    const list = await pb.collection("sae_encadrants").getFullList({ sort: "nom" });
-    encadrantCodes.clear();
-    for(const r of list) encadrantCodes.set(r.nom, r);
-  }catch(e){}
 }
 function onProjectEvent(e){
   const avant = projects.get(e.record.slug);
@@ -382,14 +372,7 @@ function subscribeRealtime(){
       referentiel = e.record.value; referentielRecordId = e.record.id;
       allItems = allItemsFromReferentiel(referentiel);
       softRender();
-    } else if(e.record.key === "admin"){
-      adminConfigCache = e.record.value; adminRecordId = e.record.id;
     }
-  }).catch(()=>{});
-  pb.collection("sae_encadrants").subscribe("*", (e) => {
-    if(e.action === "delete") encadrantCodes.delete(e.record.nom);
-    else encadrantCodes.set(e.record.nom, e.record);
-    softRender();
   }).catch(()=>{});
 }
 
@@ -552,10 +535,6 @@ function renderEmpty(){
 /* ---------------- Mes prochaines évaluations : calendrier de l'encadrant ---------------- */
 let connectedUser = null;   // encadrant connecté par son code (le temps de l'onglet)
 let agendaMonth = null;  // premier jour du mois affiché
-function loadAgendaSession(){ try{ connectedUser = sessionStorage.getItem("sae-agenda-user") || null; }catch(e){} }
-function saveAgendaSession(){
-  try{ if(connectedUser) sessionStorage.setItem("sae-agenda-user", connectedUser); else sessionStorage.removeItem("sae-agenda-user"); }catch(e){}
-}
 const agendaVisible = p => !p.archived && p.visible_eleves !== false;
 function agendaNames(){
   const m = new Map();
@@ -1246,7 +1225,7 @@ function removeOwnPresenceOnUnload(){
   try{
     fetch(`${PB_URL}/api/collections/sae_projects/records/${p.id}`, {
       method: "PATCH",
-      headers: {"Content-Type": "application/json"},
+      headers: {"Content-Type": "application/json", "Authorization": pb.authStore.token},
       body: JSON.stringify({presence: list}),
       keepalive: true
     });
@@ -1376,71 +1355,69 @@ function renderEncadrantsAdminPanel(project){
   }
   return wrap;
 }
+/* ---------------- comptes des encadrants (administrateur) ---------------- */
+const findUser = nom => usersAll.find(u => u.login === normName(nom)) || null;
+// crée le compte ou renouvelle son code : le code provisoire n'existe que dans la réponse (jamais stocké en clair)
+async function provisionAccount(nom){
+  const code = randomCode(), h = await sha256Hex(code), u = findUser(nom);
+  if(u){
+    await pb.collection("sae_users").update(u.id, { password:h, passwordConfirm:h, must_change:true });
+    u.must_change = true;
+  } else {
+    const rec = await pb.collection("sae_users").create({ name:nom, login:normName(nom), login_key:"|" + normName(nom) + "|", admin:false, must_change:true, password:h, passwordConfirm:h });
+    usersAll.push(rec);
+  }
+  return code;
+}
+function showTempCode(nom, code){
+  document.getElementById("tc-hint").textContent = "Code provisoire de " + nom + ". À transmettre à la personne : elle le remplacera par son propre code à sa première connexion.";
+  document.getElementById("tc-code").textContent = code;
+  document.getElementById("modal-tempcode").classList.add("open");
+}
+document.getElementById("tc-close").addEventListener("click", () => { document.getElementById("tc-code").textContent = ""; document.getElementById("modal-tempcode").classList.remove("open"); });
+document.getElementById("tc-copy").addEventListener("click", () => { try{ navigator.clipboard.writeText(document.getElementById("tc-code").textContent); showToast("Code copié"); }catch(e){} });
 function renderEncadrantCodeRow(tbody, nom, onChange, projectsList){
-  const rec = findEncadrantRec(nom);
-  const hasCode = !!(rec && rec.hash);
+  const u = findUser(nom);
+  const soi = !!(u && pb.authStore.model && u.id === pb.authStore.model.id);
   const row = document.createElement("tr");
   row.className = "ref-row";
-  const created = hasCode && rec.created ? new Date(rec.created).toLocaleDateString("fr-FR") : "—";
+  const statut = !u ? "Aucun compte" : (u.must_change ? "Code provisoire en attente" : "Actif") + (u.admin ? " · admin" : "");
   const projectsCell = projectsList ? `<td>${escapeHtml(projectsList.join(", ") || "—")}</td>` : "";
-  const statusCell = projectsList
-    ? `<td style="white-space:nowrap; color:var(--ink-faint); font-size:11.5px;">${hasCode ? created : "Aucun code"}</td>`
-    : `<td style="white-space:nowrap; color:var(--ink-faint); font-size:11.5px;">${hasCode ? "Code défini" : "Aucun code"}</td>`;
   row.innerHTML = `
     <td><b>${escapeHtml(nom)}</b></td>
     ${projectsCell}
-    ${statusCell}
-    <td class="ref-row-actions"><button class="btn-ghost btn-sm" type="button">${hasCode ? "Changer le code" : "Créer un code"}</button></td>
-    <td class="ref-row-actions">${hasCode ? `<button class="btn-ghost btn-sm btn-danger" type="button" data-action="reset">Réinitialiser</button>` : ""}</td>
+    <td style="white-space:nowrap; color:var(--ink-faint); font-size:11.5px;">${statut}</td>
+    <td class="ref-row-actions">${soi ? "" : `<button class="btn-ghost btn-sm" type="button" data-action="prov">${u ? "Nouveau code provisoire" : "Créer le compte"}</button>`}</td>
+    <td class="ref-row-actions"></td>
     ${projectsList ? `<td class="ref-row-actions"><button class="btn-ghost btn-sm btn-danger" type="button" data-action="delete">Supprimer</button></td>` : ""}`;
-  const colspan = projectsList ? 6 : 4;
-  const detailRow = document.createElement("tr");
-  detailRow.className = "ref-detail-row";
-  detailRow.hidden = true;
-  detailRow.innerHTML = `<td colspan="${colspan}"><div class="ref-detail-body">
-    <input type="password" placeholder="Nouveau code">
-    <input type="password" placeholder="Confirmer le code">
-    <button class="btn btn-sm btn-accent" type="button">Enregistrer le code</button>
-  </div></td>`;
-  row.querySelector(".btn-ghost:not(.btn-danger)").addEventListener("click", () => { detailRow.hidden = !detailRow.hidden; });
-  const resetBtn = row.querySelector('[data-action="reset"]');
-  if(resetBtn){
-    resetBtn.addEventListener("click", async () => {
-      if(!confirm(`Réinitialiser le code de "${nom}" ? La personne devra en recréer un (sur n'importe lequel de ses projets).`)) return;
-      await upsertEncadrantCode(nom, "");
-      showToast("Code réinitialisé");
-      if(onChange) onChange();
-    });
-  }
+  const prov = row.querySelector('[data-action="prov"]');
+  if(prov) prov.addEventListener("click", async () => {
+    if(u && !confirm(`Générer un nouveau code provisoire pour "${nom}" ? L'ancien code ne fonctionnera plus.`)) return;
+    prov.disabled = true;
+    try{ const code = await provisionAccount(nom); showTempCode(nom, code); if(onChange) onChange(); }
+    catch(e){ alert("Échec : " + (e && e.message ? e.message : "erreur inconnue")); prov.disabled = false; }
+  });
   const deleteBtn = row.querySelector('[data-action="delete"]');
   if(deleteBtn){
     deleteBtn.addEventListener("click", async () => {
       const projList = projectsList && projectsList.length ? ` (retiré des projets : ${projectsList.join(", ")})` : "";
-      if(!confirm(`Supprimer "${nom}" ? Son code sera effacé et il/elle sera retiré(e) de tous ses projets${projList}.`)) return;
-      for(const p of projects.values()){
-        if(rosterHasName(p.encadrants, nom)){
-          const encadrants = p.encadrants.filter(n => normName(n) !== normName(nom));
-          p.encadrants = encadrants;
-          await pb.collection("sae_projects").update(p.id, {encadrants});
+      if(!confirm(`Supprimer "${nom}" ? Son compte sera supprimé et il/elle sera retiré(e) de tous ses projets${projList}.`)) return;
+      try{
+        for(const p of projects.values()){
+          if(rosterHasName(p.encadrants, nom)){
+            const encadrants = p.encadrants.filter(n => normName(n) !== normName(nom));
+            p.encadrants = encadrants;
+            p.enc_keys = encKeys(encadrants);
+            await pb.collection("sae_projects").update(p.id, { encadrants, enc_keys:p.enc_keys });
+          }
         }
-      }
-      await upsertEncadrantCode(nom, "");
-      showToast("Encadrant supprimé");
-      if(onChange) onChange();
+        if(u){ await pb.collection("sae_users").delete(u.id); usersAll = usersAll.filter(x => x.id !== u.id); }
+        showToast("Encadrant supprimé");
+        if(onChange) onChange();
+      }catch(e){ alert("Échec : " + (e && e.message ? e.message : "erreur inconnue")); }
     });
   }
-  const [newInput, confirmInput] = detailRow.querySelectorAll("input");
-  detailRow.querySelector("button").addEventListener("click", async () => {
-    const a = newInput.value, b = confirmInput.value;
-    if(!a){ alert("Code requis."); return; }
-    if(a !== b){ alert("Les codes ne correspondent pas."); return; }
-    await upsertEncadrantCode(nom, await sha256Hex(a));
-    detailRow.hidden = true;
-    showToast("Code mis à jour");
-    if(onChange) onChange();
-  });
   tbody.appendChild(row);
-  tbody.appendChild(detailRow);
 }
 function renderEncadrantsManagementView(){
   const main = document.getElementById("main");
@@ -1459,7 +1436,7 @@ function renderEncadrantsManagementView(){
   const hint = document.createElement("p");
   hint.className = "hint";
   hint.style.marginBottom = "16px";
-  hint.textContent = "Chaque encadrant n'a qu'un seul code d'écriture, valable sur tous ses projets.";
+  hint.textContent = "Chaque encadrant a un compte et un seul code, valable sur tous ses projets. Un code provisoire est à transmettre à la personne : elle le remplace à sa première connexion.";
   main.appendChild(hint);
 
   canonNameCache.clear();
@@ -1472,9 +1449,8 @@ function renderEncadrantsManagementView(){
       projectsByName.get(key).push(p.nom);
     }
   }
-  const names = new Set();
-  for(const [nom, rec] of encadrantCodes.entries()) if(rec.hash) names.add(nom);
-  for(const nom of projectsByName.keys()) names.add(nom);
+  const names = new Set(projectsByName.keys());
+  for(const u of usersAll) names.add(u.name);
   const sorted = Array.from(names).sort((a,b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
 
   if(sorted.length === 0){
@@ -1487,7 +1463,7 @@ function renderEncadrantsManagementView(){
     tableWrap.className = "ref-table-wrap";
     const table = document.createElement("table");
     table.className = "ref-table ref-table-encadrants";
-    table.innerHTML = `<thead><tr><th>Nom Prénom</th><th>Projets</th><th>Créé le</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
+    table.innerHTML = `<thead><tr><th>Nom Prénom</th><th>Projets</th><th>Compte</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
     for(const nom of sorted){
       renderEncadrantCodeRow(tbody, nom, renderEncadrantsManagementView, projectsByName.get(nom) || []);
@@ -1505,8 +1481,6 @@ function renderEncadrantsManagementView(){
 }
 function openAddEncadrantModal(){
   document.getElementById("ae-nom").value = "";
-  document.getElementById("ae-code").value = "";
-  document.getElementById("ae-code-confirm").value = "";
   document.getElementById("ae-error").hidden = true;
   const list = document.getElementById("ae-project-list");
   const sorted = Array.from(projects.values())
@@ -1522,25 +1496,24 @@ document.getElementById("ae-save").addEventListener("click", async () => {
   const errEl = document.getElementById("ae-error");
   errEl.hidden = true;
   const nom = document.getElementById("ae-nom").value.trim();
-  const code = document.getElementById("ae-code").value;
-  const confirmCode = document.getElementById("ae-code-confirm").value;
   if(!nom){ errEl.textContent = "Le nom est requis."; errEl.hidden = false; return; }
-  if(!code){ errEl.textContent = "Le code est requis."; errEl.hidden = false; return; }
-  if(code !== confirmCode){ errEl.textContent = "Les codes ne correspondent pas."; errEl.hidden = false; return; }
   const slugs = Array.from(document.querySelectorAll("#ae-project-list input:checked")).map(i => i.value);
-  const hash = await sha256Hex(code);
-  await upsertEncadrantCode(nom, hash);
-  for(const slug of slugs){
-    const p = projects.get(slug);
-    if(!p) continue;
-    if(rosterHasName(p.encadrants, nom)) continue;
-    const encadrants = (p.encadrants||[]).concat([nom]);
-    p.encadrants = encadrants;
-    await pb.collection("sae_projects").update(p.id, {encadrants});
-  }
-  document.getElementById("modal-add-encadrant").classList.remove("open");
-  showToast("Encadrant ajouté");
-  renderAll();
+  try{
+    const code = await provisionAccount(nom);
+    for(const slug of slugs){
+      const p = projects.get(slug);
+      if(!p) continue;
+      if(rosterHasName(p.encadrants, nom)) continue;
+      const encadrants = (p.encadrants||[]).concat([nom]);
+      p.encadrants = encadrants;
+      p.enc_keys = encKeys(encadrants);
+      await pb.collection("sae_projects").update(p.id, { encadrants, enc_keys:p.enc_keys });
+    }
+    document.getElementById("modal-add-encadrant").classList.remove("open");
+    showToast("Encadrant ajouté");
+    renderAll();
+    showTempCode(nom, code);
+  }catch(e){ errEl.textContent = "Échec : " + (e && e.message ? e.message : "erreur inconnue"); errEl.hidden = false; }
 });
 function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
@@ -1856,6 +1829,11 @@ async function flushProjectPatch(slug){
     if(currentProjectId === slug && view === "project") softRender();
     showToast("Enregistré");
   }catch(e){
+    if(e && [400, 401, 403, 404].includes(e.status)){
+      showToast("Écriture refusée : reconnectez-vous (session expirée ?)");
+      if(!pb.authStore.isValid && connectedUser) disconnect("expire");
+      return;
+    }
     const retry = queuePendingSave(slug, recordId);
     retry.evalDiff = mergeSparse(evalDiff, retry.evalDiff);
     retry.indivDiff = mergeSparse(indivDiff, retry.indivDiff);
@@ -1888,25 +1866,35 @@ function updateIndiv(etuIdx, comp, value){
 }
 function selectProject(id){ currentProjectId = id; view = "project"; renderAll(); }
 
-/* ---------------- encadrant codes (global, shared across all projects) ---------------- */
-async function upsertEncadrantCode(nom, hash){
-  const existing = findEncadrantRec(nom);
-  let rec;
-  if(existing){
-    rec = await pb.collection("sae_encadrants").update(existing.id, {hash});
-    if(rec.nom !== existing.nom) encadrantCodes.delete(existing.nom);
-  } else {
-    rec = await pb.collection("sae_encadrants").create({nom, hash});
-  }
-  encadrantCodes.set(rec.nom, rec);
-  return rec;
-}
-
-/* ---------------- connexion unique de l'encadrant ---------------- */
-// Un encadrant se connecte une fois (nom + code) : tous les projets où il est inscrit sont débloqués à son nom.
-// La connexion ne vit que le temps de l'onglet et se verrouille seule après 20 minutes d'inactivité.
+/* ---------------- connexion unique de l'encadrant (comptes PocketBase) ---------------- */
+// Un encadrant se connecte une fois (nom + code) : le serveur lui délivre un jeton, valable pour tous les projets
+// où il est inscrit. Le jeton ne vit que le temps de l'onglet et la session se verrouille seule après 20 minutes
+// d'inactivité. Le code n'est jamais envoyé en clair : seul son SHA-256 sert de mot de passe.
 const IDLE_LOCK_MS = 20 * 60 * 1000;
+const MIN_CODE_LEN = 6;
 let lastActivity = Date.now();
+let usersAll = [];  // comptes (visibles seulement par l'administrateur)
+let connectStep = { mode:"login", oldHash:null, wantAdmin:false };
+const isAdminAccount = () => !!(pb.authStore.model && pb.authStore.model.admin);
+const encKeys = list => (list || []).filter(Boolean).map(n => "|" + normName(n) + "|").join("");
+function randomCode(){
+  const A = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  return [...crypto.getRandomValues(new Uint8Array(10))].map(x => A[x % A.length]).join("");
+}
+// au chargement : on reprend la session de l'onglet si son jeton est encore valable
+function restoreAuth(){
+  const m = pb.authStore.model;
+  if(pb.authStore.isValid && m && m.name && !m.must_change) connectedUser = m.name;
+  else { pb.authStore.clear(); connectedUser = null; }
+  if(!connectedUser || !isAdminAccount()) adminUnlocked = false;
+}
+function loadAgendaSession(){ restoreAuth(); }
+function saveAgendaSession(){}
+async function loadUsers(){
+  if(!adminUnlocked){ usersAll = []; return; }
+  try{ usersAll = await pb.collection("sae_users").getFullList({ sort:"name" }); canonNameCache.clear(); }
+  catch(e){ usersAll = []; }
+}
 function syncUnlocked(){
   const next = new Map();
   if(connectedUser){
@@ -1923,34 +1911,39 @@ function allEncadrantNames(){
   return [...m.values()].sort((a, b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
 }
 const myProjects = () => connectedUser ? [...projects.values()].filter(p => rosterHasName(p.encadrants, connectedUser)) : [];
+const accountLogin = async (nom, code) => pb.collection("sae_users").authWithPassword(normName(nom), await sha256Hex(code));
 function renderConnectBody(){
-  const nom = document.getElementById("connect-who").value;
   const body = document.getElementById("connect-body");
-  const rec = nom ? findEncadrantRec(nom) : null;
-  const existing = !!(rec && rec.hash);
+  const who = document.getElementById("connect-who");
   document.getElementById("connect-error").hidden = true;
-  document.getElementById("connect-submit").textContent = !nom || existing ? "Se connecter" : "Créer mon code";
-  if(!nom){ body.innerHTML = ""; return; }
-  if(existing){
+  if(connectStep.mode === "newcode"){
+    who.disabled = true;
+    document.getElementById("connect-title").textContent = "Choisissez votre code";
+    document.getElementById("connect-hint").textContent = "Votre code provisoire est reconnu. Choisissez maintenant votre code personnel (" + MIN_CODE_LEN + " caractères au minimum) : il remplace le provisoire, pour tous vos projets.";
+    document.getElementById("connect-submit").textContent = "Enregistrer mon code";
     body.innerHTML = `
-      <div class="field-full"><label for="connect-code">Code</label><input type="password" id="connect-code" autocomplete="off"></div>
-      <button class="modal-link" id="connect-toggle-change" type="button">Changer mon code</button>
-      <div id="connect-change-fields" hidden>
-        <div class="field-full"><label for="connect-new-code">Nouveau code</label><input type="password" id="connect-new-code" autocomplete="off"></div>
-        <div class="field-full"><label for="connect-new-code-confirm">Confirmer le nouveau code</label><input type="password" id="connect-new-code-confirm" autocomplete="off"></div>
-      </div>
-      <p class="hint" style="margin-top:8px;">Un seul code pour tous vos projets. Code oublié ? Demandez à l'administrateur de le réinitialiser.</p>`;
-    body.querySelector("#connect-toggle-change").addEventListener("click", () => { const w = body.querySelector("#connect-change-fields"); w.hidden = !w.hidden; });
-  } else {
-    body.innerHTML = `
-      <p class="hint">Aucun code n'existe encore à votre nom : choisissez-en un. Il vaudra pour tous vos projets.</p>
-      <div class="field-full"><label for="connect-code">Nouveau code</label><input type="password" id="connect-code" autocomplete="off"></div>
-      <div class="field-full"><label for="connect-code-confirm">Confirmer le code</label><input type="password" id="connect-code-confirm" autocomplete="off"></div>`;
+      <div class="field-full"><label for="connect-new-code">Nouveau code</label><input type="password" id="connect-new-code" autocomplete="new-password"></div>
+      <div class="field-full"><label for="connect-new-code-confirm">Confirmer le nouveau code</label><input type="password" id="connect-new-code-confirm" autocomplete="new-password"></div>`;
+    body.querySelector("input").focus();
+    return;
   }
-  const first = body.querySelector("input"); if(first) first.focus();
+  who.disabled = false;
+  document.getElementById("connect-submit").textContent = "Se connecter";
+  if(!who.value){ body.innerHTML = ""; return; }
+  body.innerHTML = `
+    <div class="field-full"><label for="connect-code">Code</label><input type="password" id="connect-code" autocomplete="off"></div>
+    <button class="modal-link" id="connect-toggle-change" type="button">Changer mon code</button>
+    <div id="connect-change-fields" hidden>
+      <div class="field-full"><label for="connect-new-code">Nouveau code (${MIN_CODE_LEN} caractères au minimum)</label><input type="password" id="connect-new-code" autocomplete="new-password"></div>
+      <div class="field-full"><label for="connect-new-code-confirm">Confirmer le nouveau code</label><input type="password" id="connect-new-code-confirm" autocomplete="new-password"></div>
+    </div>
+    <p class="hint" style="margin-top:8px;">Un seul code pour tous vos projets. Code oublié ou première connexion : demandez un code provisoire à l'administrateur.</p>`;
+  body.querySelector("#connect-toggle-change").addEventListener("click", () => { const w = body.querySelector("#connect-change-fields"); w.hidden = !w.hidden; });
+  body.querySelector("#connect-code").focus();
 }
 function openConnectModal(preset, opts){
   opts = opts || {};
+  connectStep = { mode:"login", oldHash:null, wantAdmin:!!opts.admin };
   const sel = document.getElementById("connect-who");
   const names = allEncadrantNames();
   sel.innerHTML = `<option value="">— Choisir —</option>` + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
@@ -1964,121 +1957,112 @@ function openConnectModal(preset, opts){
   document.getElementById("modal-connect").classList.add("open");
 }
 function closeConnectModal(){ document.getElementById("modal-connect").classList.remove("open"); }
-function connectAs(nom){
-  connectedUser = nom;
+function connectAs(){
+  const m = pb.authStore.model;
+  connectedUser = m.name;
   agendaMonth = null;
   lastActivity = Date.now();
-  saveAgendaSession();
   closeConnectModal();
-  renderAll();
+  if(connectStep.wantAdmin && isAdminAccount()) adminUnlocked = true;
+  saveSession();
+  (adminUnlocked ? loadUsers() : Promise.resolve()).then(() => renderAll());
   const n = myProjects().length;
   showToast(`Connecté — ${n} projet${n > 1 ? "s" : ""} débloqué${n > 1 ? "s" : ""}`);
 }
 function disconnect(idle){
   const label = view === "project" ? unlockedProjects.get(currentProjectId) : null;
   if(label) removeOwnPresence(currentProjectId, label);
+  pb.authStore.clear();
   connectedUser = null;
+  adminUnlocked = false;
+  usersAll = [];
   agendaMonth = null;
-  saveAgendaSession();
   unlockedProjects = new Map();
   saveSession();
   renderAll();
   if(idle){
-    showToast("Verrouillé après 20 minutes d'inactivité");
+    showToast(idle === "expire" ? "Session expirée : reconnectez-vous" : "Verrouillé après 20 minutes d'inactivité");
     openConnectModal(null, { idle:true });
   }
+}
+async function changeMyCode(oldHash, newCode){
+  const m = pb.authStore.model, h = await sha256Hex(newCode);
+  await pb.collection("sae_users").update(m.id, { oldPassword:oldHash, password:h, passwordConfirm:h, must_change:false });
+  await accountLogin(m.name, newCode);   // le changement de code invalide l'ancien jeton
 }
 async function submitConnect(){
   const err = document.getElementById("connect-error");
   err.hidden = true;
   const fail = m => { err.textContent = m; err.hidden = false; };
-  const nom = document.getElementById("connect-who").value;
+  const val = id => (document.getElementById(id) || {}).value || "";
+  const checkNew = () => {
+    const a = val("connect-new-code"), b = val("connect-new-code-confirm");
+    if(a.length < MIN_CODE_LEN) return "Le nouveau code doit compter au moins " + MIN_CODE_LEN + " caractères.";
+    if(a !== b) return "Les nouveaux codes ne correspondent pas.";
+    return null;
+  };
+  if(connectStep.mode === "newcode"){
+    const bad = checkNew(); if(bad) return fail(bad);
+    try{ await changeMyCode(connectStep.oldHash, val("connect-new-code")); }
+    catch(e){ return fail("Changement de code impossible. Reconnectez-vous avec votre code provisoire et réessayez."); }
+    return connectAs();
+  }
+  const nom = val("connect-who");
   if(!nom) return fail("Choisissez votre nom.");
-  const code = (document.getElementById("connect-code") || {}).value || "";
+  const code = val("connect-code");
   if(!code) return fail("Code requis.");
-  const confirmEl = document.getElementById("connect-code-confirm");
-  try{
-    if(confirmEl){
-      if(code !== confirmEl.value) return fail("Les codes ne correspondent pas.");
-      await upsertEncadrantCode(nom, await sha256Hex(code));
-    } else {
-      const rec = findEncadrantRec(nom);
-      if(!rec || !rec.hash || rec.hash !== await sha256Hex(code)) return fail("Code incorrect.");
-      const w = document.getElementById("connect-change-fields");
-      if(w && !w.hidden){
-        const a = document.getElementById("connect-new-code").value, b = document.getElementById("connect-new-code-confirm").value;
-        if(!a) return fail("Nouveau code requis.");
-        if(a !== b) return fail("Les nouveaux codes ne correspondent pas.");
-        await upsertEncadrantCode(nom, await sha256Hex(a));
-      }
-    }
-  }catch(e){ return fail("Enregistrement du code impossible (réseau ou serveur). Réessayez."); }
-  connectAs(nom);
+  let auth;
+  try{ auth = await accountLogin(nom, code); }
+  catch(e){ return fail(e && e.status === 400 ? "Code incorrect, ou compte inexistant : contactez l'administrateur." : "Connexion impossible (réseau ou serveur). Réessayez."); }
+  const oldHash = await sha256Hex(code);
+  if(auth.record.must_change){
+    connectStep.mode = "newcode"; connectStep.oldHash = oldHash;
+    return renderConnectBody();
+  }
+  const w = document.getElementById("connect-change-fields");
+  if(w && !w.hidden){
+    const bad = checkNew(); if(bad){ pb.authStore.clear(); return fail(bad); }
+    try{ await changeMyCode(oldHash, val("connect-new-code")); }
+    catch(e){ pb.authStore.clear(); return fail("Changement de code impossible. Réessayez."); }
+  }
+  connectAs();
 }
 document.getElementById("connect-who").addEventListener("change", renderConnectBody);
 document.getElementById("connect-submit").addEventListener("click", submitConnect);
 document.getElementById("modal-connect").addEventListener("keydown", e => { if(e.key === "Enter" && e.target.tagName !== "SELECT" && e.target.tagName !== "BUTTON") submitConnect(); });
 document.getElementById("connect-skip").addEventListener("click", () => {
+  if(connectStep.mode === "newcode") pb.authStore.clear();   // code provisoire non remplacé : pas de session
   try{ sessionStorage.setItem("sae-welcome-skip", "1"); }catch(e){}
   closeConnectModal();
 });
 // verrouillage automatique après 20 minutes sans activité (jamais pendant un enregistrement en cours)
 ["pointerdown", "pointermove", "keydown", "wheel", "touchstart", "scroll"].forEach(t => document.addEventListener(t, () => { lastActivity = Date.now(); }, { passive:true, capture:true }));
-function checkIdle(){
-  if(connectedUser && !pendingSaves.size && Date.now() - lastActivity > IDLE_LOCK_MS) disconnect(true);
+async function checkIdle(){
+  if(!connectedUser) return;
+  if(!pendingSaves.size && Date.now() - lastActivity > IDLE_LOCK_MS){ disconnect(true); return; }
+  // renouvellement du jeton tant que la personne est active
+  const exp = pb.authStore.exp;
+  if(exp && exp - Date.now() < 25 * 60 * 1000){
+    try{ await pb.collection("sae_users").authRefresh(); }
+    catch(e){ if(e && e.status === 401) disconnect("expire"); }
+  }
 }
 setInterval(checkIdle, 15000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) checkIdle(); });
 
-/* ---------------- admin modal ---------------- */
-function openAdminModal(){
-  const backdrop = document.getElementById("modal-admin");
-  document.getElementById("admin-modal-error").hidden = true;
-  document.getElementById("admin-code-input").value = "";
-  const exists = adminConfigCache && adminConfigCache.code_hash;
-  document.getElementById("admin-modal-title").textContent = exists ? "Mode administrateur" : "Créer le code administrateur";
-  document.getElementById("admin-modal-hint").textContent = exists
-    ? "Saisissez le code administrateur pour gérer le référentiel et l'import Excel."
-    : "Aucun code administrateur n'existe encore. Choisissez-en un.";
-  document.getElementById("admin-code-confirm-wrap").hidden = !!exists;
-  backdrop.classList.add("open");
+/* ---------------- mode administrateur : réservé au compte administrateur ---------------- */
+function activateAdmin(){
+  if(!connectedUser){ openConnectModal(null, { admin:true }); return; }
+  if(!isAdminAccount()){ showToast("Réservé au compte administrateur"); return; }
+  adminUnlocked = true; saveSession();
+  showToast("Mode administrateur activé");
+  loadUsers().then(() => renderAll());
+  renderAll();
 }
-document.getElementById("admin-modal-cancel").addEventListener("click", () => document.getElementById("modal-admin").classList.remove("open"));
-document.getElementById("admin-modal-submit").addEventListener("click", async () => {
-  const errEl = document.getElementById("admin-modal-error");
-  errEl.hidden = true;
-  const code = document.getElementById("admin-code-input").value;
-  if(!code){ errEl.textContent = "Code requis."; errEl.hidden = false; return; }
-  const exists = adminConfigCache && adminConfigCache.code_hash;
-  if(!exists){
-    const confirm2 = document.getElementById("admin-code-confirm").value;
-    if(code !== confirm2){ errEl.textContent = "Les codes ne correspondent pas."; errEl.hidden = false; return; }
-    const hash = await sha256Hex(code);
-    try{
-      if(adminRecordId){
-        await pb.collection("sae_config").update(adminRecordId, {value:{code_hash:hash, createdAt:new Date().toISOString()}});
-      } else {
-        const rec = await pb.collection("sae_config").create({key:"admin", value:{code_hash:hash, createdAt:new Date().toISOString()}});
-        adminRecordId = rec.id;
-      }
-      adminConfigCache = {code_hash: hash};
-      adminUnlocked = true; saveSession();
-      document.getElementById("modal-admin").classList.remove("open");
-      showToast("Code administrateur créé");
-      renderAll();
-    }catch(e){ errEl.textContent = "Échec de la création du code."; errEl.hidden = false; }
-  } else {
-    const hash = await sha256Hex(code);
-    if(hash !== adminConfigCache.code_hash){ errEl.textContent = "Code incorrect."; errEl.hidden = false; return; }
-    adminUnlocked = true; saveSession();
-    document.getElementById("modal-admin").classList.remove("open");
-    showToast("Mode administrateur activé");
-    renderAll();
-  }
-});
+function openAdminModal(){ activateAdmin(); }
 document.getElementById("btn-admin-toggle").addEventListener("click", () => {
-  if(adminUnlocked){ adminUnlocked = false; saveSession(); renderAll(); }
-  else openAdminModal();
+  if(adminUnlocked){ adminUnlocked = false; usersAll = []; saveSession(); renderAll(); }
+  else activateAdmin();
 });
 document.getElementById("btn-theme-toggle").addEventListener("click", () => {
   const next = effectiveTheme() === "dark" ? "light" : "dark";
@@ -2127,7 +2111,7 @@ function openProjectEditModal(id, scope){
 }
 function populateEncadrantDatalist(){
   canonNameCache.clear();
-  const names = new Set(encadrantCodes.keys());
+  const names = new Set(usersAll.map(u => u.name));
   for(const p of projects.values()) for(const n of (p.encadrants||[])) if(n) names.add(canonicalEncadrantName(n));
   const sorted = Array.from(names).sort((a,b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
   document.getElementById("pe-encadrant-datalist").innerHTML = sorted.map(n => `<option value="${escapeHtml(n)}">`).join("");
@@ -2157,6 +2141,7 @@ document.getElementById("pe-save").addEventListener("click", async () => {
         patch.formation = document.getElementById("pe-formation").value.trim();
         patch.annee = document.getElementById("pe-annee").value.trim();
         patch.encadrants = Array.from(document.querySelectorAll("#pe-encadrant-rows input")).map(i=>i.value.trim()).filter(Boolean);
+        patch.enc_keys = encKeys(patch.encadrants);
       }
       Object.assign(p, patch);
       await pb.collection("sae_projects").update(p.id, patch);
@@ -2167,7 +2152,7 @@ document.getElementById("pe-save").addEventListener("click", async () => {
       const encadrants = Array.from(document.querySelectorAll("#pe-encadrant-rows input")).map(i=>i.value.trim()).filter(Boolean);
       const slug = slugify(nom);
       const rec = await pb.collection("sae_projects").create({
-        slug, nom,sujet,formation,parcours,annee,etudiants,encadrants,archived:false,visible_eleves:true,
+        slug, nom,sujet,formation,parcours,annee,etudiants,encadrants,enc_keys:encKeys(encadrants),archived:false,visible_eleves:true,
         evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}
       });
       projects.set(slug, rec);
@@ -2321,13 +2306,13 @@ document.getElementById("diff-confirm").addEventListener("click", async () => {
   try{
     for(const g of importDiff.toCreate){
       const {id,...rest} = g;
-      const rec = await pb.collection("sae_projects").create({slug:id, ...rest, archived:false, visible_eleves:true, evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}});
+      const rec = await pb.collection("sae_projects").create({slug:id, ...rest, enc_keys:encKeys(rest.encadrants), archived:false, visible_eleves:true, evals:{S3:{},S4:{}}, individualisation:{S3:{},S4:{}}});
       projects.set(id, rec);
     }
     for(const g of importDiff.toUpdate){
       const {id,...rest} = g;
       const existing = projects.get(id);
-      const patch = {...rest, archived:false};
+      const patch = {...rest, enc_keys:encKeys(rest.encadrants), archived:false};
       Object.assign(existing, patch);
       await pb.collection("sae_projects").update(existing.id, patch);
     }
@@ -2388,7 +2373,8 @@ async function init(){
   loadSession();
   loadAgendaSession();
   renderAll();
-  await Promise.all([loadReferentiel(), loadAdminConfig(), loadProjects(), loadEncadrantCodes(), loadComments(), loadEvents(), loadJournal()]);
+  await Promise.all([loadReferentiel(), loadProjects(), loadComments(), loadEvents(), loadJournal(), loadUsers()]);
+  renderAll();
   subscribeRealtime();
   let ignore = false;
   try{ ignore = sessionStorage.getItem("sae-welcome-skip") === "1"; }catch(e){}
