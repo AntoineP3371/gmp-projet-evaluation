@@ -116,7 +116,7 @@ h1,h2,h3{ text-wrap:balance; }
 .pm-row:hover{ background:var(--surface-2); }
 
 .main{
-  padding:30px 40px 80px; max-width:1320px;
+  min-width:0; padding:30px 40px 80px; max-width:1320px;
   background:
     linear-gradient(var(--main-grid) 1px,transparent 1px),
     linear-gradient(90deg,var(--main-grid) 1px,transparent 1px),
