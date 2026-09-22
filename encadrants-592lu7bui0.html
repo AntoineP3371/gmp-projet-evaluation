@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.54">
+<link rel="stylesheet" href="style.css?v=0.55">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.54"></script>
+<script src="app-common.js?v=0.55"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.54</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.55</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -647,7 +647,7 @@ function renderAgendaView(){
       <h3>${escapeHtml(monthLabel)}</h3>
       <button class="btn btn-sm" id="agenda-next" type="button" aria-label="Mois suivant">›</button>
       <button class="btn btn-sm" id="agenda-today" type="button">Aujourd'hui</button>
-      <button class="btn btn-sm" id="agenda-subscribe" type="button" title="Abonnement au calendrier des évaluations de vos projets">Abonnement au calendrier</button>
+      <button class="btn btn-sm" id="agenda-subscribe" type="button" ${ICS_READY ? "" : "disabled"} title="${ICS_READY ? "Abonnement au calendrier des évaluations de vos projets" : "Bientôt disponible"}">Abonnement au calendrier${ICS_READY ? "" : " — bientôt disponible"}</button>
     </div>
     <div class="ag-legend"><span><i style="background:var(--good)"></i>noté 12 et plus</span><span><i style="background:var(--logo-blue)"></i>de 8 à 12</span><span><i style="background:var(--warn)"></i>moins de 8</span><span><i style="background:var(--danger)"></i>en retard, sans note</span><span><i style="background:var(--rule-strong)"></i>à venir</span></div>
     <div class="ag-grid">${["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map(j => `<div class="ag-dow">${j}</div>`).join("")}${cells}</div>`;
@@ -663,6 +663,9 @@ function renderAgendaView(){
 }
 
 /* ---------------- abonnement au calendrier (.ics) ---------------- */
+// La partie serveur (route /ics/<jeton>) n'est pas encore déployée : le bouton reste visible mais désactivé.
+// À repasser à true une fois l'extension PocketBase installée sur le Pi.
+const ICS_READY = false;
 function randomToken(){
   return [...crypto.getRandomValues(new Uint8Array(24))].map(b => b.toString(16).padStart(2, "0")).join("");
 }
