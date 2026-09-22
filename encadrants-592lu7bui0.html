@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.51">
+<link rel="stylesheet" href="style.css?v=0.52">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.51"></script>
+<script src="app-common.js?v=0.52"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.51</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.52</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -200,7 +200,9 @@
         <li>Les projets absents du fichier sont archivés (leurs notes sont conservées)</li>
       </ul>
     </div>
-    <p class="hint" style="margin-top:14px;">Un écran de confirmation détaillera les créations, mises à jour et archivages avant tout enregistrement.</p>
+    <div class="field-full" style="margin-top:14px;"><label for="import-annee">Année scolaire des projets importés</label><input type="text" id="import-annee" placeholder="2026-2027"></div>
+    <p class="modal-error" id="import-annee-error" hidden></p>
+    <p class="hint">Un écran de confirmation détaillera les créations, mises à jour et archivages avant tout enregistrement.</p>
     <div class="modal-actions">
       <button class="btn" id="import-help-cancel">Annuler</button>
       <button class="btn btn-accent" id="import-help-continue">Choisir un fichier…</button>
@@ -212,7 +214,9 @@
   <div class="modal wide">
     <h2>Import Excel — confirmation</h2>
     <p class="hint">Vérifiez le résumé avant d'appliquer les changements. Les notes déjà saisies ne sont jamais touchées par un import.</p>
+    <div class="diff-alerts" id="diff-alerts"></div>
     <div class="diff-summary" id="diff-summary"></div>
+    <div id="diff-relocate"></div>
     <p class="hint" id="diff-skipped-hint" hidden></p>
     <div class="modal-actions">
       <button class="btn" id="diff-cancel">Annuler</button>
@@ -873,7 +877,12 @@ function renderProjectsManagementView(){
       <input type="checkbox" id="pm-archived-toggle" ${showArchived?"checked":""}> Afficher les projets archivés
     </label>` : ""}`;
   main.appendChild(actions);
-  actions.querySelector("#pm-import").addEventListener("click", () => document.getElementById("modal-import-help").classList.add("open"));
+  actions.querySelector("#pm-import").addEventListener("click", () => {
+    document.getElementById("import-annee-error").hidden = true;
+    let saved = ""; try{ saved = localStorage.getItem("sae-import-annee") || ""; }catch(e){}
+    document.getElementById("import-annee").value = saved || defaultImportAnnee();
+    document.getElementById("modal-import-help").classList.add("open");
+  });
   actions.querySelector("#pm-add").addEventListener("click", () => openProjectEditModal(null, "admin"));
   actions.querySelector("#pm-export-notes").addEventListener("click", exportNotesExcel);
   actions.querySelector("#pm-export").addEventListener("click", exportJsonBackup);
@@ -2131,9 +2140,134 @@ document.getElementById("pe-save").addEventListener("click", async () => {
   }catch(e){ alert("Échec de l'enregistrement : " + (e && e.message ? e.message : "erreur inconnue")); }
 });
 /* ---------------- Excel import (admin) ---------------- */
+
+/* ---------------- import Excel : aides (année, alertes, personnes déplacées) ---------------- */
+let importAnnee = "";
+function defaultImportAnnee(){
+  const d = new Date(), y = d.getFullYear();
+  return (d.getMonth() >= 6 ? y : y - 1) + "-" + (d.getMonth() >= 6 ? y + 1 : y); // rentrée ~ juillet/août
+}
+// vrai si a et b (déjà normalisés) ne diffèrent que d'un caractère (faute de frappe probable)
+function oneEditAway(a, b){
+  if(a === b) return false;
+  if(Math.abs(a.length - b.length) > 1) return false;
+  const [s, t] = a.length <= b.length ? [a, b] : [b, a];
+  let i = 0, j = 0, edited = false;
+  while(i < s.length && j < t.length){
+    if(s[i] === t[j]){ i++; j++; continue; }
+    if(edited) return false;
+    edited = true;
+    if(s.length === t.length){ i++; j++; } else { j++; }
+  }
+  return true;
+}
+// étudiants rattachés à plusieurs projets dans le même fichier (erreur de saisie probable) : non traités automatiquement
+function detectDuplicateAssignments(groups){
+  const seen = new Map(); // normName -> Set(id de projet)
+  for(const [pid, g] of Object.entries(groups)){
+    for(const etu of g.etudiants){
+      const k = normName(etu);
+      if(!seen.has(k)) seen.set(k, new Set());
+      seen.get(k).add(pid);
+    }
+  }
+  const dups = [];
+  for(const [k, pids] of seen){
+    if(pids.size <= 1) continue;
+    let label = "";
+    for(const pid of pids){ const found = groups[pid].etudiants.find(e => normName(e) === k); if(found){ label = found; break; } }
+    dups.push({ nom: label, projets: [...pids].map(pid => groups[pid].nom) });
+  }
+  return dups;
+}
+// projets non concernés par ce fichier mais dont un étudiant est maintenant rattaché ailleurs : on le retire de
+// cet ancien projet (jamais deux projets à la fois pour un même étudiant), sans toucher au reste. Un projet
+// simplement hors du périmètre de ce fichier — cas courant d'un import partiel, une formation à la fois — n'est
+// jamais modifié tant qu'aucun de ses étudiants ne réapparaît ailleurs dans le fichier.
+// Ne s'applique volontairement qu'aux étudiants : contrairement à un étudiant (un seul projet à la fois), un
+// encadrant peut légitimement suivre des projets absents du fichier importé (import partiel) ; le retirer
+// automatiquement d'un projet non mentionné romprait à tort ce lien. Un changement d'encadrant sur un projet
+// n'est donc pris en compte que pour les projets présents dans le fichier (déjà visible dans le récapitulatif
+// détaillé), et se fait à la main ailleurs, via « Modifier les infos ».
+function computeRelocations(groups, dupAssignments){
+  const dupSet = new Set((dupAssignments || []).map(d => normName(d.nom)));
+  const studentAssign = new Map();  // normName -> {pid, nom du projet}
+  for(const [pid, g] of Object.entries(groups)){
+    for(const etu of g.etudiants){
+      const k = normName(etu);
+      if(dupSet.has(k) || studentAssign.has(k)) continue;
+      studentAssign.set(k, { pid, nom: g.nom });
+    }
+  }
+  const touchedIds = new Set(Object.keys(groups));
+  const toRelocate = [];
+  for(const [id, p] of projects.entries()){
+    if(touchedIds.has(id) || p.archived) continue;
+    const removedEtu = [];
+    const keptEtu = (p.etudiants || []).filter(n => {
+      const a = studentAssign.get(normName(n));
+      if(a && a.pid !== id){ removedEtu.push({ nom:n, vers:a.nom }); return false; }
+      return true;
+    });
+    if(removedEtu.length){
+      toRelocate.push({ id, nom:p.nom, removedEtu, patch:{ etudiants:keptEtu } });
+    }
+  }
+  return toRelocate;
+}
+function buildImportAlerts(groups, skippedSheets, dupAssignments){
+  const alerts = [];
+  if(skippedSheets && skippedSheets.length){
+    alerts.push({ type:"warn", text:`Feuille(s) non reconnue(s), ignorée(s) : ${skippedSheets.join(", ")}. Vérifiez qu'il s'agit bien du format « Gestion étudiants » (en-têtes sur 2 lignes).` });
+  }
+  for(const d of (dupAssignments || [])){
+    alerts.push({ type:"error", text:`« ${d.nom} » apparaît sur plusieurs projets dans ce fichier : ${d.projets.join(" / ")}. Corrigez le fichier puis réimportez ; cet étudiant n'a été rattaché à aucun des deux pour l'instant.` });
+  }
+  const encSpellings = new Map(); // normName -> Set(orthographes)
+  for(const g of Object.values(groups)) for(const e of g.encadrants){
+    const k = normName(e);
+    if(!encSpellings.has(k)) encSpellings.set(k, new Set());
+    encSpellings.get(k).add(e);
+  }
+  for(const set of encSpellings.values()){
+    if(set.size > 1) alerts.push({ type:"warn", text:`Orthographes différentes pour le même encadrant dans ce fichier : ${[...set].join(" / ")}.` });
+  }
+  if(usersAll.length){
+    const known = new Set(usersAll.map(u => u.login));
+    const missing = new Set();
+    for(const g of Object.values(groups)) for(const e of g.encadrants) if(!known.has(normName(e))) missing.add(e);
+    if(missing.size) alerts.push({ type:"info", text:`Encore sans compte : ${[...missing].sort((a,b) => a.localeCompare(b, "fr")).join(", ")}. Créez leur compte depuis « Encadrants » pour qu'ils puissent se connecter.` });
+  }
+  const byRole = { "étudiant":[], "encadrant":[] };
+  const seenNorm = new Set();
+  const push = (n, role) => { const k = role + "|" + normName(n); if(seenNorm.has(k)) return; seenNorm.add(k); byRole[role].push(n); };
+  for(const g of Object.values(groups)){ for(const e of g.etudiants) push(e, "étudiant"); for(const e of g.encadrants) push(e, "encadrant"); }
+  for(const p of projects.values()) for(const e of (p.encadrants || [])) push(e, "encadrant");
+  for(const role of Object.keys(byRole)){
+    const list = byRole[role].filter(n => normName(n).length >= 6);
+    for(let i = 0; i < list.length; i++) for(let j = i + 1; j < list.length; j++){
+      if(oneEditAway(normName(list[i]), normName(list[j]))){
+        alerts.push({ type:"warn", text:`Noms très proches (faute de frappe possible) parmi les ${role}s : « ${list[i]} » et « ${list[j]} ».` });
+      }
+    }
+  }
+  return alerts;
+}
 function normalizeHeader(h){ return String(h||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]/g,""); }
 document.getElementById("import-help-cancel").addEventListener("click", () => document.getElementById("modal-import-help").classList.remove("open"));
 document.getElementById("import-help-continue").addEventListener("click", () => {
+  const input = document.getElementById("import-annee");
+  const errEl = document.getElementById("import-annee-error");
+  const v = input.value.trim();
+  const m = v.match(/^(\d{4})-(\d{4})$/);
+  if(!m || Number(m[2]) !== Number(m[1]) + 1){
+    errEl.textContent = "Année invalide : au format AAAA-AAAA, par exemple 2026-2027.";
+    errEl.hidden = false;
+    return;
+  }
+  errEl.hidden = true;
+  importAnnee = v;
+  try{ localStorage.setItem("sae-import-annee", v); }catch(e){}
   document.getElementById("modal-import-help").classList.remove("open");
   document.getElementById("file-import").click();
 });
@@ -2144,22 +2278,24 @@ document.getElementById("file-import").addEventListener("change", async e => {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, {type:"array"});
   const rosterSheets = wb.SheetNames.filter(n => /^BUT\s*\d/i.test(n));
-  let groups, skipped = 0;
+  let groups, skipped = 0, skippedSheets = [];
   const isRoster = rosterSheets.length > 0;
   if(isRoster){
     const parsed = parseRosterWorkbook(wb, rosterSheets);
-    groups = parsed.groups; skipped = parsed.skipped;
+    groups = parsed.groups; skipped = parsed.skipped; skippedSheets = parsed.skippedSheets;
     if(Object.keys(groups).length === 0 && skipped === 0){ alert("Aucune ligne exploitable trouvée dans les onglets " + rosterSheets.join(", ") + "."); return; }
   } else {
     groups = parseFlatWorkbook(wb);
     if(groups === null) return;
   }
+  const dup = detectDuplicateAssignments(groups);
   importDiff = computeImportDiff(groups, isRoster ? {skipArchive:true} : undefined);
   importDiff.skipped = skipped;
+  importDiff.toRelocate = computeRelocations(groups, dup);
+  importDiff.alerts = buildImportAlerts(groups, skippedSheets, dup);
   renderImportDiff();
   document.getElementById("modal-import-diff").classList.add("open");
 });
-const CURRENT_IMPORT_ANNEE = "2026-2027"; // à mettre à jour chaque rentrée : année affectée aux projets créés/mis à jour via un import Excel
 function parseFlatWorkbook(wb){
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(sheet, {defval:""});
@@ -2181,7 +2317,7 @@ function parseFlatWorkbook(wb){
     const projet = rr.projet;
     if(!projet) continue;
     const id = slugify(projet);
-    if(!groups[id]) groups[id] = { nom:projet, formation:rr.formation||"", parcours:rr.parcours||"", annee:CURRENT_IMPORT_ANNEE, etudiants:[], encadrants:[] };
+    if(!groups[id]) groups[id] = { nom:projet, formation:rr.formation||"", parcours:rr.parcours||"", annee:importAnnee, etudiants:[], encadrants:[] };
     const g = groups[id];
     const nomPrenom = `${rr.nom||""} ${rr.prenom||""}`.trim();
     if(nomPrenom && !g.etudiants.includes(nomPrenom)) g.etudiants.push(nomPrenom);
@@ -2196,11 +2332,12 @@ function parseRosterWorkbook(wb, sheetNames){
   // (ligne 1 : Nom/Prénom/Parcours/Formation/…/Nom du projet/Encadrant 1-4 ; ligne 2 : libellés détaillés).
   const groups = {};
   let skipped = 0;
+  const skippedSheets = [];
   for(const sheetName of sheetNames){
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:""});
     if(rows.length < 3) continue;
     const h1 = rows[1].map(v => normalizeHeader(v));
-    if(h1[0] !== "nom" || h1[1] !== "prenom" || h1[2] !== "parcours" || h1[3] !== "formation") continue;
+    if(h1[0] !== "nom" || h1[1] !== "prenom" || h1[2] !== "parcours" || h1[3] !== "formation"){ skippedSheets.push(sheetName); continue; }
     for(let i = 2; i < rows.length; i++){
       const r = rows[i];
       const nom = String(r[0]||"").trim();
@@ -2211,7 +2348,7 @@ function parseRosterWorkbook(wb, sheetNames){
       const nomProjet = String(r[10]||"").trim();
       if(!nomProjet){ skipped++; continue; }
       const key = slugify(`${sheetName} ${nomProjet}`);
-      if(!groups[key]) groups[key] = { nom: nomProjet, formation: [sheetName, formationCol].filter(Boolean).join(" · "), parcours, annee: CURRENT_IMPORT_ANNEE, etudiants: [], encadrants: [] };
+      if(!groups[key]) groups[key] = { nom: nomProjet, formation: [sheetName, formationCol].filter(Boolean).join(" · "), parcours, annee: importAnnee, etudiants: [], encadrants: [] };
       const g = groups[key];
       const nomPrenom = `${nom} ${prenom}`.trim();
       if(nomPrenom && !g.etudiants.includes(nomPrenom)) g.etudiants.push(nomPrenom);
@@ -2221,7 +2358,7 @@ function parseRosterWorkbook(wb, sheetNames){
       }
     }
   }
-  return {groups, skipped};
+  return {groups, skipped, skippedSheets};
 }
 function sameRoster(existing, g){
   return existing.formation === g.formation && existing.parcours === g.parcours &&
@@ -2247,19 +2384,51 @@ function computeImportDiff(groups, opts){
   }
   return {toCreate,toUpdate,toArchive,toReactivate};
 }
+function fmtNames(arr){ return arr.map(escapeHtml).join(", "); }
+function importDiffDetail(g){
+  const existing = projects.get(g.id);
+  if(!existing) return g.etudiants.length || g.encadrants.length ? `<div class="diff-detail">${g.etudiants.length ? `<span class="add">+ ${fmtNames(g.etudiants)}</span>` : ""}${g.encadrants.length ? ` · <span class="add">encadrant ${fmtNames(g.encadrants)}</span>` : ""}</div>` : "";
+  const sameName = (a,b) => normName(a) === normName(b);
+  const oldEtu = existing.etudiants || [], oldEnc = existing.encadrants || [];
+  const addedEtu = g.etudiants.filter(n => !oldEtu.some(o => sameName(o,n)));
+  const removedEtu = oldEtu.filter(n => !g.etudiants.some(o => sameName(o,n)));
+  const addedEnc = g.encadrants.filter(n => !oldEnc.some(o => sameName(o,n)));
+  const removedEnc = oldEnc.filter(n => !g.encadrants.some(o => sameName(o,n)));
+  const bits = [];
+  if(addedEtu.length) bits.push(`<span class="add">+ ${fmtNames(addedEtu)}</span>`);
+  if(removedEtu.length) bits.push(`<span class="rem">− ${fmtNames(removedEtu)}</span>`);
+  if(addedEnc.length) bits.push(`<span class="add">+ encadrant ${fmtNames(addedEnc)}</span>`);
+  if(removedEnc.length) bits.push(`<span class="rem">− encadrant ${fmtNames(removedEnc)}</span>`);
+  return bits.length ? `<div class="diff-detail">${bits.join(" · ")}</div>` : "";
+}
 function renderImportDiff(){
+  const alertsEl = document.getElementById("diff-alerts");
+  alertsEl.innerHTML = (importDiff.alerts || []).map(a => `<div class="diff-alert ${a.type}">${escapeHtml(a.text)}</div>`).join("");
+
   const el = document.getElementById("diff-summary");
   const rows = [
-    ["Nouveaux projets", importDiff.toCreate],
-    ["Projets mis à jour", importDiff.toUpdate],
-    ["Projets réactivés (revenus dans l'Excel)", importDiff.toReactivate],
-    ["Projets absents du fichier → archivés (notes conservées)", importDiff.toArchive],
+    ["Nouveaux projets", importDiff.toCreate, true],
+    ["Projets mis à jour", importDiff.toUpdate, true],
+    ["Projets réactivés (revenus dans l'Excel)", importDiff.toReactivate, false],
+    ["Projets absents du fichier → archivés (notes conservées)", importDiff.toArchive, false],
   ];
-  el.innerHTML = rows.map(([label,list]) => `
+  el.innerHTML = rows.map(([label,list,detailed]) => `
     <div class="diff-row">
-      <div><div>${label}</div>${list.length ? `<div class="diff-names">${list.map(x=>escapeHtml(x.nom)).join(", ")}</div>` : ""}</div>
+      <div><div>${label}</div>${detailed
+        ? list.map(g => `<div class="diff-proj"><b>${escapeHtml(g.nom)}</b>${importDiffDetail(g)}</div>`).join("")
+        : (list.length ? `<div class="diff-names">${list.map(x=>escapeHtml(x.nom)).join(", ")}</div>` : "")}</div>
       <b>${list.length}</b>
     </div>`).join("");
+
+  const rel = document.getElementById("diff-relocate");
+  const toRelocate = importDiff.toRelocate || [];
+  rel.innerHTML = !toRelocate.length ? "" : `<div class="diff-row" style="flex-direction:column; align-items:stretch;">
+    <div style="display:flex; justify-content:space-between;"><b>Étudiants déplacés vers un autre projet, retirés d'ici</b><b>${toRelocate.length}</b></div>
+    ${toRelocate.map(r => `<div class="diff-proj"><b>${escapeHtml(r.nom)}</b><div class="diff-detail">
+      ${r.removedEtu.map(x => `<span class="rem">− ${escapeHtml(x.nom)} → ${escapeHtml(x.vers)}</span>`).join(" ")}
+    </div></div>`).join("")}
+  </div>`;
+
   const skippedHint = document.getElementById("diff-skipped-hint");
   if(importDiff.skipped){
     skippedHint.textContent = `${importDiff.skipped} étudiant(s) pas encore affecté(s) à un projet dans le fichier (colonne "Nom du projet" vide) — ignoré(s) pour cet import.`;
@@ -2270,6 +2439,10 @@ function renderImportDiff(){
 }
 document.getElementById("diff-cancel").addEventListener("click", () => document.getElementById("modal-import-diff").classList.remove("open"));
 document.getElementById("diff-confirm").addEventListener("click", async () => {
+  if((importDiff.alerts || []).some(a => a.type === "error")){
+    alert("Corrigez d'abord le fichier : au moins une alerte bloquante est affichée en haut (en rouge).");
+    return;
+  }
   try{
     for(const g of importDiff.toCreate){
       const {id,...rest} = g;
@@ -2287,6 +2460,11 @@ document.getElementById("diff-confirm").addEventListener("click", async () => {
       const existing = projects.get(g.id);
       existing.archived = true;
       await pb.collection("sae_projects").update(existing.id, {archived:true});
+    }
+    for(const r of (importDiff.toRelocate || [])){
+      const existing = projects.get(r.id);
+      Object.assign(existing, r.patch);
+      await pb.collection("sae_projects").update(existing.id, r.patch);
     }
     document.getElementById("modal-import-diff").classList.remove("open");
     showToast("Import terminé");

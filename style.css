@@ -428,3 +428,16 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .jr-table tr.bad td{ background:color-mix(in srgb, var(--danger) 7%, var(--surface)); }
 
 .tc-code{ font-family:var(--font-mono); font-size:22px; letter-spacing:.08em; text-align:center; padding:14px; border:1px dashed var(--rule-strong); border-radius:var(--radius); user-select:all; background:var(--surface-2); }
+
+/* import Excel : alertes et récapitulatif détaillé */
+.diff-alerts{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.diff-alert{ font-size:12.5px; padding:8px 10px; border-radius:var(--radius); border:1px solid var(--rule); background:var(--surface-2); }
+.diff-alert.warn{ border-color:var(--warn); background:color-mix(in srgb, var(--warn) 12%, var(--surface)); }
+.diff-alert.error{ border-color:var(--danger); background:color-mix(in srgb, var(--danger) 8%, var(--surface)); color:var(--danger); font-weight:600; }
+.diff-alert.info{ border-color:var(--logo-blue); background:color-mix(in srgb, var(--logo-blue) 8%, var(--surface)); }
+.diff-proj{ padding:5px 0 5px 9px; border-left:2px solid var(--rule-strong); margin-top:6px; font-size:12px; }
+.diff-proj:first-child{ margin-top:2px; }
+.diff-proj b{ font-size:12.5px; }
+.diff-detail{ margin-top:2px; color:var(--ink-muted); }
+.diff-detail .add{ color:var(--good); }
+.diff-detail .rem{ color:var(--danger); }
