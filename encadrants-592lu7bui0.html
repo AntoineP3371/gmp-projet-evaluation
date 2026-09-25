@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.56">
+<link rel="stylesheet" href="style.css?v=0.57">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.56"></script>
+<script src="app-common.js?v=0.57"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.56</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.57</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -51,6 +51,10 @@
       <button class="nav-item" id="nav-encadrants">
         <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6"/><circle cx="18" cy="9" r="2.4"/><path d="M16.2 14c2.8.4 4.8 2.5 4.8 5.6"/></svg>
         Encadrants
+      </button>
+      <button class="nav-item" id="nav-etudiants">
+        <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="M6 10.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-5.5"/></svg>
+        Étudiants
       </button>
       <button class="nav-item" id="nav-journal">
         <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
@@ -197,6 +201,20 @@
     <div class="modal-actions">
       <button class="btn" id="ae-cancel">Annuler</button>
       <button class="btn btn-accent" id="ae-save">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-add-etudiant">
+  <div class="modal">
+    <h2>Ajouter un étudiant</h2>
+    <p class="hint">Indiquez son nom et le projet auquel le rattacher. Un étudiant ne peut être que sur un seul projet.</p>
+    <div class="field-full"><label for="aet-nom">Nom Prénom</label><input type="text" id="aet-nom"></div>
+    <div class="field-full"><label for="aet-project">Projet</label><select id="aet-project"></select></div>
+    <p class="modal-error" id="aet-error" hidden></p>
+    <div class="modal-actions">
+      <button class="btn" id="aet-cancel">Annuler</button>
+      <button class="btn btn-accent" id="aet-save">Ajouter</button>
     </div>
   </div>
 </div>
@@ -448,6 +466,7 @@ function renderAll(){
   else if(view === "referentiel") renderReferentielView();
   else if(view === "projets") renderProjectsManagementView();
   else if(view === "encadrants") renderEncadrantsManagementView();
+  else if(view === "etudiants") renderEtudiantsManagementView();
   else if(view === "agenda") renderAgendaView();
   else if(view === "journal") renderJournalView();
   else renderEmpty();
@@ -545,6 +564,7 @@ function renderSidebar(){
   document.getElementById("nav-referentiel").classList.toggle("active", view==="referentiel");
   document.getElementById("nav-projets").classList.toggle("active", view==="projets");
   document.getElementById("nav-encadrants").classList.toggle("active", view==="encadrants");
+  document.getElementById("nav-etudiants").classList.toggle("active", view==="etudiants");
   document.getElementById("nav-agenda").classList.toggle("active", view==="agenda");
   document.getElementById("nav-journal").classList.toggle("active", view==="journal");
   const jb = document.getElementById("journal-badge");
@@ -1583,6 +1603,237 @@ document.getElementById("ae-save").addEventListener("click", async () => {
     showTempCode(nom, code);
   }catch(e){ errEl.textContent = "Échec : " + (e && e.message ? e.message : "erreur inconnue"); errEl.hidden = false; }
 });
+let etuColFilters = { nom:"", projet:"", formation:"", parcours:"", annee:"" };
+let etuSort = { col:"nom", dir:1 };
+const ETU_COLS = [
+  { key:"nom",       label:"Nom Prénom" },
+  { key:"projet",    label:"Projet" },
+  { key:"formation", label:"Formation" },
+  { key:"parcours",  label:"Parcours" },
+  { key:"annee",     label:"Année" },
+];
+// une entrée d'individualisation est indexée par la position de l'étudiant dans project.etudiants :
+// en retirer un décale les entrées suivantes d'un cran, sous peine d'attribuer la note revue d'un
+// étudiant à un autre après suppression ou déplacement.
+function removeEtudiantAt(project, idx){
+  const etudiants = (project.etudiants||[]).filter((_,i) => i !== idx);
+  const individualisation = deepClone(project.individualisation || {S3:{},S4:{}});
+  for(const sem of Object.keys(individualisation)){
+    const reindexed = {};
+    for(const k of Object.keys(individualisation[sem]||{})){
+      const n = Number(k);
+      if(n === idx) continue;
+      reindexed[n > idx ? n - 1 : n] = individualisation[sem][k];
+    }
+    individualisation[sem] = reindexed;
+  }
+  return { etudiants, individualisation };
+}
+function etuAllRows(){
+  const rows = [];
+  for(const p of projects.values()){
+    (p.etudiants||[]).forEach((nom, idx) => { if(nom) rows.push({ nom, p, idx }); });
+  }
+  return rows;
+}
+function etuFilteredSortedRows(){
+  let rows = etuAllRows();
+  const f = etuColFilters;
+  if(f.nom.trim()) rows = rows.filter(r => normName(r.nom).includes(normName(f.nom)));
+  if(f.projet.trim()) rows = rows.filter(r => normName(r.p.nom).includes(normName(f.projet)));
+  if(f.formation) rows = rows.filter(r => (r.p.formation||"") === f.formation);
+  if(f.parcours) rows = rows.filter(r => (r.p.parcours||"") === f.parcours);
+  if(f.annee) rows = rows.filter(r => (r.p.annee||"") === f.annee);
+  const keyFn = {
+    nom: r => r.nom, projet: r => r.p.nom, formation: r => r.p.formation||"",
+    parcours: r => r.p.parcours||"", annee: r => r.p.annee||"",
+  }[etuSort.col];
+  rows.sort((a,b) => keyFn(a).localeCompare(keyFn(b), "fr", {sensitivity:"base"}) * etuSort.dir);
+  return rows;
+}
+function etuRebuildRows(){
+  const tbody = document.querySelector(".ref-table-etudiants tbody");
+  const empty = document.getElementById("etu-empty");
+  if(!tbody) return;
+  const rows = etuFilteredSortedRows();
+  tbody.innerHTML = "";
+  for(const r of rows) renderEtudiantRow(tbody, r.nom, r.p, r.idx);
+  if(empty) empty.hidden = rows.length !== 0;
+}
+function renderEtudiantsManagementView(){
+  const main = document.getElementById("main");
+  if(!adminUnlocked){
+    main.innerHTML = `<div class="empty-state"><h2>Gestion des étudiants</h2><p>Réservée au mode administrateur.</p>
+      <button class="btn btn-accent" id="etu-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
+    main.querySelector("#etu-unlock-admin").addEventListener("click", openAdminModal);
+    return;
+  }
+  main.innerHTML = "";
+  const head = document.createElement("div");
+  head.className = "team-head";
+  head.innerHTML = `<div><h1>Gestion des étudiants</h1><div class="tags"><span class="tag">Admin</span></div></div>`;
+  main.appendChild(head);
+
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.style.marginBottom = "16px";
+  hint.textContent = "Liste agrégée depuis tous les projets. Un étudiant n'est jamais que sur un seul projet. Cliquez un en-tête pour trier, ✎ pour modifier une valeur — Formation / Parcours / Année concernent le projet entier, pas seulement cet étudiant.";
+  main.appendChild(hint);
+
+  const allRows = etuAllRows();
+  const distinct = keyFn => Array.from(new Set(allRows.map(keyFn).filter(Boolean))).sort((a,b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
+  const options = {
+    formation: distinct(r => r.p.formation),
+    parcours: distinct(r => r.p.parcours),
+    annee: distinct(r => r.p.annee),
+  };
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "ref-table-wrap";
+  const table = document.createElement("table");
+  table.className = "ref-table ref-table-etudiants";
+  const headRow = "<tr>" + ETU_COLS.map(c => `<th class="sortable" data-col="${c.key}">${c.label}${etuSort.col===c.key ? (etuSort.dir===1 ? " ▲" : " ▼") : ""}</th>`).join("") + "<th></th></tr>";
+  const filterCell = c => {
+    if(c.key === "nom" || c.key === "projet") return `<th><input type="text" class="ref-filter-input" data-col="${c.key}" value="${escapeHtml(etuColFilters[c.key])}" placeholder="Filtrer…"></th>`;
+    const opts = options[c.key];
+    return `<th><select class="ref-filter-input" data-col="${c.key}"><option value="">Tous / toutes</option>${opts.map(v => `<option value="${escapeHtml(v)}"${etuColFilters[c.key]===v ? " selected" : ""}>${escapeHtml(v)}</option>`).join("")}</select></th>`;
+  };
+  const filterRow = "<tr class=\"ref-filter-row\">" + ETU_COLS.map(filterCell).join("") + "<th></th></tr>";
+  table.innerHTML = `<thead>${headRow}${filterRow}</thead><tbody></tbody>`;
+  table.querySelectorAll("th.sortable").forEach(th => th.addEventListener("click", () => {
+    const col = th.dataset.col;
+    if(etuSort.col === col) etuSort.dir *= -1; else { etuSort.col = col; etuSort.dir = 1; }
+    renderEtudiantsManagementView();
+  }));
+  table.querySelectorAll(".ref-filter-row [data-col]").forEach(el => {
+    const ev = el.tagName === "SELECT" ? "change" : "input";
+    el.addEventListener(ev, e => { etuColFilters[e.target.dataset.col] = e.target.value; etuRebuildRows(); });
+  });
+  tableWrap.appendChild(table);
+  main.appendChild(tableWrap);
+
+  const empty = document.createElement("p");
+  empty.id = "etu-empty";
+  empty.style.cssText = "color:var(--ink-muted); font-size:12.5px; margin-top:10px;";
+  empty.textContent = "Aucun étudiant ne correspond.";
+  empty.hidden = true;
+  main.appendChild(empty);
+
+  etuRebuildRows();
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "btn btn-sm";
+  addBtn.style.marginTop = "10px";
+  addBtn.textContent = "+ Ajouter un étudiant";
+  addBtn.addEventListener("click", openAddEtudiantModal);
+  main.appendChild(addBtn);
+}
+function renderEtudiantRow(tbody, nom, p, idx){
+  const row = document.createElement("tr");
+  row.className = "ref-row";
+  const cell = (field, val) => `<td class="etu-cell">${escapeHtml(val)} <button class="cell-edit" type="button" data-field="${field}" title="Modifier">✎</button></td>`;
+  row.innerHTML =
+    cell("nom", nom) +
+    cell("projet", p.nom) +
+    cell("formation", p.formation||"—") +
+    cell("parcours", p.parcours||"—") +
+    cell("annee", p.annee||"—") +
+    `<td class="ref-row-actions"><button class="btn-ghost btn-sm btn-danger" type="button" data-action="delete">Supprimer</button></td>`;
+  row.querySelectorAll(".cell-edit").forEach(btn => btn.addEventListener("click", () => editEtudiantField(p, nom, idx, btn.dataset.field)));
+  row.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+    if(!confirm(`Supprimer "${nom}" du projet "${p.nom}" ?`)) return;
+    try{
+      const fresh = await pb.collection("sae_projects").getOne(p.id);
+      const { etudiants, individualisation } = removeEtudiantAt(fresh, idx);
+      const updated = await pb.collection("sae_projects").update(p.id, { etudiants, individualisation });
+      projects.set(updated.slug, updated);
+      showToast("Étudiant supprimé");
+      renderEtudiantsManagementView();
+    }catch(e){ alert("Échec : " + (e && e.message ? e.message : "erreur inconnue")); }
+  });
+  tbody.appendChild(row);
+}
+async function editEtudiantField(p, nom, idx, field){
+  try{
+    if(field === "nom"){
+      const next = prompt("Nom Prénom :", nom);
+      if(next === null) return;
+      const trimmed = next.trim();
+      if(!trimmed || trimmed === nom) return;
+      const fresh = await pb.collection("sae_projects").getOne(p.id);
+      const etudiants = fresh.etudiants.slice();
+      etudiants[idx] = trimmed;
+      const updated = await pb.collection("sae_projects").update(p.id, { etudiants });
+      projects.set(updated.slug, updated);
+      showToast("Étudiant modifié");
+    } else if(field === "projet"){
+      const sorted = Array.from(projects.values()).filter(x => !x.archived).sort((a,b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
+      const names = sorted.map(x => x.nom);
+      const chosen = prompt(`Déplacer "${nom}" vers quel projet ?\n\n${names.join("\n")}`, p.nom);
+      if(chosen === null) return;
+      const trimmed = chosen.trim();
+      if(!trimmed || trimmed === p.nom) return;
+      const dest = sorted.find(x => x.nom === trimmed);
+      if(!dest){ alert("Ce projet ne correspond à aucun projet actif existant."); return; }
+      if(rosterHasName(dest.etudiants, nom)){ alert(`"${nom}" est déjà sur le projet "${dest.nom}".`); return; }
+      if(!confirm(`Déplacer "${nom}" du projet "${p.nom}" vers "${dest.nom}" ?`)) return;
+      const freshSrc = await pb.collection("sae_projects").getOne(p.id);
+      const { etudiants: srcEtudiants, individualisation: srcIndiv } = removeEtudiantAt(freshSrc, idx);
+      const updatedSrc = await pb.collection("sae_projects").update(p.id, { etudiants:srcEtudiants, individualisation:srcIndiv });
+      projects.set(updatedSrc.slug, updatedSrc);
+      const freshDest = await pb.collection("sae_projects").getOne(dest.id);
+      const destEtudiants = (freshDest.etudiants||[]).concat([nom]);
+      const updatedDest = await pb.collection("sae_projects").update(dest.id, { etudiants:destEtudiants });
+      projects.set(updatedDest.slug, updatedDest);
+      showToast("Étudiant déplacé");
+    } else {
+      const labels = { formation:"Formation", parcours:"Parcours", annee:"Année" };
+      const current = p[field] || "";
+      const next = prompt(`${labels[field]} du projet "${p.nom}" :`, current);
+      if(next === null) return;
+      const trimmed = next.trim();
+      if(trimmed === current) return;
+      const n = (p.etudiants||[]).length;
+      if(!confirm(`Ce champ concerne le projet "${p.nom}" entier (${n} étudiant${n>1?"s":""}), pas seulement "${nom}". Continuer ?`)) return;
+      const updated = await pb.collection("sae_projects").update(p.id, { [field]: trimmed });
+      projects.set(updated.slug, updated);
+      showToast("Projet modifié");
+    }
+    renderEtudiantsManagementView();
+  }catch(e){ alert("Échec : " + (e && e.message ? e.message : "erreur inconnue")); }
+}
+function openAddEtudiantModal(){
+  document.getElementById("aet-nom").value = "";
+  document.getElementById("aet-error").hidden = true;
+  const sel = document.getElementById("aet-project");
+  const sorted = Array.from(projects.values())
+    .filter(p => !p.archived)
+    .sort((a,b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
+  sel.innerHTML = sorted.length
+    ? sorted.map(p => `<option value="${escapeHtml(p.slug)}">${escapeHtml(p.nom)}</option>`).join("")
+    : "";
+  document.getElementById("modal-add-etudiant").classList.add("open");
+}
+document.getElementById("aet-cancel").addEventListener("click", () => document.getElementById("modal-add-etudiant").classList.remove("open"));
+document.getElementById("aet-save").addEventListener("click", async () => {
+  const errEl = document.getElementById("aet-error");
+  errEl.hidden = true;
+  const nom = document.getElementById("aet-nom").value.trim();
+  if(!nom){ errEl.textContent = "Le nom est requis."; errEl.hidden = false; return; }
+  const slug = document.getElementById("aet-project").value;
+  const p = projects.get(slug);
+  if(!p){ errEl.textContent = "Choisissez un projet."; errEl.hidden = false; return; }
+  try{
+    const fresh = await pb.collection("sae_projects").getOne(p.id);
+    if(rosterHasName(fresh.etudiants, nom)){ errEl.textContent = "Cet étudiant est déjà sur ce projet."; errEl.hidden = false; return; }
+    const etudiants = (fresh.etudiants||[]).concat([nom]);
+    const updated = await pb.collection("sae_projects").update(p.id, { etudiants });
+    projects.set(updated.slug, updated);
+    document.getElementById("modal-add-etudiant").classList.remove("open");
+    showToast("Étudiant ajouté");
+    renderEtudiantsManagementView();
+  }catch(e){ errEl.textContent = "Échec : " + (e && e.message ? e.message : "erreur inconnue"); errEl.hidden = false; }
+});
 function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
   const card = document.createElement("div");
@@ -2109,6 +2360,7 @@ document.getElementById("nav-referentiel").addEventListener("click", () => { if(
 document.getElementById("nav-projets").addEventListener("click", () => { view = "projets"; renderAll(); });
 document.getElementById("nav-agenda").addEventListener("click", () => { view = "agenda"; renderAll(); if(!connectedUser) openConnectModal(); });
 document.getElementById("nav-encadrants").addEventListener("click", () => { view = "encadrants"; renderAll(); });
+document.getElementById("nav-etudiants").addEventListener("click", () => { view = "etudiants"; renderAll(); });
 document.getElementById("nav-journal").addEventListener("click", () => { view = "journal"; renderAll(); });
 document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
 document.getElementById("filter-annee").addEventListener("change", e => { filterAnnee = e.target.value; renderSidebar(); });

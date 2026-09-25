@@ -294,6 +294,13 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .ref-table td{ padding:6px 10px; border-bottom:1px solid var(--rule); vertical-align:middle; }
 .ref-table tbody tr.ref-row:last-child td{ border-bottom:none; }
 .ref-table-encadrants td:first-child, .ref-table-encadrants th:first-child{ white-space:nowrap; }
+.ref-table-etudiants td:first-child, .ref-table-etudiants th:first-child{ white-space:nowrap; }
+.ref-table th.sortable{ cursor:pointer; user-select:none; }
+.ref-table th.sortable:hover{ color:var(--ink); }
+.ref-filter-row th{ padding:5px 8px; background:var(--surface); border-bottom:1px solid var(--rule-strong); }
+.ref-filter-input{ width:100%; font-size:11.5px; padding:3px 6px; border:1px solid var(--rule-strong); border-radius:6px; background:var(--surface-2); color:var(--ink); font-family:inherit; box-sizing:border-box; }
+.etu-cell .cell-edit{ margin-left:4px; border:none; background:none; cursor:pointer; color:var(--ink-faint); font-size:11px; padding:0 2px; vertical-align:middle; }
+.etu-cell .cell-edit:hover{ color:var(--ink); }
 .ref-idx{ font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); white-space:nowrap; }
 .ref-drag-handle{ cursor:grab; color:var(--ink-faint); text-align:center; width:20px; user-select:none; }
 .ref-drag-handle:active{ cursor:grabbing; }
