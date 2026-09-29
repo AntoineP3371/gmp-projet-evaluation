@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.58">
+<link rel="stylesheet" href="style.css?v=0.59">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.58"></script>
+<script src="app-common.js?v=0.59"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.58</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.59</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -703,7 +703,7 @@ async function openIcsModal(){
   const field = document.getElementById("ics-url");
   field.value = "Génération du lien…";
   box.classList.add("open");
-  try{ field.value = PB_URL + "/ics/" + await ensureIcsToken(false); }
+  try{ field.value = PB_URL + "/ics/" + await ensureIcsToken(false) + ".ics"; }
   catch(e){ field.value = ""; showToast("Lien indisponible (réseau ou serveur) — réessayez"); }
 }
 document.getElementById("ics-close").addEventListener("click", () => document.getElementById("modal-ics").classList.remove("open"));
@@ -715,7 +715,7 @@ document.getElementById("ics-copy").addEventListener("click", () => {
 document.getElementById("ics-regen").addEventListener("click", async () => {
   const field = document.getElementById("ics-url");
   field.value = "Régénération…";
-  try{ field.value = PB_URL + "/ics/" + await ensureIcsToken(true); showToast("Lien régénéré — l'ancien ne fonctionne plus"); }
+  try{ field.value = PB_URL + "/ics/" + await ensureIcsToken(true) + ".ics"; showToast("Lien régénéré — l'ancien ne fonctionne plus"); }
   catch(e){ showToast("Échec de la régénération (réessayez)"); }
 });
 
