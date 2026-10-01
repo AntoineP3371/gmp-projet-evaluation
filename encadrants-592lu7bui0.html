@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.63">
+<link rel="stylesheet" href="style.css?v=0.64">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.63</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.64</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -2335,20 +2335,31 @@ function renderConnectBody(){
   body.querySelector("#connect-toggle-change").addEventListener("click", () => { const w = body.querySelector("#connect-change-fields"); w.hidden = !w.hidden; });
   body.querySelector("#connect-code").focus();
 }
-function openConnectModal(preset, opts){
+let encNamesCache = null;
+async function fetchEncadrantNames(){
+  if(encNamesCache) return encNamesCache;
+  try{
+    const r = await fetch(PB_URL + "/enc/names");
+    if(!r.ok) throw new Error("bad status");
+    encNamesCache = await r.json();
+  }catch(e){ encNamesCache = allEncadrantNames(); }
+  return encNamesCache;
+}
+async function openConnectModal(preset, opts){
   opts = opts || {};
   connectStep = { mode:"login", oldHash:null, wantAdmin:!!opts.admin };
   const sel = document.getElementById("connect-who");
-  const names = allEncadrantNames();
-  sel.innerHTML = `<option value="">— Choisir —</option>` + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
-  const pre = preset ? names.find(n => normName(n) === normName(preset)) : "";
-  sel.value = pre || "";
+  sel.innerHTML = `<option value="">Chargement…</option>`;
   document.getElementById("connect-title").textContent = opts.idle ? "Session verrouillée" : "Connexion";
   document.getElementById("connect-hint").textContent = opts.idle
     ? "Vous avez été déconnecté après 20 minutes d'inactivité. Reconnectez-vous pour continuer."
     : "Choisissez votre nom et saisissez votre code : tous vos projets sont débloqués d'un coup, et le calendrier de vos évaluations est prêt.";
   renderConnectBody();
   document.getElementById("modal-connect").classList.add("open");
+  const names = await fetchEncadrantNames();
+  sel.innerHTML = `<option value="">— Choisir —</option>` + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+  const pre = preset ? names.find(n => normName(n) === normName(preset)) : "";
+  sel.value = pre || "";
 }
 function closeConnectModal(){ document.getElementById("modal-connect").classList.remove("open"); }
 function connectAs(){

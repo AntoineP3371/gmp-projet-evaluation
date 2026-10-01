@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="evaluation/evaluation-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.63">
+<link rel="stylesheet" href="style.css?v=0.64">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
@@ -33,7 +33,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.63</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.64</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -154,6 +154,14 @@ async function renderProjectList(){
     groups.get(key).push(p);
   }
   const sortedKeys = [...groups.keys()].sort((a,b) => a.localeCompare(b, "fr"));
+  const PARCOURS_COLORS = ["--c1","--c2","--c3","--c4","--c5"];
+  const colorByKey = new Map(sortedKeys.map((key,i) => [key, `var(${PARCOURS_COLORS[i % PARCOURS_COLORS.length]})`]));
+  const trackLabel = (formation) => {
+    if(!formation) return "";
+    if(/app/i.test(formation)) return "Apprentissage";
+    if(/init/i.test(formation)) return "Formation initiale";
+    return "";
+  };
   const selectProject = (p) => { currentToken = p.token; currentProjectName = p.nom; renderAll(); };
   for(const key of sortedKeys){
     const group = document.createElement("div");
@@ -162,10 +170,15 @@ async function renderProjectList(){
     const grid = document.createElement("div");
     grid.className = "etu-project-grid";
     for(const p of groups.get(key)){
+      const track = trackLabel(p.formation);
       const card = document.createElement("div");
       card.className = "etu-project-card";
+      card.style.setProperty("--card-color", colorByKey.get(key));
       card.innerHTML = `
-        ${p.parcours ? `<span class="etu-pill">${escapeHtml(p.parcours)}</span>` : ""}
+        <div class="etu-badges">
+          ${p.parcours ? `<span class="etu-pill">${escapeHtml(p.parcours)}</span>` : ""}
+          ${track ? `<span class="etu-track">${escapeHtml(track)}</span>` : ""}
+        </div>
         <h3>${escapeHtml(p.nom)}</h3>
         ${p.description ? `<p>${escapeHtml(p.description)}</p>` : ""}
         <span class="etu-go">Accéder →</span>`;

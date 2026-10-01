@@ -161,13 +161,15 @@ h1,h2,h3{ text-wrap:balance; }
 .etu-project-group{ margin-bottom:26px; }
 .etu-project-group-title{ font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 10px; }
 .etu-project-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:14px; }
-.etu-project-card{ position:relative; background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:18px 16px 16px; overflow:hidden; cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:8px; transition:border-color .15s, transform .15s; }
-.etu-project-card::before{ content:""; position:absolute; top:0; left:0; right:0; height:4px; background:var(--accent); }
-.etu-project-card:hover{ border-color:var(--accent); transform:translateY(-1px); }
-.etu-project-card .etu-pill{ align-self:flex-start; background:var(--surface-2); color:var(--accent); font-size:10.5px; font-weight:700; letter-spacing:.03em; padding:3px 9px; border-radius:99px; text-transform:uppercase; }
+.etu-project-card{ --card-color:var(--accent); position:relative; background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:18px 16px 16px; overflow:hidden; cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:8px; transition:border-color .15s, transform .15s; }
+.etu-project-card::before{ content:""; position:absolute; top:0; left:0; right:0; height:4px; background:var(--card-color); }
+.etu-project-card:hover{ border-color:var(--card-color); transform:translateY(-1px); }
+.etu-project-card .etu-badges{ display:flex; flex-wrap:wrap; gap:6px; }
+.etu-project-card .etu-pill{ background:var(--surface-2); color:var(--card-color); font-size:10.5px; font-weight:700; letter-spacing:.03em; padding:3px 9px; border-radius:99px; text-transform:uppercase; }
+.etu-project-card .etu-track{ background:transparent; color:var(--ink-faint); font-size:10.5px; font-weight:600; letter-spacing:.02em; padding:3px 9px; border:1px solid var(--rule-strong); border-radius:99px; }
 .etu-project-card h3{ margin:2px 0 0; font-size:15.5px; }
 .etu-project-card p{ margin:0; font-size:12.5px; color:var(--ink-muted); line-height:1.45; flex:1; }
-.etu-project-card .etu-go{ font-size:12.5px; font-weight:600; color:var(--accent); }
+.etu-project-card .etu-go{ font-size:12.5px; font-weight:600; color:var(--card-color); }
 .lock-icon{ width:16px; height:16px; flex:none; }
 
 .presence-warning{ background:var(--surface-2); border:1px solid var(--warn); color:var(--ink); border-radius:var(--radius); padding:10px 14px; margin-bottom:18px; font-size:12.5px; }
