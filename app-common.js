@@ -2,6 +2,14 @@
 // Chargé via <script src="app-common.js"> avant le script propre à chaque page ;
 // ces fonctions s'appuient sur des globales définies par la page (ex. allItems).
 
+function fmtDate(s){
+  return s ? new Date(String(s).replace(" ", "T")).toLocaleString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"}) : "";
+}
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
 function escapeHtml(s){
   return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }

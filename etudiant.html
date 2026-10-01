@@ -19,11 +19,11 @@
 <link rel="apple-touch-icon" href="evaluation/evaluation-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.60">
+<link rel="stylesheet" href="style.css?v=0.61">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.60"></script>
+<script src="app-common.js?v=0.61"></script>
 </head>
 <body>
 
@@ -33,24 +33,14 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.60</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.61</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
       <span class="brand-sub">Consultation — lecture seule</span>
     </button>
 
-    <div class="side-field">
-      <label for="side-search">Recherche</label>
-      <input class="side-search" id="side-search" type="text" placeholder="Nom de projet, d'étudiant, d'encadrant…" title="Rechercher par nom de projet, d'étudiant ou d'encadrant">
-    </div>
-    <div class="side-filters">
-      <div class="side-field"><label for="filter-annee">Année</label><select class="side-select" id="filter-annee"><option value="">Toutes années</option></select></div>
-      <div class="side-field"><label for="filter-formation">Formation</label><select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select></div>
-      <div class="side-field"><label for="filter-parcours">Parcours</label><select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select></div>
-    </div>
-
-    <ul class="team-list" id="team-list"></ul>
+    <div id="side-lock"></div>
 
     <div class="sidebar-admin">
       <div class="theme-status" id="theme-status">
@@ -82,137 +72,97 @@ let projects = new Map();
 let currentProjectId = null;
 let currentSemestre = "S3";
 let currentVue = "S3";
-let showArchived = false;
-let searchFilter = "";
-let filterAnnee = "";
-let filterFormation = "";
-let filterParcours = "";
 
-/* ---------------- data loading ---------------- */
+/* ---------------- accès par lien + mot de passe de projet ---------------- */
+const params = new URLSearchParams(location.search);
+const etuToken = params.get("p") || "";
+let unlocked = false;
+let autoRefreshTimer = null;
+
 async function loadReferentiel(){
   try{
     const rec = await pb.collection("sae_config").getFirstListItem('key="referentiel"');
     referentiel = rec.value;
     allItems = allItemsFromReferentiel(referentiel);
-  }catch(e){ referentiel = null; allItems = []; }
-  renderAll();
-}
-async function loadProjects(){
-  try{
-    const list = await pb.collection("sae_projects").getFullList({ sort: "nom" });
-    projects.clear();
-    for(const r of list) projects.set(r.id, r);
     showConnError(false);
-  }catch(e){ showConnError(true); return; }
-  renderAll();
+  }catch(e){ referentiel = null; allItems = []; showConnError(true); }
 }
-function subscribeRealtime(){
-  pb.collection("sae_projects").subscribe("*", (e) => {
-    const avant = projects.get(e.record.id);
-    if(e.action === "delete") projects.delete(e.record.id);
-    else projects.set(e.record.id, e.record);
-    if(e.action !== "delete" && avant && sansPresence(avant) === sansPresence(e.record)){ renderSidebar(); return; }
-    const st = captureViewState();
+function hashKey(){ return "etu-hash-" + etuToken; }
+async function tryUnlock(hash){
+  try{
+    const r = await fetch(PB_URL + "/etu/unlock", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ token: etuToken, hash }),
+    });
+    const d = await r.json();
+    if(!r.ok) return { ok:false, error: d.error || "Échec de la connexion." };
+    projects.clear(); projects.set(d.project.slug, d.project);
+    commentsAll = d.comments || []; eventsAll = d.events || []; journalAll = d.journal || [];
+    currentProjectId = d.project.slug;
+    unlocked = true;
+    try{ sessionStorage.setItem(hashKey(), hash); }catch(e){}
     renderAll();
-    restoreViewState(st);
-  }).catch(()=>{});
-  pb.collection("sae_journal").subscribe("*", (e) => {
-    if(e.action !== "delete") upsertJournal(e.record);
-    const p = projects.get(currentProjectId);
-    if(p) refreshNoteStamps(p, currentSemestre);
-  }).catch(()=>{});
-  pb.collection("sae_events").subscribe("*", (e) => {
-    if(e.action === "delete") eventsAll = eventsAll.filter(x => x.id !== e.record.id);
-    else upsertEvent(e.record);
-    const st = captureViewState();
-    renderAll();
-    restoreViewState(st);
-  }).catch(()=>{});
-  pb.collection("sae_comments").subscribe("*", (e) => {
-    if(e.action === "delete") commentsAll = commentsAll.filter(c => c.id !== e.record.id);
-    else upsertComment(e.record);
-    const p = projects.get(currentProjectId);
-    if(!p || p.slug !== e.record.project || e.record.sem !== currentSemestre) return;
-    const th = document.querySelector('.cm-thread[data-item="' + CSS.escape(e.record.item) + '"]');
-    if(th) drawThreadList(th, p, currentSemestre, e.record.item, { readOnly:true });
-  }).catch(()=>{});
-  pb.collection("sae_config").subscribe("*", (e) => {
-    if(e.record.key === "referentiel"){ referentiel = e.record.value; allItems = allItemsFromReferentiel(referentiel); renderAll(); }
-  }).catch(()=>{});
+    if(!autoRefreshTimer) autoRefreshTimer = setInterval(() => tryUnlock(hash), 3 * 60 * 1000);
+    return { ok:true };
+  }catch(e){ return { ok:false, error:"Connexion au serveur impossible." }; }
+}
+function lockAgain(){
+  unlocked = false;
+  try{ sessionStorage.removeItem(hashKey()); }catch(e){}
+  if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  renderAll();
 }
 
-/* ---------------- rendering (read-only) ---------------- */
+/* ---------------- rendering ---------------- */
 function renderAll(){
-  renderSidebar();
-  if(currentProjectId) renderProjectView(); else renderEmpty();
+  renderSideLock();
+  if(!etuToken) return renderNoToken();
+  if(!unlocked) return renderPasswordScreen();
+  renderProjectView();
 }
-function matchesFilter(p){
-  if(filterAnnee && p.annee !== filterAnnee) return false;
-  if(filterFormation && p.formation !== filterFormation) return false;
-  if(filterParcours && p.parcours !== filterParcours) return false;
-  if(!searchFilter) return true;
-  const q = searchFilter.toLowerCase();
-  if((p.nom||"").toLowerCase().includes(q)) return true;
-  if((p.sujet||"").toLowerCase().includes(q)) return true;
-  if((p.parcours||"").toLowerCase().includes(q)) return true;
-  if((p.etudiants||[]).some(n => (n||"").toLowerCase().includes(q))) return true;
-  if((p.encadrants||[]).some(n => (n||"").toLowerCase().includes(q))) return true;
-  return false;
+function renderSideLock(){
+  const el = document.getElementById("side-lock");
+  el.innerHTML = unlocked
+    ? `<button class="btn btn-sm" id="btn-lock-again" type="button">Verrouiller</button>`
+    : "";
+  if(unlocked) el.querySelector("#btn-lock-again").addEventListener("click", lockAgain);
 }
-function populateFilterOptions(){
-  const annees = new Set(), formations = new Set(), parcoursSet = new Set();
-  for(const p of projects.values()){
-    if(p.annee) annees.add(p.annee);
-    if(p.formation) formations.add(p.formation);
-    if(p.parcours) parcoursSet.add(p.parcours);
-  }
-  fillSelect("filter-annee", annees, "Toutes années", filterAnnee);
-  fillSelect("filter-formation", formations, "Toutes formations", filterFormation);
-  fillSelect("filter-parcours", parcoursSet, "Tous parcours", filterParcours);
-}
-function renderSidebar(){
-  populateFilterOptions();
-  const ul = document.getElementById("team-list");
-  ul.innerHTML = "";
-  const entries = Array.from(projects.entries())
-    .filter(([id,p]) => !p.archived && p.visible_eleves !== false && matchesFilter(p))
-    .sort((a,b) => a[1].nom.localeCompare(b[1].nom, "fr", {sensitivity:"base"}));
-  if(entries.length === 0){
-    const li = document.createElement("li");
-    li.style.cssText = "color:var(--ink-faint); font-size:12.5px; padding:6px 2px;";
-    li.textContent = "Aucun projet ne correspond.";
-    ul.appendChild(li);
-  } else {
-    for(const [id,p] of entries){
-      const li = document.createElement("li");
-      const btn = document.createElement("button");
-      const overdue = getOverdueItemNumbers(p);
-      const lockState = connectionState(p);
-      btn.className = "team-item" + (currentProjectId===id ? " active" : "");
-      btn.innerHTML = `<span class="team-item-lock ${lockState}" title="${lockState==="none"?"Aucun encadrant connecté":lockState==="one"?"Un encadrant connecté":"Plusieurs encadrants connectés"}">${lockIconSvg(lockState!=="none")}</span>
-        <div class="team-item-main">
-          <div class="team-item-top-row">
-            <span class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}</span>
-            <span class="team-item-sujet">${escapeHtml([p.formation, p.parcours].filter(Boolean).join(" · ") || p.sujet || "—")}</span>
-          </div>
-          <div class="team-item-students">${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : ""}</div>
-        </div>`;
-      btn.addEventListener("click", () => { currentProjectId = id; renderAll(); });
-      li.appendChild(btn);
-      ul.appendChild(li);
-    }
-  }
-}
-function renderEmpty(){
+function renderNoToken(){
   document.getElementById("main").innerHTML = `<div class="empty-state">
-    <h2>Aucun projet sélectionné</h2>
-    <p>Choisissez un projet à gauche pour consulter son évaluation.</p>
+    <h2>Lien manquant</h2>
+    <p>Utilisez le lien personnel transmis par votre encadrant pour accéder à l'évaluation de votre projet.</p>
   </div>`;
+}
+function renderPasswordScreen(error){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="empty-state">
+    <h2>Accès à votre projet</h2>
+    <p>Saisissez le mot de passe transmis par votre encadrant.</p>
+    <div class="side-field" style="max-width:280px; margin:16px auto 0; text-align:left;">
+      <label for="etu-pw">Mot de passe</label>
+      <input type="password" id="etu-pw" autocomplete="off">
+    </div>
+    ${error ? `<p style="color:var(--danger); font-size:12.5px; margin-top:8px;">${escapeHtml(error)}</p>` : ""}
+    <button class="btn btn-accent" id="etu-pw-submit" style="margin-top:14px;">Accéder</button>
+  </div>`;
+  const input = main.querySelector("#etu-pw");
+  const submit = async () => {
+    const value = input.value;
+    if(!value) return;
+    submitBtn.disabled = true;
+    const hash = await sha256Hex(value);
+    const res = await tryUnlock(hash);
+    if(!res.ok){ renderPasswordScreen(res.error); }
+  };
+  const submitBtn = main.querySelector("#etu-pw-submit");
+  submitBtn.addEventListener("click", submit);
+  input.addEventListener("keydown", e => { if(e.key === "Enter") submit(); });
+  input.focus();
 }
 function renderProjectView(){
   const main = document.getElementById("main");
   const p = projects.get(currentProjectId);
-  if(!p || p.visible_eleves === false){ currentProjectId = null; renderEmpty(); return; }
+  if(!p || p.visible_eleves === false){ lockAgain(); return; }
   if(!referentiel){ main.innerHTML = `<div class="empty-state"><h2>Référentiel indisponible</h2></div>`; return; }
   main.innerHTML = "";
 
@@ -320,11 +270,7 @@ function renderIndividualisation(project){
   return buildIndividualisation(project, currentSemestre, true, null);
 }
 
-document.getElementById("brand-home").addEventListener("click", () => { currentProjectId = null; renderAll(); });
-document.getElementById("side-search").addEventListener("input", e => { searchFilter = e.target.value; renderSidebar(); });
-document.getElementById("filter-annee").addEventListener("change", e => { filterAnnee = e.target.value; renderSidebar(); });
-document.getElementById("filter-formation").addEventListener("change", e => { filterFormation = e.target.value; renderSidebar(); });
-document.getElementById("filter-parcours").addEventListener("change", e => { filterParcours = e.target.value; renderSidebar(); });
+document.getElementById("brand-home").addEventListener("click", () => { if(unlocked) renderProjectView(); });
 document.getElementById("btn-theme-toggle").addEventListener("click", () => {
   const next = effectiveTheme() === "dark" ? "light" : "dark";
   localStorage.setItem("theme", next);
@@ -334,9 +280,15 @@ document.getElementById("btn-theme-toggle").addEventListener("click", () => {
 updateThemeToggleBtn();
 
 async function init(){
-  renderEmpty();
-  await Promise.all([loadReferentiel(), loadProjects(), loadComments(), loadEvents(), loadJournal()]);
-  subscribeRealtime();
+  await loadReferentiel();
+  if(!etuToken){ renderAll(); return; }
+  let savedHash = null;
+  try{ savedHash = sessionStorage.getItem(hashKey()); }catch(e){}
+  if(savedHash){
+    const res = await tryUnlock(savedHash);
+    if(res.ok) return;
+  }
+  renderAll();
 }
 init();
 </script>
