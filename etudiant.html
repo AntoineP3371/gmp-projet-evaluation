@@ -19,11 +19,11 @@
 <link rel="apple-touch-icon" href="evaluation/evaluation-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.61">
+<link rel="stylesheet" href="style.css?v=0.62">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.61"></script>
+<script src="app-common.js?v=0.62"></script>
 </head>
 <body>
 
@@ -33,7 +33,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.61</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.62</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -73,9 +73,11 @@ let currentProjectId = null;
 let currentSemestre = "S3";
 let currentVue = "S3";
 
-/* ---------------- accès par lien + mot de passe de projet ---------------- */
+/* ---------------- accès par lien (ou liste) + mot de passe de projet ---------------- */
 const params = new URLSearchParams(location.search);
-const etuToken = params.get("p") || "";
+let currentToken = params.get("p") || "";
+let currentProjectName = "";
+let projectList = null; // null = pas encore chargée ; [] = chargée, vide
 let unlocked = false;
 let autoRefreshTimer = null;
 
@@ -87,12 +89,12 @@ async function loadReferentiel(){
     showConnError(false);
   }catch(e){ referentiel = null; allItems = []; showConnError(true); }
 }
-function hashKey(){ return "etu-hash-" + etuToken; }
-async function tryUnlock(hash){
+function pwKey(){ return "etu-pw-" + currentToken; }
+async function tryUnlock(password){
   try{
     const r = await fetch(PB_URL + "/etu/unlock", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ token: etuToken, hash }),
+      body: JSON.stringify({ token: currentToken, password }),
     });
     const d = await r.json();
     if(!r.ok) return { ok:false, error: d.error || "Échec de la connexion." };
@@ -100,25 +102,27 @@ async function tryUnlock(hash){
     commentsAll = d.comments || []; eventsAll = d.events || []; journalAll = d.journal || [];
     currentProjectId = d.project.slug;
     unlocked = true;
-    try{ sessionStorage.setItem(hashKey(), hash); }catch(e){}
+    try{ sessionStorage.setItem(pwKey(), password); }catch(e){}
     renderAll();
-    if(!autoRefreshTimer) autoRefreshTimer = setInterval(() => tryUnlock(hash), 3 * 60 * 1000);
+    if(!autoRefreshTimer) autoRefreshTimer = setInterval(() => tryUnlock(password), 3 * 60 * 1000);
     return { ok:true };
   }catch(e){ return { ok:false, error:"Connexion au serveur impossible." }; }
 }
 function lockAgain(){
   unlocked = false;
-  try{ sessionStorage.removeItem(hashKey()); }catch(e){}
+  const hadUrlToken = !!params.get("p");
+  try{ sessionStorage.removeItem(pwKey()); }catch(e){}
   if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  if(!hadUrlToken){ currentToken = ""; currentProjectName = ""; }
   renderAll();
 }
 
 /* ---------------- rendering ---------------- */
 function renderAll(){
   renderSideLock();
-  if(!etuToken) return renderNoToken();
-  if(!unlocked) return renderPasswordScreen();
-  renderProjectView();
+  if(unlocked) return renderProjectView();
+  if(currentToken) return renderPasswordScreen();
+  renderProjectList();
 }
 function renderSideLock(){
   const el = document.getElementById("side-lock");
@@ -127,16 +131,37 @@ function renderSideLock(){
     : "";
   if(unlocked) el.querySelector("#btn-lock-again").addEventListener("click", lockAgain);
 }
-function renderNoToken(){
-  document.getElementById("main").innerHTML = `<div class="empty-state">
-    <h2>Lien manquant</h2>
-    <p>Utilisez le lien personnel transmis par votre encadrant pour accéder à l'évaluation de votre projet.</p>
+async function renderProjectList(){
+  const main = document.getElementById("main");
+  if(projectList === null){
+    main.innerHTML = `<div class="empty-state"><h2>Choisissez votre projet</h2><p>Chargement…</p></div>`;
+    try{
+      const r = await fetch(PB_URL + "/etu/list");
+      projectList = await r.json();
+    }catch(e){ projectList = []; }
+    if(currentToken) return; // un lien a ete utilise entre temps (double appel), on laisse l'autre vue s'afficher
+  }
+  main.innerHTML = `<div class="empty-state">
+    <h2>Choisissez votre projet</h2>
+    <p>${projectList.length ? "Sélectionnez votre projet, puis saisissez le mot de passe transmis par votre encadrant." : "Aucun projet disponible pour le moment."}</p>
+    <div class="etu-project-list" id="etu-project-list"></div>
   </div>`;
+  const list = main.querySelector("#etu-project-list");
+  for(const p of projectList){
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.textContent = p.nom;
+    btn.addEventListener("click", () => {
+      currentToken = p.token; currentProjectName = p.nom;
+      renderAll();
+    });
+    list.appendChild(btn);
+  }
 }
 function renderPasswordScreen(error){
   const main = document.getElementById("main");
   main.innerHTML = `<div class="empty-state">
-    <h2>Accès à votre projet</h2>
+    <h2>${currentProjectName ? escapeHtml(currentProjectName) : "Accès à votre projet"}</h2>
     <p>Saisissez le mot de passe transmis par votre encadrant.</p>
     <div class="side-field" style="max-width:280px; margin:16px auto 0; text-align:left;">
       <label for="etu-pw">Mot de passe</label>
@@ -144,18 +169,20 @@ function renderPasswordScreen(error){
     </div>
     ${error ? `<p style="color:var(--danger); font-size:12.5px; margin-top:8px;">${escapeHtml(error)}</p>` : ""}
     <button class="btn btn-accent" id="etu-pw-submit" style="margin-top:14px;">Accéder</button>
+    ${!params.get("p") ? `<button class="btn btn-sm" id="etu-pw-back" style="margin-top:14px; margin-left:8px;">← Autre projet</button>` : ""}
   </div>`;
   const input = main.querySelector("#etu-pw");
   const submit = async () => {
     const value = input.value;
     if(!value) return;
     submitBtn.disabled = true;
-    const hash = await sha256Hex(value);
-    const res = await tryUnlock(hash);
+    const res = await tryUnlock(value);
     if(!res.ok){ renderPasswordScreen(res.error); }
   };
   const submitBtn = main.querySelector("#etu-pw-submit");
   submitBtn.addEventListener("click", submit);
+  const backBtn = main.querySelector("#etu-pw-back");
+  if(backBtn) backBtn.addEventListener("click", () => { currentToken = ""; currentProjectName = ""; renderAll(); });
   input.addEventListener("keydown", e => { if(e.key === "Enter") submit(); });
   input.focus();
 }
@@ -281,11 +308,11 @@ updateThemeToggleBtn();
 
 async function init(){
   await loadReferentiel();
-  if(!etuToken){ renderAll(); return; }
-  let savedHash = null;
-  try{ savedHash = sessionStorage.getItem(hashKey()); }catch(e){}
-  if(savedHash){
-    const res = await tryUnlock(savedHash);
+  if(!currentToken){ renderAll(); return; }
+  let savedPw = null;
+  try{ savedPw = sessionStorage.getItem(pwKey()); }catch(e){}
+  if(savedPw){
+    const res = await tryUnlock(savedPw);
     if(res.ok) return;
   }
   renderAll();
