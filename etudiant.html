@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="evaluation/evaluation-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.62">
+<link rel="stylesheet" href="style.css?v=0.63">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
@@ -33,7 +33,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.62</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.63</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -144,18 +144,36 @@ async function renderProjectList(){
   main.innerHTML = `<div class="empty-state">
     <h2>Choisissez votre projet</h2>
     <p>${projectList.length ? "Sélectionnez votre projet, puis saisissez le mot de passe transmis par votre encadrant." : "Aucun projet disponible pour le moment."}</p>
-    <div class="etu-project-list" id="etu-project-list"></div>
+    <div class="etu-project-groups" id="etu-project-groups"></div>
   </div>`;
-  const list = main.querySelector("#etu-project-list");
+  const groupsEl = main.querySelector("#etu-project-groups");
+  const groups = new Map();
   for(const p of projectList){
-    const btn = document.createElement("button");
-    btn.className = "btn";
-    btn.textContent = p.nom;
-    btn.addEventListener("click", () => {
-      currentToken = p.token; currentProjectName = p.nom;
-      renderAll();
-    });
-    list.appendChild(btn);
+    const key = p.parcours || "Autres projets";
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  }
+  const sortedKeys = [...groups.keys()].sort((a,b) => a.localeCompare(b, "fr"));
+  const selectProject = (p) => { currentToken = p.token; currentProjectName = p.nom; renderAll(); };
+  for(const key of sortedKeys){
+    const group = document.createElement("div");
+    group.className = "etu-project-group";
+    group.innerHTML = `<p class="etu-project-group-title">${escapeHtml(key)}</p>`;
+    const grid = document.createElement("div");
+    grid.className = "etu-project-grid";
+    for(const p of groups.get(key)){
+      const card = document.createElement("div");
+      card.className = "etu-project-card";
+      card.innerHTML = `
+        ${p.parcours ? `<span class="etu-pill">${escapeHtml(p.parcours)}</span>` : ""}
+        <h3>${escapeHtml(p.nom)}</h3>
+        ${p.description ? `<p>${escapeHtml(p.description)}</p>` : ""}
+        <span class="etu-go">Accéder →</span>`;
+      card.addEventListener("click", () => selectProject(p));
+      grid.appendChild(card);
+    }
+    group.appendChild(grid);
+    groupsEl.appendChild(group);
   }
 }
 function renderPasswordScreen(error){
