@@ -114,6 +114,15 @@ h1,h2,h3{ text-wrap:balance; }
 .pm-row{ cursor:pointer; }
 .pm-row:hover{ background:var(--surface-2); }
 
+.etu-topbar{ display:flex; align-items:center; justify-content:center; padding:16px 20px; background:var(--surface); border-bottom:1px solid var(--rule); }
+.etu-brand{ display:flex; align-items:center; gap:12px; background:none; border:none; box-shadow:none; padding:0; margin:0; font:inherit; color:inherit; appearance:none; -webkit-appearance:none; cursor:pointer; }
+.etu-brand:hover .brand-title{ text-decoration:underline; }
+.etu-brand .brand-logo{ height:30px; }
+.etu-brand-text{ display:flex; flex-direction:column; gap:1px; align-items:flex-start; }
+.etu-footer{ display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap; padding:18px 20px 28px; border-top:1px solid var(--rule); }
+.etu-footer .theme-status{ margin:0; }
+.etu-footer .privacy-link{ align-self:auto; }
+
 .main{
   min-width:0; padding:30px 40px 80px; max-width:1320px;
   background:
