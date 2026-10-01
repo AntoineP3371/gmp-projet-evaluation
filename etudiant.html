@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="evaluation/evaluation-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.66">
+<link rel="stylesheet" href="style.css?v=0.67">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
@@ -33,20 +33,19 @@
   <button class="etu-brand" id="brand-home" type="button">
     <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
     <span class="etu-brand-text">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.66</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.67</span></span>
       <span class="brand-title">Fiches d'évaluation des projets</span>
     </span>
   </button>
+  <div class="etu-topbar-actions">
+    <div id="side-lock"></div>
+    <button class="btn btn-ghost btn-sm" id="btn-theme-toggle" type="button"></button>
+  </div>
 </header>
 
 <main class="main etu-main" id="main"></main>
 
 <footer class="etu-footer">
-  <div id="side-lock"></div>
-  <div class="theme-status" id="theme-status">
-    <span>Affichage</span>
-    <button class="btn btn-ghost btn-sm" id="btn-theme-toggle" type="button"></button>
-  </div>
   <a class="privacy-link" href="confidentialite.html">Confidentialité</a>
 </footer>
 
@@ -130,7 +129,7 @@ function renderSideLock(){
 async function renderProjectList(){
   const main = document.getElementById("main");
   if(projectList === null){
-    main.innerHTML = `<div class="empty-state"><h2>Choisissez votre projet</h2><p>Chargement…</p></div>`;
+    main.innerHTML = `<div class="empty-state"><h2>Sélectionnez votre projet</h2><p>Chargement…</p></div>`;
     try{
       const r = await fetch(PB_URL + "/etu/list");
       projectList = await r.json();
@@ -138,7 +137,7 @@ async function renderProjectList(){
     if(currentToken) return; // un lien a ete utilise entre temps (double appel), on laisse l'autre vue s'afficher
   }
   main.innerHTML = `<div class="empty-state">
-    <h2>Choisissez votre projet</h2>
+    <h2>Sélectionnez votre projet</h2>
     <p>${projectList.length ? "Sélectionnez votre projet, puis saisissez le mot de passe transmis par votre encadrant." : "Aucun projet disponible pour le moment."}</p>
     <div class="etu-project-groups" id="etu-project-groups"></div>
   </div>`;

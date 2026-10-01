@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.64">
+<link rel="stylesheet" href="style.css?v=0.67">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.64</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.67</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -1414,7 +1414,13 @@ function etuLinkFor(token){
 function renderEtuAccessPanel(project){
   const wrap = document.createElement("div");
   wrap.className = "etu-access";
+  const collapsed = sessionStorage.getItem("etu-access-collapsed") === "1";
   wrap.innerHTML = `
+    <button class="etu-access-toggle" id="etu-access-toggle" type="button" aria-expanded="${collapsed ? "false" : "true"}">
+      <span>Accès étudiants</span>
+      <span class="etu-access-chevron${collapsed ? " collapsed" : ""}">▾</span>
+    </button>
+    <div class="etu-access-body" id="etu-access-body" ${collapsed ? "hidden" : ""}>
     <div class="etu-access-field">
       <label>Lien d'accès étudiants</label>
       <div class="etu-access-row">
@@ -1447,7 +1453,19 @@ function renderEtuAccessPanel(project){
         <button class="btn btn-sm" id="etu-desc-save" type="button">Enregistrer</button>
       </div>
       <p class="hint" style="margin:4px 0 0;">Affiché sur la page de sélection des projets, à destination des étudiants.</p>
+    </div>
     </div>`;
+
+  wrap.querySelector("#etu-access-toggle").addEventListener("click", () => {
+    const body = wrap.querySelector("#etu-access-body");
+    const toggle = wrap.querySelector("#etu-access-toggle");
+    const chevron = wrap.querySelector(".etu-access-chevron");
+    const nowCollapsed = !body.hidden;
+    body.hidden = nowCollapsed;
+    chevron.classList.toggle("collapsed", nowCollapsed);
+    toggle.setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
+    sessionStorage.setItem("etu-access-collapsed", nowCollapsed ? "1" : "0");
+  });
 
   wrap.querySelector("#etu-link-copy").addEventListener("click", () => {
     try{ navigator.clipboard.writeText(wrap.querySelector("#etu-link").value); showToast("Lien copié"); }catch(e){}

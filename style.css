@@ -114,14 +114,13 @@ h1,h2,h3{ text-wrap:balance; }
 .pm-row{ cursor:pointer; }
 .pm-row:hover{ background:var(--surface-2); }
 
-.etu-topbar{ display:flex; align-items:center; justify-content:center; padding:16px 20px; background:var(--surface); border-bottom:1px solid var(--rule); }
+.etu-topbar{ display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:16px 20px; background:var(--surface); border-bottom:1px solid var(--rule); }
 .etu-brand{ display:flex; align-items:center; gap:12px; background:none; border:none; box-shadow:none; padding:0; margin:0; font:inherit; color:inherit; appearance:none; -webkit-appearance:none; cursor:pointer; }
 .etu-brand:hover .brand-title{ text-decoration:underline; }
 .etu-brand .brand-logo{ height:30px; }
 .etu-brand-text{ display:flex; flex-direction:column; gap:1px; align-items:flex-start; }
+.etu-topbar-actions{ display:flex; align-items:center; gap:10px; margin-left:auto; }
 .etu-footer{ display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap; padding:18px 20px 28px; border-top:1px solid var(--rule); }
-.etu-footer .theme-status{ margin:0; }
-.etu-footer .privacy-link{ align-self:auto; }
 main.etu-main{ max-width:none; margin:0 auto; }
 
 .main{
@@ -163,6 +162,10 @@ main.etu-main{ max-width:none; margin:0 auto; }
 .lock-banner.rw .lock-banner-label{ color:var(--ink); font-weight:600; }
 .lock-banner-instructions{ color:var(--danger); font-weight:700; }
 .etu-access{ display:flex; flex-direction:column; gap:12px; width:100%; }
+.etu-access-toggle{ display:flex; align-items:center; justify-content:space-between; width:100%; background:none; border:none; padding:0; margin:0; font:inherit; font-weight:700; font-size:13px; color:var(--ink); cursor:pointer; }
+.etu-access-chevron{ color:var(--ink-faint); transition:transform .15s; }
+.etu-access-chevron.collapsed{ transform:rotate(-90deg); }
+.etu-access-body{ display:flex; flex-direction:column; gap:12px; margin-top:12px; }
 .etu-access-field label{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-muted); margin-bottom:5px; }
 .etu-access-row{ display:flex; gap:8px; flex-wrap:wrap; }
 .etu-access-row input{ flex:1 1 260px; min-width:0; font-family:var(--font-mono); font-size:12.5px; padding:7px 10px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface); color:var(--ink); }
