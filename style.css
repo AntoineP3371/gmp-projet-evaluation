@@ -166,6 +166,7 @@ main.etu-main{ max-width:none; margin:0 auto; }
 .etu-access-chevron{ color:var(--ink-faint); transition:transform .15s; }
 .etu-access-chevron.collapsed{ transform:rotate(-90deg); }
 .etu-access-body{ display:flex; flex-direction:column; gap:12px; margin-top:12px; }
+.etu-access-steps{ margin:0; padding-left:20px; font-size:12.5px; color:var(--ink-muted); line-height:1.6; }
 .etu-access-field label{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-muted); margin-bottom:5px; }
 .etu-access-row{ display:flex; gap:8px; flex-wrap:wrap; }
 .etu-access-row input{ flex:1 1 260px; min-width:0; font-family:var(--font-mono); font-size:12.5px; padding:7px 10px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface); color:var(--ink); }
