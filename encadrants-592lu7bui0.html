@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.69">
+<link rel="stylesheet" href="style.css?v=0.70">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.69</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.70</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -81,6 +81,10 @@
       <div class="theme-status" id="theme-status">
         <span>Affichage</span>
         <button class="btn btn-ghost btn-sm" id="btn-theme-toggle" type="button"></button>
+      </div>
+      <div class="theme-status" id="admin-status" hidden>
+        <span>Administration</span>
+        <button class="btn btn-ghost btn-sm" id="btn-admin-toggle" type="button"></button>
       </div>
       <div class="side-links">
         <a class="privacy-link" href="guide-encadrants.pdf" download="guide-encadrants.pdf" title="Télécharger le guide de démarrage (PDF, 3 pages)">Guide</a>
@@ -499,17 +503,20 @@ function renderSidebar(){
   const meBox = document.getElementById("side-me");
   if(connectedUser){
     const n = myProjects().length;
-    const adminLabel = adminUnlocked ? "Quitter l'administration" : "Mode administrateur";
-    meBox.innerHTML = `<div class="side-me"><span class="side-me-dot"></span><div class="side-me-txt"><b>${escapeHtml(connectedUser)}</b><small>${n} projet${n > 1 ? "s" : ""} débloqué${n > 1 ? "s" : ""}</small></div><div class="side-me-actions"><button class="btn btn-sm${adminUnlocked ? " btn-accent" : ""}" id="btn-admin-toggle" type="button">${adminLabel}</button><button class="btn btn-sm" id="btn-disconnect" type="button">Se déconnecter</button></div></div>`;
+    meBox.innerHTML = `<div class="side-me"><span class="side-me-dot"></span><div class="side-me-txt"><b>${escapeHtml(connectedUser)}</b><small>${n} projet${n > 1 ? "s" : ""} débloqué${n > 1 ? "s" : ""}</small></div><div class="side-me-actions"><button class="btn btn-sm" id="btn-disconnect" type="button">Se déconnecter</button></div></div>`;
     meBox.querySelector("#btn-disconnect").addEventListener("click", () => disconnect(false));
-    meBox.querySelector("#btn-admin-toggle").addEventListener("click", () => {
-      if(adminUnlocked){ adminUnlocked = false; usersAll = []; saveSession(); loadProjects(); renderAll(); }
-      else activateAdmin();
-    });
   } else {
     meBox.innerHTML = `<button class="btn btn-sm side-connect" id="btn-connect" type="button">Se connecter</button>`;
     meBox.querySelector("#btn-connect").addEventListener("click", () => openConnectModal());
   }
+  const adminRow = document.getElementById("admin-status");
+  adminRow.hidden = !connectedUser;
+  const adminBtn = document.getElementById("btn-admin-toggle");
+  adminBtn.textContent = adminUnlocked ? "Quitter l'administration" : "Mode administrateur";
+  adminBtn.onclick = () => {
+    if(adminUnlocked){ adminUnlocked = false; usersAll = []; saveSession(); loadProjects(); renderAll(); }
+    else activateAdmin();
+  };
   const ul = document.getElementById("team-list");
   ul.innerHTML = "";
   const entries = Array.from(projects.entries())
