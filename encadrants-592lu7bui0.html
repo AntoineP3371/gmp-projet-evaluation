@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.73">
+<link rel="stylesheet" href="style.css?v=0.74">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.73</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.74</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -535,7 +535,9 @@ function renderSidebar(){
   if(entries.length === 0){
     const li = document.createElement("li");
     li.style.cssText = "color:var(--ink-faint); font-size:12.5px; padding:6px 2px;";
-    li.textContent = projects.size === 0 ? "Aucun projet — importez un Excel." : "Aucun projet ne correspond.";
+    li.textContent = !connectedUser ? "Connectez-vous pour afficher vos projets."
+      : projects.size === 0 ? (adminUnlocked ? "Aucun projet — importez un Excel." : "Aucun projet à votre nom.")
+      : "Aucun projet ne correspond.";
     ul.appendChild(li);
   } else {
     for(const [id,p] of entries){
