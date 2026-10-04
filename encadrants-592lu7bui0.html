@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.70">
+<link rel="stylesheet" href="style.css?v=0.71">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.70</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.71</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -470,6 +470,8 @@ function renderAll(){
   else renderEmpty();
   syncPresence();
 }
+// hors mode administrateur, un encadrant (administrateur compris) ne voit que les projets qu'il encadre
+function canSee(p){ return adminUnlocked || !connectedUser || rosterHasName(p.encadrants, connectedUser); }
 function matchesFilter(p){
   if(filterAnnee && p.annee !== filterAnnee) return false;
   if(filterFormation && p.formation !== filterFormation) return false;
@@ -488,6 +490,7 @@ function populateFilterOptions(){
   canonNameCache.clear();
   const annees = new Set(), formations = new Set(), parcoursSet = new Set(), encadrantsSet = new Set();
   for(const p of projects.values()){
+    if(!canSee(p)) continue;
     if(p.annee) annees.add(p.annee);
     if(p.formation) formations.add(p.formation);
     if(p.parcours) parcoursSet.add(p.parcours);
@@ -520,7 +523,7 @@ function renderSidebar(){
   const ul = document.getElementById("team-list");
   ul.innerHTML = "";
   const entries = Array.from(projects.entries())
-    .filter(([id,p]) => (showArchived || !p.archived) && (adminUnlocked || p.visible_eleves !== false) && matchesFilter(p))
+    .filter(([id,p]) => canSee(p) && (showArchived || !p.archived) && (adminUnlocked || p.visible_eleves !== false) && matchesFilter(p))
     .sort((a,b) => {
       const rk = p => connectedUser && rosterHasName(p.encadrants, connectedUser) ? 0 : 1;
       return (rk(a[1]) - rk(b[1])) || a[1].nom.localeCompare(b[1].nom, "fr", {sensitivity:"base"});
@@ -539,7 +542,7 @@ function renderSidebar(){
         if(grp !== lastGroup){
           const hd = document.createElement("li");
           hd.className = "team-group";
-          hd.textContent = grp === "mine" ? "Mes projets (" + nMine + ")" : "Autres projets · lecture seule";
+          hd.textContent = grp === "mine" ? "Mes projets (" + nMine + ")" : "Autres projets";
           ul.appendChild(hd);
           lastGroup = grp;
         }
