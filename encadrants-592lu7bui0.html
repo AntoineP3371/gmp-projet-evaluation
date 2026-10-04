@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.74">
+<link rel="stylesheet" href="style.css?v=0.75">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.74</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.75</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -1368,13 +1368,11 @@ function renderProjectView(){
     </div>
     <div class="team-head-actions">
       ${adminUnlocked ? `<button class="btn btn-sm" id="btn-edit-project">Modifier les infos</button>` : ""}
-      <button class="btn btn-sm" id="btn-toggle-bareme">${baremeVisible ? "Masquer les barèmes" : "Afficher les barèmes"}</button>
     </div>`;
   main.appendChild(head);
   if(adminUnlocked){
     head.querySelector("#btn-edit-project").addEventListener("click", () => openProjectEditModal(currentProjectId));
   }
-  head.querySelector("#btn-toggle-bareme").addEventListener("click", () => { baremeVisible = !baremeVisible; renderProjectView(); });
   head.querySelectorAll(".encadrant-btn").forEach(b => b.addEventListener("click", () => { if(!connectedUser) openConnectModal(b.dataset.name); }));
 
   const banner = document.createElement("div");
@@ -1432,7 +1430,7 @@ function renderEtuAccessPanel(project){
   wrap.innerHTML = `
     <button class="etu-access-toggle" id="etu-access-toggle" type="button" aria-expanded="${collapsed ? "false" : "true"}">
       <span>Accès étudiants</span>
-      <span class="etu-access-chevron${collapsed ? " collapsed" : ""}">▾</span>
+      <span class="etu-access-hint"><span class="etu-access-state">${collapsed ? "Déplier" : "Replier"}</span><span class="etu-access-chevron${collapsed ? " collapsed" : ""}">▾</span></span>
     </button>
     ${project.visible_eleves === false ? `<p class="etu-access-hidden"><b>Ce projet n'est pas visible des étudiants</b> : ils ne peuvent pas y accéder tant qu'il reste masqué. ${adminUnlocked ? "Ce réglage se change dans « Projets » (colonne « Visible étudiants »)." : "Seul l'administrateur peut modifier ce réglage."}</p>` : ""}
     <div class="etu-access-body" id="etu-access-body" ${collapsed ? "hidden" : ""}>
@@ -1483,6 +1481,7 @@ function renderEtuAccessPanel(project){
     const nowCollapsed = !body.hidden;
     body.hidden = nowCollapsed;
     chevron.classList.toggle("collapsed", nowCollapsed);
+    wrap.querySelector(".etu-access-state").textContent = nowCollapsed ? "Déplier" : "Replier";
     toggle.setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
     sessionStorage.setItem("etu-access-collapsed", nowCollapsed ? "1" : "0");
   });
@@ -2031,11 +2030,13 @@ function renderVueBar(){
   toggles.className = "vue-toggles";
   toggles.innerHTML = `
     <label class="sw">Frise <button type="button" role="switch" data-t="frise" aria-checked="${affichage.frise}" aria-label="Afficher la frise"></button></label>
-    <label class="sw">Notes <button type="button" role="switch" data-t="notes" aria-checked="${affichage.notes}" aria-label="Afficher les notes par compétence"></button></label>`;
+    <label class="sw">Notes <button type="button" role="switch" data-t="notes" aria-checked="${affichage.notes}" aria-label="Afficher les notes par compétence"></button></label>
+    <label class="sw">Barèmes <button type="button" role="switch" data-t="bareme" aria-checked="${baremeVisible}" aria-label="Afficher les barèmes"></button></label>`;
   toggles.addEventListener("click", e => {
     const btn = e.target.closest("button[data-t]");
     if(!btn) return;
     const t = btn.dataset.t;
+    if(t === "bareme"){ baremeVisible = !baremeVisible; renderProjectView(); return; }
     affichage[t] = !affichage[t];
     saveAffichage();
     btn.setAttribute("aria-checked", affichage[t]);
