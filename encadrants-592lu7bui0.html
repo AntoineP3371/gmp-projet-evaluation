@@ -18,16 +18,16 @@
 </head>
 <body>
 
-<div class="conn-banner" id="conn-banner">Connexion au serveur impossible â€” vÃ©rifiez votre rÃ©seau ou rÃ©essayez plus tard.</div>
+<div class="conn-banner" id="conn-banner">Connexion au serveur impossible — vérifiez votre réseau ou réessayez plus tard.</div>
 
 <div class="app">
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE Â· BUT GMP <span class="version-tag">v0.76</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.76</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
-      <span class="brand-title">Fiches d'Ã©valuation des projets</span>
+      <span class="brand-title">Fiches d'évaluation des projets</span>
       <span class="brand-sub" id="brand-sub">Espace encadrants</span>
     </button>
 
@@ -35,7 +35,7 @@
 
     <button class="nav-item agenda-link" id="nav-agenda" type="button">
       <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-      Mes prochaines Ã©valuations
+      Mes prochaines évaluations
     </button>
 
     <div class="admin-nav" id="admin-nav" hidden>
@@ -54,7 +54,7 @@
       </button>
       <button class="nav-item" id="nav-etudiants">
         <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="M6 10.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-5.5"/></svg>
-        Ã‰tudiants
+        Étudiants
       </button>
       <button class="nav-item" id="nav-journal">
         <svg class="nav-item-icon" width="15" height="15" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
@@ -64,10 +64,10 @@
 
     <div class="side-field">
       <label for="side-search">Recherche</label>
-      <input class="side-search" id="side-search" type="text" placeholder="Nom de projet, d'Ã©tudiant, d'encadrantâ€¦" title="Rechercher par nom de projet, d'Ã©tudiant ou d'encadrant">
+      <input class="side-search" id="side-search" type="text" placeholder="Nom de projet, d'étudiant, d'encadrant…" title="Rechercher par nom de projet, d'étudiant ou d'encadrant">
     </div>
     <div class="side-filters">
-      <div class="side-field"><label for="filter-annee">AnnÃ©e</label><select class="side-select" id="filter-annee"><option value="">Toutes annÃ©es</option></select></div>
+      <div class="side-field"><label for="filter-annee">Année</label><select class="side-select" id="filter-annee"><option value="">Toutes années</option></select></div>
       <div class="side-field"><label for="filter-formation">Formation</label><select class="side-select" id="filter-formation"><option value="">Toutes formations</option></select></div>
       <div class="side-field"><label for="filter-parcours">Parcours</label><select class="side-select" id="filter-parcours"><option value="">Tous parcours</option></select></div>
       <div class="side-field"><label for="filter-encadrant">Encadrant</label><select class="side-select" id="filter-encadrant"><option value="">Tous encadrants</option></select></div>
@@ -87,9 +87,9 @@
         <button class="btn btn-ghost btn-sm" id="btn-admin-toggle" type="button"></button>
       </div>
       <div class="side-links">
-        <a class="privacy-link" href="guide-encadrants.pdf" download="guide-encadrants.pdf" title="TÃ©lÃ©charger le guide de dÃ©marrage (PDF, 3 pages)">Guide</a>
-        <span aria-hidden="true">Â·</span>
-        <a class="privacy-link" href="confidentialite.html">ConfidentialitÃ©</a>
+        <a class="privacy-link" href="guide-encadrants.pdf" download="guide-encadrants.pdf" title="Télécharger le guide de démarrage (PDF, 3 pages)">Guide</a>
+        <span aria-hidden="true">·</span>
+        <a class="privacy-link" href="confidentialite.html">Confidentialité</a>
       </div>
     </div>
   </aside>
@@ -113,11 +113,11 @@
 
 <div class="modal-backdrop" id="modal-event">
   <div class="modal">
-    <h2 id="event-title">Ajouter un Ã©vÃ©nement</h2>
+    <h2 id="event-title">Ajouter un événement</h2>
     <p class="hint" id="event-hint"></p>
     <div class="field-full"><label for="event-date">Date</label><input type="date" id="event-date"></div>
-    <div class="field-full"><label for="event-name">IntitulÃ©</label><input type="text" id="event-name" maxlength="120" placeholder="Ex. Soutenance intermÃ©diaire"></div>
-    <div class="field-full"><label>Projets concernÃ©s (facultatif)</label><div class="ev-projects" id="event-projects"></div></div>
+    <div class="field-full"><label for="event-name">Intitulé</label><input type="text" id="event-name" maxlength="120" placeholder="Ex. Soutenance intermédiaire"></div>
+    <div class="field-full"><label>Projets concernés (facultatif)</label><div class="ev-projects" id="event-projects"></div></div>
     <p class="modal-error" id="event-error" hidden></p>
     <div class="modal-actions">
       <button class="btn btn-danger" id="event-delete" type="button" hidden>Supprimer</button>
@@ -132,7 +132,7 @@
     <h2>Code provisoire</h2>
     <p class="hint" id="tc-hint"></p>
     <div class="tc-code" id="tc-code"></div>
-    <p class="hint" style="margin-top:12px;">Ce code ne sera plus affichÃ© une fois cette fenÃªtre fermÃ©e : notez-le ou copiez-le maintenant.</p>
+    <p class="hint" style="margin-top:12px;">Ce code ne sera plus affiché une fois cette fenêtre fermée : notez-le ou copiez-le maintenant.</p>
     <div class="modal-actions">
       <button class="btn" id="tc-copy" type="button">Copier</button>
       <button class="btn btn-accent" id="tc-close" type="button">Fermer</button>
@@ -143,22 +143,22 @@
 <div class="modal-backdrop" id="modal-ics">
   <div class="modal">
     <h2>Abonnement au calendrier</h2>
-    <p class="hint">Ce lien personnel regroupe les dates d'Ã©valuation de vos projets et vos Ã©vÃ©nements. Ajoutez-le une fois dans votre agenda : il se met ensuite Ã  jour tout seul (l'application de calendrier revient le consulter, environ toutes les 12 heures selon l'application).</p>
+    <p class="hint">Ce lien personnel regroupe les dates d'évaluation de vos projets et vos événements. Ajoutez-le une fois dans votre agenda : il se met ensuite à jour tout seul (l'application de calendrier revient le consulter, environ toutes les 12 heures selon l'application).</p>
     <div class="field-full"><label for="ics-url">Votre lien</label><input type="text" id="ics-url" readonly></div>
     <div class="modal-actions" style="justify-content:flex-start; gap:8px;">
       <button class="btn btn-accent" id="ics-copy" type="button">Copier le lien</button>
-      <button class="btn" id="ics-regen" type="button" title="Ce lien contient tout ce qu'il faut pour lire l'agenda, sans code ni connexion : quiconque l'obtient peut se l'ajouter Ã  son propre calendrier. Il ne peut pas Ãªtre retirÃ© autrement. RÃ©gÃ©nÃ©rez-le si vous l'avez partagÃ© par erreur ou laissÃ© sur un poste partagÃ© : l'ancien cesse aussitÃ´t de fonctionner (les Ã©vÃ©nements dÃ©jÃ  copiÃ©s dans un agenda y restent, seule la mise Ã  jour automatique s'arrÃªte).">RÃ©gÃ©nÃ©rer</button>
+      <button class="btn" id="ics-regen" type="button" title="Ce lien contient tout ce qu'il faut pour lire l'agenda, sans code ni connexion : quiconque l'obtient peut se l'ajouter à son propre calendrier. Il ne peut pas être retiré autrement. Régénérez-le si vous l'avez partagé par erreur ou laissé sur un poste partagé : l'ancien cesse aussitôt de fonctionner (les événements déjà copiés dans un agenda y restent, seule la mise à jour automatique s'arrête).">Régénérer</button>
     </div>
     <div class="help" style="margin-top:14px;">
       <h3>Ajouter ce calendrier</h3>
       <ul>
-        <li><b>Google Calendar</b> : Autres agendas (+) â†’ Ã€ partir de l'URL â†’ coller le lien.</li>
-        <li><b>Outlook</b> : Ajouter un calendrier â†’ Ã€ partir d'Internet â†’ coller le lien.</li>
-        <li><b>Apple Calendar</b> : Fichier â†’ Nouvel abonnement au calendrier â†’ coller le lien.</li>
-        <li><b>Zimbra</b> : Calendrier â†’ logo roue dentÃ©e â†’ Ajouter un calendrier externe â†’ type iCal â†’ coller le lien.</li>
+        <li><b>Google Calendar</b> : Autres agendas (+) → À partir de l'URL → coller le lien.</li>
+        <li><b>Outlook</b> : Ajouter un calendrier → À partir d'Internet → coller le lien.</li>
+        <li><b>Apple Calendar</b> : Fichier → Nouvel abonnement au calendrier → coller le lien.</li>
+        <li><b>Zimbra</b> : Calendrier → logo roue dentée → Ajouter un calendrier externe → type iCal → coller le lien.</li>
       </ul>
     </div>
-    <p class="hint" style="margin-top:10px;">Ce lien donne accÃ¨s aux dates et intitulÃ©s de vos projets, ni plus ni moins que ce que la page Ã©tudiants montre dÃ©jÃ  publiquement. <b>RÃ©gÃ©nÃ©rez-le</b> si vous l'avez partagÃ© par erreur : l'ancien cesse aussitÃ´t de fonctionner.</p>
+    <p class="hint" style="margin-top:10px;">Ce lien donne accès aux dates et intitulés de vos projets, ni plus ni moins que ce que la page étudiants montre déjà publiquement. <b>Régénérez-le</b> si vous l'avez partagé par erreur : l'ancien cesse aussitôt de fonctionner.</p>
     <div class="modal-actions">
       <button class="btn btn-accent" id="ics-close" type="button">Fermer</button>
     </div>
@@ -173,11 +173,11 @@
     <div class="field-full" id="pe-sujet-wrap"><label for="pe-sujet">Sujet</label><input type="text" id="pe-sujet"></div>
     <div class="field-full" id="pe-formation-wrap"><label for="pe-formation">Formation</label><input type="text" id="pe-formation"></div>
     <div class="field-full"><label for="pe-parcours">Parcours</label><input type="text" id="pe-parcours"></div>
-    <div class="field-full" id="pe-annee-wrap"><label for="pe-annee">AnnÃ©e</label><input type="text" id="pe-annee" placeholder="ex. 2026-2027"></div>
+    <div class="field-full" id="pe-annee-wrap"><label for="pe-annee">Année</label><input type="text" id="pe-annee" placeholder="ex. 2026-2027"></div>
     <div class="field-full">
-      <label>Ã‰tudiants</label>
+      <label>Étudiants</label>
       <div id="pe-student-rows"></div>
-      <button class="btn btn-ghost btn-sm" id="pe-add-student" type="button">+ Ajouter un Ã©tudiant</button>
+      <button class="btn btn-ghost btn-sm" id="pe-add-student" type="button">+ Ajouter un étudiant</button>
     </div>
     <div class="field-full" id="pe-encadrants-wrap">
       <label>Encadrants</label>
@@ -195,8 +195,8 @@
 <div class="modal-backdrop" id="modal-add-encadrant">
   <div class="modal wide">
     <h2>Ajouter un encadrant</h2>
-    <p class="hint">Indiquez son nom et cochez les projets sur lesquels il ou elle doit apparaÃ®tre. Un code provisoire est gÃ©nÃ©rÃ©, Ã  lui transmettre.</p>
-    <div class="field-full"><label for="ae-nom">Nom PrÃ©nom</label><input type="text" id="ae-nom"></div>
+    <p class="hint">Indiquez son nom et cochez les projets sur lesquels il ou elle doit apparaître. Un code provisoire est généré, à lui transmettre.</p>
+    <div class="field-full"><label for="ae-nom">Nom Prénom</label><input type="text" id="ae-nom"></div>
     <div class="field-full">
       <label>Projets</label>
       <div class="ae-project-list" id="ae-project-list"></div>
@@ -211,9 +211,9 @@
 
 <div class="modal-backdrop" id="modal-add-etudiant">
   <div class="modal">
-    <h2>Ajouter un Ã©tudiant</h2>
-    <p class="hint">Indiquez son nom et le projet auquel le rattacher. Un Ã©tudiant ne peut Ãªtre que sur un seul projet.</p>
-    <div class="field-full"><label for="aet-nom">Nom PrÃ©nom</label><input type="text" id="aet-nom"></div>
+    <h2>Ajouter un étudiant</h2>
+    <p class="hint">Indiquez son nom et le projet auquel le rattacher. Un étudiant ne peut être que sur un seul projet.</p>
+    <div class="field-full"><label for="aet-nom">Nom Prénom</label><input type="text" id="aet-nom"></div>
     <div class="field-full"><label for="aet-project">Projet</label><select id="aet-project"></select></div>
     <p class="modal-error" id="aet-error" hidden></p>
     <div class="modal-actions">
@@ -226,37 +226,37 @@
 <div class="modal-backdrop" id="modal-import-help">
   <div class="modal wide">
     <h2>Importer un fichier Excel</h2>
-    <p class="hint">Deux formats de fichier sont reconnus automatiquement. Les notes dÃ©jÃ  saisies ne sont jamais touchÃ©es par un import.</p>
+    <p class="hint">Deux formats de fichier sont reconnus automatiquement. Les notes déjà saisies ne sont jamais touchées par un import.</p>
     <div class="import-help">
-      <h3>Format Â« Gestion Ã©tudiants Â» (export standard)</h3>
+      <h3>Format « Gestion étudiants » (export standard)</h3>
       <ul>
-        <li>Un onglet par formation, nommÃ© <code>BUT 2â€¦</code> ou <code>BUT 3â€¦</code></li>
-        <li>En-tÃªtes sur 2 lignes ; colonnes dans cet ordre : <b>Nom</b>, <b>PrÃ©nom</b>, <b>Parcours</b>, <b>Formation</b>, puis (colonne K) <b>Nom du projet</b> et (colonnes L Ã  O) <b>Encadrant 1</b> Ã  <b>Encadrant 4</b></li>
-        <li>Une ligne par Ã©tudiant â€” les Ã©tudiants d'un mÃªme projet sont regroupÃ©s automatiquement</li>
-        <li>Une ligne sans Â« Nom du projet Â» renseignÃ© est ignorÃ©e (comptÃ©e Ã  part dans le rÃ©sumÃ©)</li>
-        <li>Les projets absents du fichier ne sont jamais archivÃ©s avec ce format</li>
+        <li>Un onglet par formation, nommé <code>BUT 2…</code> ou <code>BUT 3…</code></li>
+        <li>En-têtes sur 2 lignes ; colonnes dans cet ordre : <b>Nom</b>, <b>Prénom</b>, <b>Parcours</b>, <b>Formation</b>, puis (colonne K) <b>Nom du projet</b> et (colonnes L à O) <b>Encadrant 1</b> à <b>Encadrant 4</b></li>
+        <li>Une ligne par étudiant — les étudiants d'un même projet sont regroupés automatiquement</li>
+        <li>Une ligne sans « Nom du projet » renseigné est ignorée (comptée à part dans le résumé)</li>
+        <li>Les projets absents du fichier ne sont jamais archivés avec ce format</li>
       </ul>
-      <h3>Format Â« Ã  plat Â» (une feuille, une ligne par Ã©tudiant)</h3>
+      <h3>Format « à plat » (une feuille, une ligne par étudiant)</h3>
       <ul>
-        <li>Une seule feuille, en-tÃªtes en 1<sup>re</sup> ligne â€” seuls les intitulÃ©s comptent, pas l'ordre des colonnes</li>
-        <li>Colonnes reconnues : <b>Nom</b>, <b>PrÃ©nom</b>, <b>Projet</b> (obligatoire), <b>Formation</b>, <b>Parcours</b>, <b>Encadrant 1</b>, <b>Encadrant 2</b>â€¦</li>
-        <li>Les projets absents du fichier sont archivÃ©s (leurs notes sont conservÃ©es)</li>
+        <li>Une seule feuille, en-têtes en 1<sup>re</sup> ligne — seuls les intitulés comptent, pas l'ordre des colonnes</li>
+        <li>Colonnes reconnues : <b>Nom</b>, <b>Prénom</b>, <b>Projet</b> (obligatoire), <b>Formation</b>, <b>Parcours</b>, <b>Encadrant 1</b>, <b>Encadrant 2</b>…</li>
+        <li>Les projets absents du fichier sont archivés (leurs notes sont conservées)</li>
       </ul>
     </div>
-    <div class="field-full" style="margin-top:14px;"><label for="import-annee">AnnÃ©e scolaire des projets importÃ©s</label><input type="text" id="import-annee" placeholder="2026-2027"></div>
+    <div class="field-full" style="margin-top:14px;"><label for="import-annee">Année scolaire des projets importés</label><input type="text" id="import-annee" placeholder="2026-2027"></div>
     <p class="modal-error" id="import-annee-error" hidden></p>
-    <p class="hint">Un Ã©cran de confirmation dÃ©taillera les crÃ©ations, mises Ã  jour et archivages avant tout enregistrement.</p>
+    <p class="hint">Un écran de confirmation détaillera les créations, mises à jour et archivages avant tout enregistrement.</p>
     <div class="modal-actions">
       <button class="btn" id="import-help-cancel">Annuler</button>
-      <button class="btn btn-accent" id="import-help-continue">Choisir un fichierâ€¦</button>
+      <button class="btn btn-accent" id="import-help-continue">Choisir un fichier…</button>
     </div>
   </div>
 </div>
 
 <div class="modal-backdrop" id="modal-import-diff">
   <div class="modal wide">
-    <h2>Import Excel â€” confirmation</h2>
-    <p class="hint">VÃ©rifiez le rÃ©sumÃ© avant d'appliquer les changements. Les notes dÃ©jÃ  saisies ne sont jamais touchÃ©es par un import.</p>
+    <h2>Import Excel — confirmation</h2>
+    <p class="hint">Vérifiez le résumé avant d'appliquer les changements. Les notes déjà saisies ne sont jamais touchées par un import.</p>
     <div class="diff-alerts" id="diff-alerts"></div>
     <div class="diff-summary" id="diff-summary"></div>
     <div id="diff-relocate"></div>
@@ -272,14 +272,14 @@
 
 <script>
 const COMPETENCES = {
-  C1: { nom: "SpÃ©cifier",  couleur: "var(--c1)" },
-  C2: { nom: "DÃ©velopper", couleur: "var(--c2)" },
-  C3: { nom: "RÃ©aliser",   couleur: "var(--c3)" },
+  C1: { nom: "Spécifier",  couleur: "var(--c1)" },
+  C2: { nom: "Développer", couleur: "var(--c2)" },
+  C3: { nom: "Réaliser",   couleur: "var(--c3)" },
   C4: { nom: "Exploiter",  couleur: "var(--c4)" },
   C5: { nom: "Parcours",   couleur: "var(--c5)" },
 };
 
-// jeton d'authentification conservÃ© dans l'onglet (sessionStorage), jamais dans le navigateur de faÃ§on durable
+// jeton d'authentification conservé dans l'onglet (sessionStorage), jamais dans le navigateur de façon durable
 class SessionAuthStore {
   constructor(){
     this._cb = []; this.token = ""; this.model = null;
@@ -332,10 +332,10 @@ let importDiff = null;
 let projectEditId = null;
 
 function slugify(s){
-  const base = String(s||"").normalize("NFD").replace(/[Ì€-Í¯]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+  const base = String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
   return base || ("projet-" + Date.now().toString(36));
 }
-function normName(s){ return String(s||"").trim().toLowerCase().normalize("NFD").replace(/[Ì€-Í¯]/g,""); }
+function normName(s){ return String(s||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
 function rosterHasName(list, nom){
   const key = normName(nom);
   return (list||[]).some(n => normName(n) === key);
@@ -388,7 +388,7 @@ function onProjectEvent(e){
   const avant = projects.get(e.record.slug);
   if(e.action === "delete") projects.delete(e.record.slug);
   else projects.set(e.record.slug, e.record);
-  // seule la prÃ©sence des collÃ¨gues a changÃ© (ou Ã©cho de notre propre enregistrement) : on ne redessine pas la page
+  // seule la présence des collègues a changé (ou écho de notre propre enregistrement) : on ne redessine pas la page
   if(e.action !== "delete" && avant && sansPresence(avant) === sansPresence(e.record)){
     renderSidebar();
     refreshPresenceBanner();
@@ -424,7 +424,7 @@ function isEditing(){
   return !!a && !a.disabled && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && document.getElementById("main").contains(a);
 }
 let refreshPending = false;
-// rafraÃ®chissement automatique (temps rÃ©el, enregistrement) : jamais pendant la saisie, et sans faire remonter la page
+// rafraîchissement automatique (temps réel, enregistrement) : jamais pendant la saisie, et sans faire remonter la page
 function softRender(){
   if(pendingSaves.size || isEditing()){ refreshPending = true; renderSidebar(); return; }
   const st = captureViewState();
@@ -438,7 +438,7 @@ document.addEventListener("focusout", () => {
 });
 function presenceMessage(editors){
   const names = editors.map(e => e.label || "un encadrant").join(", ");
-  return `âš  ${names} ${editors.length > 1 ? "modifient" : "modifie"} actuellement ce projet â€” vos modifications peuvent se croiser.`;
+  return `⚠ ${names} ${editors.length > 1 ? "modifient" : "modifie"} actuellement ce projet — vos modifications peuvent se croiser.`;
 }
 function refreshPresenceBanner(){
   if(view !== "project") return;
@@ -472,7 +472,7 @@ function renderAll(){
 }
 // hors mode administrateur, un encadrant (administrateur compris) ne voit que les projets qu'il encadre
 function canSee(p){ return adminUnlocked || !connectedUser || rosterHasName(p.encadrants, connectedUser); }
-// "visible des Ã©tudiants" ne masque un projet qu'aux Ã©tudiants : ses encadrants (et l'administrateur) le voient toujours
+// "visible des étudiants" ne masque un projet qu'aux étudiants : ses encadrants (et l'administrateur) le voient toujours
 const isMine = p => !!connectedUser && rosterHasName(p.encadrants, connectedUser);
 function matchesFilter(p){
   if(filterAnnee && p.annee !== filterAnnee) return false;
@@ -498,7 +498,7 @@ function populateFilterOptions(){
     if(p.parcours) parcoursSet.add(p.parcours);
     (p.encadrants||[]).forEach(e => e && encadrantsSet.add(canonicalEncadrantName(e)));
   }
-  fillSelect("filter-annee", annees, "Toutes annÃ©es", filterAnnee);
+  fillSelect("filter-annee", annees, "Toutes années", filterAnnee);
   fillSelect("filter-formation", formations, "Toutes formations", filterFormation);
   fillSelect("filter-parcours", parcoursSet, "Tous parcours", filterParcours);
   fillSelect("filter-encadrant", encadrantsSet, "Tous encadrants", filterEncadrant);
@@ -508,7 +508,7 @@ function renderSidebar(){
   const meBox = document.getElementById("side-me");
   if(connectedUser){
     const n = myProjects().length;
-    meBox.innerHTML = `<div class="side-me"><span class="side-me-dot"></span><div class="side-me-txt"><b>${escapeHtml(connectedUser)}</b><small>${n} projet${n > 1 ? "s" : ""} dÃ©bloquÃ©${n > 1 ? "s" : ""}</small></div><div class="side-me-actions"><button class="btn btn-sm" id="btn-disconnect" type="button">Se dÃ©connecter</button></div></div>`;
+    meBox.innerHTML = `<div class="side-me"><span class="side-me-dot"></span><div class="side-me-txt"><b>${escapeHtml(connectedUser)}</b><small>${n} projet${n > 1 ? "s" : ""} débloqué${n > 1 ? "s" : ""}</small></div><div class="side-me-actions"><button class="btn btn-sm" id="btn-disconnect" type="button">Se déconnecter</button></div></div>`;
     meBox.querySelector("#btn-disconnect").addEventListener("click", () => disconnect(false));
   } else {
     meBox.innerHTML = `<button class="btn btn-sm side-connect" id="btn-connect" type="button">Se connecter</button>`;
@@ -536,7 +536,7 @@ function renderSidebar(){
     const li = document.createElement("li");
     li.style.cssText = "color:var(--ink-faint); font-size:12.5px; padding:6px 2px;";
     li.textContent = !connectedUser ? "Connectez-vous pour afficher vos projets."
-      : projects.size === 0 ? (adminUnlocked ? "Aucun projet â€” importez un Excel." : "Aucun projet Ã  votre nom.")
+      : projects.size === 0 ? (adminUnlocked ? "Aucun projet — importez un Excel." : "Aucun projet à votre nom.")
       : "Aucun projet ne correspond.";
     ul.appendChild(li);
   } else {
@@ -556,11 +556,11 @@ function renderSidebar(){
       const lockState = connectionState(p);
       const overdue = getOverdueItemNumbers(p);
       btn.className = "team-item" + (view==="project" && currentProjectId===id ? " active" : "") + (p.archived ? " is-archived" : "");
-      btn.innerHTML = `<span class="team-item-lock ${lockState}" title="${lockState==="none"?"Aucun encadrant connectÃ©":lockState==="one"?"Un encadrant connectÃ©":"Plusieurs encadrants connectÃ©s"}">${lockIconSvg(lockState!=="none")}</span>
+      btn.innerHTML = `<span class="team-item-lock ${lockState}" title="${lockState==="none"?"Aucun encadrant connecté":lockState==="one"?"Un encadrant connecté":"Plusieurs encadrants connectés"}">${lockIconSvg(lockState!=="none")}</span>
         <div class="team-item-main">
           <div class="team-item-top-row">
-            <span class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}${p.archived ? " (archivÃ©)" : ""}${p.visible_eleves === false ? ` <span class="hidden-badge" title="Ce projet n'est pas visible des Ã©tudiants">masquÃ©</span>` : ""}</span>
-            <span class="team-item-sujet">${escapeHtml([p.formation, p.parcours].filter(Boolean).join(" Â· ") || p.sujet || "â€”")}</span>
+            <span class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}${p.archived ? " (archivé)" : ""}${p.visible_eleves === false ? ` <span class="hidden-badge" title="Ce projet n'est pas visible des étudiants">masqué</span>` : ""}</span>
+            <span class="team-item-sujet">${escapeHtml([p.formation, p.parcours].filter(Boolean).join(" · ") || p.sujet || "—")}</span>
           </div>
           <div class="team-item-students">${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : ""}</div>
         </div>`;
@@ -583,13 +583,13 @@ function renderSidebar(){
 }
 function renderEmpty(){
   document.getElementById("main").innerHTML = `<div class="empty-state">
-    <h2>Aucun projet sÃ©lectionnÃ©</h2>
-    <p>Choisissez un projet Ã  gauche${projects.size===0 ? ", ou importez le fichier Excel des projets (mode administrateur)" : ""}.</p>
+    <h2>Aucun projet sélectionné</h2>
+    <p>Choisissez un projet à gauche${projects.size===0 ? ", ou importez le fichier Excel des projets (mode administrateur)" : ""}.</p>
   </div>`;
 }
-/* ---------------- Mes prochaines Ã©valuations : calendrier de l'encadrant ---------------- */
-let connectedUser = null;   // encadrant connectÃ© par son code (le temps de l'onglet)
-let agendaMonth = null;  // premier jour du mois affichÃ©
+/* ---------------- Mes prochaines évaluations : calendrier de l'encadrant ---------------- */
+let connectedUser = null;   // encadrant connecté par son code (le temps de l'onglet)
+let agendaMonth = null;  // premier jour du mois affiché
 const agendaVisible = p => !p.archived && p.visible_eleves !== false;
 function agendaNames(){
   const m = new Map();
@@ -599,7 +599,7 @@ function agendaNames(){
   }
   return [...m.values()].sort((a, b) => a.localeCompare(b, "fr", {sensitivity:"base"}));
 }
-// jour (AAAA-MM-JJ) -> projet -> livrables prÃ©vus ce jour, avec le code couleur de la frise
+// jour (AAAA-MM-JJ) -> projet -> livrables prévus ce jour, avec le code couleur de la frise
 function agendaEvents(){
   const today = new Date(), days = new Map();
   for(const p of projects.values()){
@@ -629,8 +629,8 @@ function renderAgendaView(){
   const main = document.getElementById("main");
   main.removeAttribute("data-sem");
   if(!connectedUser){
-    main.innerHTML = `<div class="ag-head"><h2>Mes prochaines Ã©valuations</h2></div>
-      <div class="ag-login"><p class="ag-hint">Connectez-vous pour voir le calendrier des Ã©valuations prÃ©vues dans les projets que vous encadrez.</p>
+    main.innerHTML = `<div class="ag-head"><h2>Mes prochaines évaluations</h2></div>
+      <div class="ag-login"><p class="ag-hint">Connectez-vous pour voir le calendrier des évaluations prévues dans les projets que vous encadrez.</p>
       <button class="btn btn-accent" id="agenda-connect" type="button">Se connecter</button></div>`;
     document.getElementById("agenda-connect").addEventListener("click", () => openConnectModal());
     return;
@@ -657,27 +657,27 @@ function renderAgendaView(){
       const worst = items.find(it => it.status.color === "var(--danger)") || items[0];
       return `<div class="ag-lab" style="--st:${worst.status.color}">
         <button class="ag-proj" type="button" data-slug="${escapeHtml(p.slug)}" data-sem="${items[0].sem}" data-item="${escapeHtml(items[0].id)}" title="Ouvrir ${escapeHtml(p.nom)}">${escapeHtml(p.nom)}</button>
-        ${items.map(it => `<button class="ag-liv" type="button" data-slug="${escapeHtml(p.slug)}" data-sem="${it.sem}" data-item="${escapeHtml(it.id)}" style="--tx:${it.status.text}" title="${escapeHtml(it.titre)} â€” ${it.sem}"><i style="background:${it.status.color}"></i><span>${escapeHtml(it.titre)}</span></button>`).join("")}
+        ${items.map(it => `<button class="ag-liv" type="button" data-slug="${escapeHtml(p.slug)}" data-sem="${it.sem}" data-item="${escapeHtml(it.id)}" style="--tx:${it.status.text}" title="${escapeHtml(it.titre)} — ${it.sem}"><i style="background:${it.status.color}"></i><span>${escapeHtml(it.titre)}</span></button>`).join("")}
       </div>`;
     }).join("") : "";
-    const evs = (evByDay.get(key) || []).map(ev => `<div class="ag-lab ag-ev"><button class="ag-evb" type="button" data-ev="${escapeHtml(ev.id)}" title="${escapeHtml(ev.titre)}">â—† ${escapeHtml(ev.titre)}</button><span class="ag-evp">${escapeHtml(agendaEventScope(ev))}</span></div>`).join("");
-    const ajout = `Ajouter un Ã©vÃ©nement le ${d.toLocaleDateString("fr-FR", {day:"numeric", month:"long"})}`;
+    const evs = (evByDay.get(key) || []).map(ev => `<div class="ag-lab ag-ev"><button class="ag-evb" type="button" data-ev="${escapeHtml(ev.id)}" title="${escapeHtml(ev.titre)}">◆ ${escapeHtml(ev.titre)}</button><span class="ag-evp">${escapeHtml(agendaEventScope(ev))}</span></div>`).join("");
+    const ajout = `Ajouter un événement le ${d.toLocaleDateString("fr-FR", {day:"numeric", month:"long"})}`;
     cells += `<div class="ag-cell${d.getMonth() !== m ? " off" : ""}${key === todayKey ? " today" : ""}"><div class="ag-cellh"><span class="ag-n">${d.getDate()}</span><button class="ag-add" type="button" data-day="${key}" title="${ajout}" aria-label="${ajout}">+</button></div>${labels}${evs}</div>`;
   }
   const monthLabel = agendaMonth.toLocaleDateString("fr-FR", {month:"long", year:"numeric"});
   main.innerHTML = `<div class="ag-head">
-      <h2>Mes prochaines Ã©valuations</h2>
-      <div class="ag-who"><span>${escapeHtml(connectedUser)}</span><button class="btn btn-sm" id="agenda-logout" type="button">Se dÃ©connecter</button></div>
+      <h2>Mes prochaines évaluations</h2>
+      <div class="ag-who"><span>${escapeHtml(connectedUser)}</span><button class="btn btn-sm" id="agenda-logout" type="button">Se déconnecter</button></div>
     </div>
-    <p class="ag-sum">${nProj ? nProj + " projet" + (nProj > 1 ? "s" : "") + " encadrÃ©" + (nProj > 1 ? "s" : "") : "Aucun projet visible dont vous soyez encadrant"}${late ? ` Â· <b class="ag-late">${late} livrable${late > 1 ? "s" : ""} sans note dont la date est passÃ©e</b>` : ""}. Un clic sur une Ã©tiquette ouvre le livrable ; le Â« + Â» d'une case ajoute un Ã©vÃ©nement.</p>
+    <p class="ag-sum">${nProj ? nProj + " projet" + (nProj > 1 ? "s" : "") + " encadré" + (nProj > 1 ? "s" : "") : "Aucun projet visible dont vous soyez encadrant"}${late ? ` · <b class="ag-late">${late} livrable${late > 1 ? "s" : ""} sans note dont la date est passée</b>` : ""}. Un clic sur une étiquette ouvre le livrable ; le « + » d'une case ajoute un événement.</p>
     <div class="ag-nav">
-      <button class="btn btn-sm" id="agenda-prev" type="button" aria-label="Mois prÃ©cÃ©dent">â€¹</button>
+      <button class="btn btn-sm" id="agenda-prev" type="button" aria-label="Mois précédent">‹</button>
       <h3>${escapeHtml(monthLabel)}</h3>
-      <button class="btn btn-sm" id="agenda-next" type="button" aria-label="Mois suivant">â€º</button>
+      <button class="btn btn-sm" id="agenda-next" type="button" aria-label="Mois suivant">›</button>
       <button class="btn btn-sm" id="agenda-today" type="button">Aujourd'hui</button>
-      <button class="btn btn-sm" id="agenda-subscribe" type="button" ${ICS_READY ? "" : "disabled"} title="${ICS_READY ? "Abonnement au calendrier des Ã©valuations de vos projets" : "BientÃ´t disponible"}">Abonnement au calendrier${ICS_READY ? "" : " â€” bientÃ´t disponible"}</button>
+      <button class="btn btn-sm" id="agenda-subscribe" type="button" ${ICS_READY ? "" : "disabled"} title="${ICS_READY ? "Abonnement au calendrier des évaluations de vos projets" : "Bientôt disponible"}">Abonnement au calendrier${ICS_READY ? "" : " — bientôt disponible"}</button>
     </div>
-    <div class="ag-legend"><span><i style="background:var(--good)"></i>notÃ© 12 et plus</span><span><i style="background:var(--logo-blue)"></i>de 8 Ã  12</span><span><i style="background:var(--warn)"></i>moins de 8</span><span><i style="background:var(--danger)"></i>en retard, sans note</span><span><i style="background:var(--rule-strong)"></i>Ã  venir</span></div>
+    <div class="ag-legend"><span><i style="background:var(--good)"></i>noté 12 et plus</span><span><i style="background:var(--logo-blue)"></i>de 8 à 12</span><span><i style="background:var(--warn)"></i>moins de 8</span><span><i style="background:var(--danger)"></i>en retard, sans note</span><span><i style="background:var(--rule-strong)"></i>à venir</span></div>
     <div class="ag-grid">${["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."].map(j => `<div class="ag-dow">${j}</div>`).join("")}${cells}</div>`;
   const shift = n => { agendaMonth = new Date(y, m + n, 1); renderAgendaView(); };
   document.getElementById("agenda-prev").addEventListener("click", () => shift(-1));
@@ -692,9 +692,9 @@ function renderAgendaView(){
 
 /* ---------------- abonnement au calendrier (.ics) ---------------- */
 const ICS_READY = true;
-// domaine dÃ©diÃ© (sans underscore) pour ce lien : certains clients (Zimbra, Google Agenda, iOS)
-// rejettent purement et simplement un nom d'hÃ´te contenant un underscore comme api_evalprojet.
-// mÃªme service PocketBase, juste exposÃ© sous un deuxiÃ¨me nom d'hÃ´te propre.
+// domaine dédié (sans underscore) pour ce lien : certains clients (Zimbra, Google Agenda, iOS)
+// rejettent purement et simplement un nom d'hôte contenant un underscore comme api_evalprojet.
+// même service PocketBase, juste exposé sous un deuxième nom d'hôte propre.
 const ICS_BASE_URL = "https://agenda.gmpbordeaux.fr";
 function randomToken(){
   return [...crypto.getRandomValues(new Uint8Array(24))].map(b => b.toString(16).padStart(2, "0")).join("");
@@ -711,28 +711,28 @@ async function ensureIcsToken(force){
 async function openIcsModal(){
   const box = document.getElementById("modal-ics");
   const field = document.getElementById("ics-url");
-  field.value = "GÃ©nÃ©ration du lienâ€¦";
+  field.value = "Génération du lien…";
   box.classList.add("open");
   try{ field.value = ICS_BASE_URL + "/ics/" + await ensureIcsToken(false) + ".ics"; }
-  catch(e){ field.value = ""; showToast("Lien indisponible (rÃ©seau ou serveur) â€” rÃ©essayez"); }
+  catch(e){ field.value = ""; showToast("Lien indisponible (réseau ou serveur) — réessayez"); }
 }
 document.getElementById("ics-close").addEventListener("click", () => document.getElementById("modal-ics").classList.remove("open"));
 document.getElementById("ics-copy").addEventListener("click", () => {
   const v = document.getElementById("ics-url").value;
   if(!v) return;
-  try{ navigator.clipboard.writeText(v); showToast("Lien copiÃ©"); }catch(e){}
+  try{ navigator.clipboard.writeText(v); showToast("Lien copié"); }catch(e){}
 });
 document.getElementById("ics-regen").addEventListener("click", async () => {
   const field = document.getElementById("ics-url");
-  field.value = "RÃ©gÃ©nÃ©rationâ€¦";
-  try{ field.value = ICS_BASE_URL + "/ics/" + await ensureIcsToken(true) + ".ics"; showToast("Lien rÃ©gÃ©nÃ©rÃ© â€” l'ancien ne fonctionne plus"); }
-  catch(e){ showToast("Ã‰chec de la rÃ©gÃ©nÃ©ration (rÃ©essayez)"); }
+  field.value = "Régénération…";
+  try{ field.value = ICS_BASE_URL + "/ics/" + await ensureIcsToken(true) + ".ics"; showToast("Lien régénéré — l'ancien ne fonctionne plus"); }
+  catch(e){ showToast("Échec de la régénération (réessayez)"); }
 });
 
-/* ---------------- Ã©vÃ©nements : ajout depuis le calendrier, ouverture depuis la frise ---------------- */
+/* ---------------- événements : ajout depuis le calendrier, ouverture depuis la frise ---------------- */
 let eventEditId = null;
 const eventMe = () => connectedUser || null;
-// visibles : ceux qu'on a Ã©crits, et ceux rattachÃ©s Ã  l'un de ses projets
+// visibles : ceux qu'on a écrits, et ceux rattachés à l'un de ses projets
 function agendaEventsByDay(){
   const mine = new Set([...projects.values()].filter(p => agendaVisible(p) && rosterHasName(p.encadrants, connectedUser)).map(p => p.slug));
   const out = new Map();
@@ -757,10 +757,10 @@ function openEventModal(id, day){
   if(!ev && !me) return;
   eventEditId = ev ? ev.id : null;
   const canEdit = !ev || normName(ev.author) === normName(me);
-  document.getElementById("event-title").textContent = !ev ? "Ajouter un Ã©vÃ©nement" : (canEdit ? "Modifier l'Ã©vÃ©nement" : "Ã‰vÃ©nement");
+  document.getElementById("event-title").textContent = !ev ? "Ajouter un événement" : (canEdit ? "Modifier l'événement" : "Événement");
   document.getElementById("event-hint").textContent = !ev
-    ? `Sous le nom de ${me}. Cochez les projets concernÃ©s : l'Ã©vÃ©nement apparaÃ®t sur leur frise, cÃ´tÃ© encadrants et cÃ´tÃ© Ã©tudiants. Sans projet, il reste dans votre calendrier.`
-    : `AjoutÃ© par ${ev.author}${canEdit ? "" : " â€” seul son auteur peut le modifier ou le supprimer."}`;
+    ? `Sous le nom de ${me}. Cochez les projets concernés : l'événement apparaît sur leur frise, côté encadrants et côté étudiants. Sans projet, il reste dans votre calendrier.`
+    : `Ajouté par ${ev.author}${canEdit ? "" : " — seul son auteur peut le modifier ou le supprimer."}`;
   const dateEl = document.getElementById("event-date"), nameEl = document.getElementById("event-name");
   dateEl.value = ev ? String(ev.date).slice(0, 10) : day;
   nameEl.value = ev ? ev.titre : "";
@@ -770,7 +770,7 @@ function openEventModal(id, day){
     .sort((a, b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
   document.getElementById("event-projects").innerHTML = candidats.length
     ? candidats.map((p, i) => `<label class="ev-proj" for="event-p${i}"><input type="checkbox" id="event-p${i}" value="${escapeHtml(p.slug)}"${dejaChoisis.has(p.slug) ? " checked" : ""}${canEdit ? "" : " disabled"}> ${escapeHtml(p.nom)}</label>`).join("")
-    : `<span class="ag-hint">Aucun projet Ã  votre nom.</span>`;
+    : `<span class="ag-hint">Aucun projet à votre nom.</span>`;
   document.getElementById("event-error").hidden = true;
   document.getElementById("event-delete").hidden = !(ev && canEdit);
   document.getElementById("event-submit").hidden = !canEdit;
@@ -786,7 +786,7 @@ async function saveEvent(){
   const date = document.getElementById("event-date").value;
   const titre = document.getElementById("event-name").value.trim();
   if(!date){ err.textContent = "Choisissez une date."; err.hidden = false; return; }
-  if(!titre){ err.textContent = "Donnez un intitulÃ©."; err.hidden = false; return; }
+  if(!titre){ err.textContent = "Donnez un intitulé."; err.hidden = false; return; }
   const projets = [...document.querySelectorAll("#event-projects input:checked")].map(i => i.value);
   try{
     const rec = eventEditId
@@ -794,21 +794,21 @@ async function saveEvent(){
       : await pb.collection("sae_events").create({ date, titre, projets, author: me });
     upsertEvent(rec);
     closeEventModal();
-    showToast("Ã‰vÃ©nement enregistrÃ©");
+    showToast("Événement enregistré");
     softRender();
-  }catch(e){ err.textContent = "Enregistrement impossible (rÃ©seau ou serveur). RÃ©essayez."; err.hidden = false; }
+  }catch(e){ err.textContent = "Enregistrement impossible (réseau ou serveur). Réessayez."; err.hidden = false; }
 }
 async function deleteEvent(){
-  if(!eventEditId || !confirm("Supprimer cet Ã©vÃ©nement ?")) return;
+  if(!eventEditId || !confirm("Supprimer cet événement ?")) return;
   try{
     const rec = await pb.collection("sae_events").update(eventEditId, { deleted_by: eventMe() });
     upsertEvent(rec);
     closeEventModal();
-    showToast("Ã‰vÃ©nement supprimÃ©");
+    showToast("Événement supprimé");
     softRender();
-  }catch(e){ const err = document.getElementById("event-error"); err.textContent = "Suppression impossible. RÃ©essayez."; err.hidden = false; }
+  }catch(e){ const err = document.getElementById("event-error"); err.textContent = "Suppression impossible. Réessayez."; err.hidden = false; }
 }
-// clic sur un Ã©vÃ©nement de la frise
+// clic sur un événement de la frise
 function onTimelineEvent(id){ openEventModal(id); }
 document.getElementById("event-cancel").addEventListener("click", closeEventModal);
 document.getElementById("event-submit").addEventListener("click", saveEvent);
@@ -816,8 +816,8 @@ document.getElementById("event-delete").addEventListener("click", deleteEvent);
 document.getElementById("event-name").addEventListener("keydown", e => { if(e.key === "Enter") saveEvent(); });
 
 /* ---------------- journal des modifications de notes (surveillance) ---------------- */
-// Chaque note, date ou note individuelle enregistrÃ©e par l'application laisse une trace (qui, quand, avant, aprÃ¨s).
-// Une valeur qui a changÃ© sans laisser de trace (Ã©criture directe dans la base) apparaÃ®t comme Â« Ã©cart Â».
+// Chaque note, date ou note individuelle enregistrée par l'application laisse une trace (qui, quand, avant, après).
+// Une valeur qui a changé sans laisser de trace (écriture directe dans la base) apparaît comme « écart ».
 const jNorm = v => {
   if(v === undefined || v === null) return "";
   const s = String(v).trim();
@@ -860,7 +860,7 @@ function journalValues(p){
   }
   return m;
 }
-// Ã©carts : valeur actuelle diffÃ©rente de la derniÃ¨re valeur tracÃ©e ; sans trace : valeur jamais journalisÃ©e
+// écarts : valeur actuelle différente de la dernière valeur tracée ; sans trace : valeur jamais journalisée
 function journalCheck(){
   const last = new Map();
   for(const e of journalAll) last.set(`${e.project}|${e.sem}|${e.cle}`, jNorm(e.apres));
@@ -884,12 +884,12 @@ function journalLabel(p, cle){
   const [type, a, b] = cle.split(":");
   if(type === "item"){
     const it = allItems.find(i => i.id === a);
-    return (it ? it.titre : a) + " â€” " + (b === "note" ? "note" : "date");
+    return (it ? it.titre : a) + " — " + (b === "note" ? "note" : "date");
   }
-  return "Note individuelle â€” " + ((p.etudiants || [])[Number(a)] || "Ã©tudiant " + a) + " Â· " + b;
+  return "Note individuelle — " + ((p.etudiants || [])[Number(a)] || "étudiant " + a) + " · " + b;
 }
 function journalFmt(cle, v){
-  if(v === "") return "â€”";
+  if(v === "") return "—";
   return cle.endsWith(":date") ? new Date(v + "T00:00:00").toLocaleDateString("fr-FR") : v;
 }
 async function journalWrite(rows, author){
@@ -901,7 +901,7 @@ function renderJournalView(){
   const main = document.getElementById("main");
   main.removeAttribute("data-sem");
   if(!adminUnlocked){
-    main.innerHTML = `<div class="empty-state"><h2>Journal des modifications</h2><p>RÃ©servÃ© Ã  l'administrateur.</p><button class="btn btn-accent" id="jr-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
+    main.innerHTML = `<div class="empty-state"><h2>Journal des modifications</h2><p>Réservé à l'administrateur.</p><button class="btn btn-accent" id="jr-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
     main.querySelector("#jr-unlock-admin").addEventListener("click", openAdminModal);
     return;
   }
@@ -910,34 +910,34 @@ function renderJournalView(){
   const recents = [...journalAll].reverse().slice(0, 200);
   const nomProj = slug => { const p = projects.get(slug); return p ? p.nom : slug; };
   main.innerHTML = `<div class="ag-head"><h2>Journal des modifications</h2></div>
-    <p class="ag-sum">Chaque note, date ou note individuelle enregistrÃ©e par l'application est tracÃ©e (auteur, date et heure, avant, aprÃ¨s). Une valeur qui change <b>sans laisser de trace</b> vient d'une Ã©criture directe dans la base : elle apparaÃ®t ci-dessous comme Ã©cart.</p>
+    <p class="ag-sum">Chaque note, date ou note individuelle enregistrée par l'application est tracée (auteur, date et heure, avant, après). Une valeur qui change <b>sans laisser de trace</b> vient d'une écriture directe dans la base : elle apparaît ci-dessous comme écart.</p>
     <div class="jr-cards">
-      <div class="jr-card ${ecarts.length ? "bad" : "ok"}"><b>${ecarts.length}</b><span>Ã©cart${ecarts.length > 1 ? "s" : ""} Ã  vÃ©rifier</span></div>
-      <div class="jr-card"><b>${journalAll.length}</b><span>modification${journalAll.length > 1 ? "s" : ""} tracÃ©e${journalAll.length > 1 ? "s" : ""}</span></div>
-      <div class="jr-card ${sansTrace.length ? "warn" : ""}"><b>${sansTrace.length}</b><span>valeur${sansTrace.length > 1 ? "s" : ""} sans trace${sansTrace.length ? ` <button class="btn btn-sm" id="jr-baseline" type="button">CrÃ©er le point de rÃ©fÃ©rence</button>` : ""}</span></div>
+      <div class="jr-card ${ecarts.length ? "bad" : "ok"}"><b>${ecarts.length}</b><span>écart${ecarts.length > 1 ? "s" : ""} à vérifier</span></div>
+      <div class="jr-card"><b>${journalAll.length}</b><span>modification${journalAll.length > 1 ? "s" : ""} tracée${journalAll.length > 1 ? "s" : ""}</span></div>
+      <div class="jr-card ${sansTrace.length ? "warn" : ""}"><b>${sansTrace.length}</b><span>valeur${sansTrace.length > 1 ? "s" : ""} sans trace${sansTrace.length ? ` <button class="btn btn-sm" id="jr-baseline" type="button">Créer le point de référence</button>` : ""}</span></div>
     </div>
-    ${ecarts.length ? `<h3 class="jr-h">Ã‰carts Ã  vÃ©rifier</h3>
-    <div class="jr-scroll"><table class="jr-table"><thead><tr><th>Projet</th><th>Sem.</th><th>Ã‰lÃ©ment</th><th>DerniÃ¨re valeur tracÃ©e</th><th>Valeur actuelle</th><th></th></tr></thead><tbody>
+    ${ecarts.length ? `<h3 class="jr-h">Écarts à vérifier</h3>
+    <div class="jr-scroll"><table class="jr-table"><thead><tr><th>Projet</th><th>Sem.</th><th>Élément</th><th>Dernière valeur tracée</th><th>Valeur actuelle</th><th></th></tr></thead><tbody>
       ${ecarts.map((e, i) => `<tr class="bad"><td>${escapeHtml(e.p.nom)}</td><td>${e.sem}</td><td>${escapeHtml(journalLabel(e.p, e.cle))}</td><td>${escapeHtml(journalFmt(e.cle, e.trace))}</td><td><b>${escapeHtml(journalFmt(e.cle, e.courant))}</b></td><td><button class="btn btn-sm" data-valide="${i}" type="button">Valider la valeur actuelle</button></td></tr>`).join("")}
     </tbody></table></div>` : ""}
-    <h3 class="jr-h">Historique (200 derniÃ¨res)</h3>
-    ${recents.length ? `<div class="jr-scroll"><table class="jr-table"><thead><tr><th>Date</th><th>Auteur</th><th>Projet</th><th>Sem.</th><th>Ã‰lÃ©ment</th><th>Avant</th><th>AprÃ¨s</th></tr></thead><tbody>
+    <h3 class="jr-h">Historique (200 dernières)</h3>
+    ${recents.length ? `<div class="jr-scroll"><table class="jr-table"><thead><tr><th>Date</th><th>Auteur</th><th>Projet</th><th>Sem.</th><th>Élément</th><th>Avant</th><th>Après</th></tr></thead><tbody>
       ${recents.map(e => { const p = projects.get(e.project); return `<tr><td>${escapeHtml(fmtDate(e.created))}</td><td>${escapeHtml(e.author)}</td><td>${escapeHtml(nomProj(e.project))}</td><td>${escapeHtml(e.sem)}</td><td>${escapeHtml(p ? journalLabel(p, e.cle) : e.cle)}</td><td>${escapeHtml(journalFmt(e.cle, jNorm(e.avant)))}</td><td><b>${escapeHtml(journalFmt(e.cle, jNorm(e.apres)))}</b></td></tr>`; }).join("")}
-    </tbody></table></div>` : `<p class="ag-hint">Aucune modification tracÃ©e pour l'instant.</p>`}`;
+    </tbody></table></div>` : `<p class="ag-hint">Aucune modification tracée pour l'instant.</p>`}`;
   const bl = main.querySelector("#jr-baseline");
   if(bl) bl.addEventListener("click", async () => {
-    if(!confirm(`Enregistrer la valeur actuelle de ${sansTrace.length} note(s) et date(s) comme point de dÃ©part du journal ?`)) return;
+    if(!confirm(`Enregistrer la valeur actuelle de ${sansTrace.length} note(s) et date(s) comme point de départ du journal ?`)) return;
     bl.disabled = true;
-    try{ await journalWrite(sansTrace, "Point de rÃ©fÃ©rence"); showToast("Point de rÃ©fÃ©rence crÃ©Ã©"); }
-    catch(e){ showToast("Ã‰chec (rÃ©essayez)"); }
+    try{ await journalWrite(sansTrace, "Point de référence"); showToast("Point de référence créé"); }
+    catch(e){ showToast("Échec (réessayez)"); }
     renderJournalView(); renderSidebar();
   });
   main.querySelectorAll("[data-valide]").forEach(b => b.addEventListener("click", async () => {
     const e = ecarts[Number(b.dataset.valide)];
-    if(!e || !confirm("Valider la valeur actuelle comme lÃ©gitime ?")) return;
+    if(!e || !confirm("Valider la valeur actuelle comme légitime ?")) return;
     b.disabled = true;
-    try{ await journalWrite([{ p:e.p, sem:e.sem, cle:e.cle, avant:e.trace, courant:e.courant }], "ValidÃ© par " + (connectedUser || "l'administrateur")); showToast("Ã‰cart validÃ©"); }
-    catch(err){ showToast("Ã‰chec (rÃ©essayez)"); }
+    try{ await journalWrite([{ p:e.p, sem:e.sem, cle:e.cle, avant:e.trace, courant:e.courant }], "Validé par " + (connectedUser || "l'administrateur")); showToast("Écart validé"); }
+    catch(err){ showToast("Échec (réessayez)"); }
     renderJournalView(); renderSidebar();
   }));
 }
@@ -945,7 +945,7 @@ function renderJournalView(){
 function renderProjectsManagementView(){
   const main = document.getElementById("main");
   if(!adminUnlocked){
-    main.innerHTML = `<div class="empty-state"><h2>Gestion des projets</h2><p>La liste complÃ¨te des projets et encadrants est rÃ©servÃ©e au mode administrateur.</p>
+    main.innerHTML = `<div class="empty-state"><h2>Gestion des projets</h2><p>La liste complète des projets et encadrants est réservée au mode administrateur.</p>
       <button class="btn btn-accent" id="proj-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
     main.querySelector("#proj-unlock-admin").addEventListener("click", openAdminModal);
     return;
@@ -961,11 +961,11 @@ function renderProjectsManagementView(){
   actions.innerHTML = `
     <button class="btn btn-sm" id="pm-import">Importer un Excel</button>
     <button class="btn btn-sm" id="pm-add">+ Ajouter un projet</button>
-    <button class="btn btn-sm" id="pm-export-notes">TÃ©lÃ©charger les notes (Excel)</button>
+    <button class="btn btn-sm" id="pm-export-notes">Télécharger les notes (Excel)</button>
     <button class="btn btn-sm" id="pm-export">Exporter (sauvegarde JSON)</button>
-    <button class="btn btn-sm${archivedOnly ? " btn-accent" : ""}" id="pm-archives-only" type="button">ðŸ—„ Archives</button>
+    <button class="btn btn-sm${archivedOnly ? " btn-accent" : ""}" id="pm-archives-only" type="button">🗄 Archives</button>
     ${!archivedOnly ? `<label class="archived-toggle pm-archived-toggle">
-      <input type="checkbox" id="pm-archived-toggle" ${showArchived?"checked":""}> Afficher les projets archivÃ©s
+      <input type="checkbox" id="pm-archived-toggle" ${showArchived?"checked":""}> Afficher les projets archivés
     </label>` : ""}`;
   main.appendChild(actions);
   actions.querySelector("#pm-import").addEventListener("click", () => {
@@ -988,7 +988,7 @@ function renderProjectsManagementView(){
   if(list.length === 0){
     const empty = document.createElement("p");
     empty.style.cssText = "color:var(--ink-muted); font-size:12.5px; margin-top:16px;";
-    empty.textContent = archivedOnly ? "Aucun projet archivÃ©." : "Aucun projet.";
+    empty.textContent = archivedOnly ? "Aucun projet archivé." : "Aucun projet.";
     main.appendChild(empty);
     return;
   }
@@ -997,37 +997,37 @@ function renderProjectsManagementView(){
   tableWrap.className = "ref-table-wrap";
   const table = document.createElement("table");
   table.className = "ref-table";
-  table.innerHTML = `<thead><tr><th>Projet</th><th>AnnÃ©e</th><th>Formation</th><th>Parcours</th><th>Ã‰tudiants</th><th>Encadrants</th><th>Visible Ã©tudiants</th><th>ArchivÃ©</th><th></th></tr></thead><tbody></tbody>`;
+  table.innerHTML = `<thead><tr><th>Projet</th><th>Année</th><th>Formation</th><th>Parcours</th><th>Étudiants</th><th>Encadrants</th><th>Visible étudiants</th><th>Archivé</th><th></th></tr></thead><tbody></tbody>`;
   const tbody = table.querySelector("tbody");
   for(const p of list){
     const tr = document.createElement("tr");
     tr.className = "ref-row pm-row";
     tr.innerHTML = `
-      <td><b>${escapeHtml(p.nom)}</b>${p.archived ? ' <span class="tag">archivÃ©</span>' : ""}</td>
-      <td>${escapeHtml(p.annee||"â€”")}</td>
-      <td>${escapeHtml(p.formation||"â€”")}</td>
-      <td>${escapeHtml(p.parcours||"â€”")}</td>
-      <td style="text-align:right;">${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : "â€”"}</td>
-      <td>${p.encadrants && p.encadrants.length ? escapeHtml(p.encadrants.join(", ")) : "â€”"}</td>
+      <td><b>${escapeHtml(p.nom)}</b>${p.archived ? ' <span class="tag">archivé</span>' : ""}</td>
+      <td>${escapeHtml(p.annee||"—")}</td>
+      <td>${escapeHtml(p.formation||"—")}</td>
+      <td>${escapeHtml(p.parcours||"—")}</td>
+      <td style="text-align:right;">${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : "—"}</td>
+      <td>${p.encadrants && p.encadrants.length ? escapeHtml(p.encadrants.join(", ")) : "—"}</td>
       <td style="text-align:center;"><input type="checkbox" class="pm-visible-cb" ${p.visible_eleves !== false ? "checked" : ""}></td>
       <td style="text-align:center;"><input type="checkbox" class="pm-archive-cb" ${p.archived ? "checked" : ""}></td>
-      <td class="ref-row-actions"><button class="btn-ghost btn-sm" type="button">âœŽ Modifier</button></td>`;
+      <td class="ref-row-actions"><button class="btn-ghost btn-sm" type="button">✎ Modifier</button></td>`;
     tr.addEventListener("click", () => selectProject(p.slug));
     const visibleCb = tr.querySelector('.pm-visible-cb');
     visibleCb.addEventListener("click", e => e.stopPropagation());
     visibleCb.addEventListener("change", async e => {
       const visible = e.target.checked;
       p.visible_eleves = visible;
-      try{ await pb.collection("sae_projects").update(p.id, {visible_eleves: visible}); showToast(visible ? "Visible pour les Ã©tudiants" : "MasquÃ© aux Ã©tudiants"); }
-      catch(err){ showToast("Ã‰chec de l'enregistrement"); }
+      try{ await pb.collection("sae_projects").update(p.id, {visible_eleves: visible}); showToast(visible ? "Visible pour les étudiants" : "Masqué aux étudiants"); }
+      catch(err){ showToast("Échec de l'enregistrement"); }
     });
     const archiveCb = tr.querySelector('.pm-archive-cb');
     archiveCb.addEventListener("click", e => e.stopPropagation());
     archiveCb.addEventListener("change", async e => {
       const archived = e.target.checked;
       p.archived = archived;
-      try{ await pb.collection("sae_projects").update(p.id, {archived}); showToast(archived ? "Projet archivÃ©" : "Projet dÃ©sarchivÃ©"); renderAll(); }
-      catch(err){ showToast("Ã‰chec de l'enregistrement"); }
+      try{ await pb.collection("sae_projects").update(p.id, {archived}); showToast(archived ? "Projet archivé" : "Projet désarchivé"); renderAll(); }
+      catch(err){ showToast("Échec de l'enregistrement"); }
     });
     const editBtn = tr.querySelector(".btn-ghost");
     editBtn.addEventListener("click", e => { e.stopPropagation(); openProjectEditModal(p.slug); });
@@ -1040,11 +1040,11 @@ function renderProjectsManagementView(){
 function renderReferentielView(){
   const main = document.getElementById("main");
   if(!referentiel){
-    main.innerHTML = `<div class="empty-state"><h2>RÃ©fÃ©rentiel non configurÃ©</h2><p>Importez <code>seed-referentiel.json</code> dans la collection <code>sae_config</code> de PocketBase (voir le guide d'installation).</p></div>`;
+    main.innerHTML = `<div class="empty-state"><h2>Référentiel non configuré</h2><p>Importez <code>seed-referentiel.json</code> dans la collection <code>sae_config</code> de PocketBase (voir le guide d'installation).</p></div>`;
     return;
   }
   if(!adminUnlocked){
-    main.innerHTML = `<div class="empty-state"><h2>RÃ©fÃ©rentiel</h2><p>La modification du rÃ©fÃ©rentiel (livrables, barÃ¨mes, coefficients) est rÃ©servÃ©e au mode administrateur.</p>
+    main.innerHTML = `<div class="empty-state"><h2>Référentiel</h2><p>La modification du référentiel (livrables, barèmes, coefficients) est réservée au mode administrateur.</p>
       <button class="btn btn-accent" id="ref-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
     main.querySelector("#ref-unlock-admin").addEventListener("click", openAdminModal);
     return;
@@ -1066,10 +1066,10 @@ function renderReferentielView(){
     const isParcoursSection = Object.prototype.hasOwnProperty.call(section, "parcours");
     wrap.innerHTML = `<div class="section-head">
       <div class="section-title">${escapeHtml(section.titre)}${isParcoursSection ? ` <span class="tag">${escapeHtml(section.parcours)}</span>` : ""}</div>
-      <button class="btn-ghost btn-sm btn-danger" type="button" title="Supprimer cette section">ðŸ—‘ Supprimer la section</button>
+      <button class="btn-ghost btn-sm btn-danger" type="button" title="Supprimer cette section">🗑 Supprimer la section</button>
     </div>`;
     wrap.querySelector('[title="Supprimer cette section"]').addEventListener("click", () => {
-      if(!confirm(`Supprimer la section "${section.titre}${isParcoursSection ? " â€” " + section.parcours : ""}" ? Les notes dÃ©jÃ  saisies pour ses livrables resteront dans les projets mais ne seront plus affichÃ©es.`)) return;
+      if(!confirm(`Supprimer la section "${section.titre}${isParcoursSection ? " — " + section.parcours : ""}" ? Les notes déjà saisies pour ses livrables resteront dans les projets mais ne seront plus affichées.`)) return;
       refDraft.sections = refDraft.sections.filter(s => s !== section);
       renderReferentielView();
       saveReferentielDraft();
@@ -1123,16 +1123,16 @@ function renderReferentielView(){
   addParcoursSectionBtn.addEventListener("click", () => {
     const covered = new Set(refDraft.sections.filter(s => s.parcours).map(s => s.parcours));
     const remaining = Array.from(knownParcours).filter(v => !covered.has(v)).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
-    if(remaining.length === 0){ alert("Tous les parcours utilisÃ©s par vos projets ont dÃ©jÃ  une section Parcours."); return; }
-    const chosen = prompt(`Pour quel parcours ? (dÃ©terminÃ© par les projets existants)\n\n${remaining.join("\n")}`, remaining[0]);
-    if(!chosen || !remaining.includes(chosen.trim())){ if(chosen) alert("Ce parcours ne correspond Ã  aucun projet existant."); return; }
+    if(remaining.length === 0){ alert("Tous les parcours utilisés par vos projets ont déjà une section Parcours."); return; }
+    const chosen = prompt(`Pour quel parcours ? (déterminé par les projets existants)\n\n${remaining.join("\n")}`, remaining[0]);
+    if(!chosen || !remaining.includes(chosen.trim())){ if(chosen) alert("Ce parcours ne correspond à aucun projet existant."); return; }
     const pv = chosen.trim();
     const sid = "par-" + slugify(pv);
-    if(refDraft.sections.some(s => s.id === sid)){ alert("Une section existe dÃ©jÃ  pour ce parcours."); return; }
+    if(refDraft.sections.some(s => s.id === sid)){ alert("Une section existe déjà pour ce parcours."); return; }
     refDraft.sections.push({
       id: sid, titre: "Parcours", parcours: pv,
-      sousTitre: "Proposition libre d'au moins un critÃ¨re d'Ã©valuation par les responsables de parcours â€” titres et descriptions modifiables dans le panneau RÃ©fÃ©rentiel (admin).",
-      items: [1,2,3].map(n => ({ id:`${sid}-${n}`, titre:`CritÃ¨re ${n}`, coef:{C5:1}, desc:"", editable:true }))
+      sousTitre: "Proposition libre d'au moins un critère d'évaluation par les responsables de parcours — titres et descriptions modifiables dans le panneau Référentiel (admin).",
+      items: [1,2,3].map(n => ({ id:`${sid}-${n}`, titre:`Critère ${n}`, coef:{C5:1}, desc:"", editable:true }))
     });
     renderReferentielView();
     saveReferentielDraft();
@@ -1163,13 +1163,13 @@ function renderRefRow(tbody, section, item, idx){
   const coefCells = Object.keys(COMPETENCES).map(c => `
     <td><input id="ref-${item.id}-coef-${c}" class="ref-coef-input" type="number" min="0" step="1" data-coef="${c}" value="${item.coef && item.coef[c] ? item.coef[c] : ""}"></td>`).join("");
   row.innerHTML = `
-    <td class="ref-drag-handle" title="Glisser pour rÃ©ordonner">â ¿</td>
+    <td class="ref-drag-handle" title="Glisser pour réordonner">⠿</td>
     <td class="ref-idx">${idx}.</td>
     <td><input id="ref-${item.id}-titre" class="ref-titre-input" type="text" data-field="titre" value="${escapeHtml(item.titre)}" placeholder="Titre du livrable"></td>
     ${coefCells}
     <td class="ref-row-actions">
-      <button class="btn-ghost btn-sm" type="button" title="DÃ©tails (durÃ©e, description, barÃ¨me)">âœŽ</button>
-      <button class="btn-ghost btn-sm btn-danger" type="button" title="Supprimer">ðŸ—‘</button>
+      <button class="btn-ghost btn-sm" type="button" title="Détails (durée, description, barème)">✎</button>
+      <button class="btn-ghost btn-sm btn-danger" type="button" title="Supprimer">🗑</button>
     </td>`;
   row.draggable = true;
   row.addEventListener("dragstart", e => {
@@ -1193,12 +1193,12 @@ function renderRefRow(tbody, section, item, idx){
   detailRow.hidden = true;
   detailRow.innerHTML = `<td colspan="${3 + Object.keys(COMPETENCES).length + 1}">
     <div class="ref-detail-body">
-      ${item.editable ? "" : `<input id="ref-${item.id}-duree" type="text" data-field="duree" value="${escapeHtml(item.duree||"")}" placeholder="DurÃ©e (optionnel)">`}
+      ${item.editable ? "" : `<input id="ref-${item.id}-duree" type="text" data-field="duree" value="${escapeHtml(item.duree||"")}" placeholder="Durée (optionnel)">`}
       <textarea id="ref-${item.id}-desc" data-field="desc" placeholder="Description">${escapeHtml(item.desc||"")}</textarea>
       ${item.editable ? "" : `
-      <textarea id="ref-${item.id}-faible" data-field="faible" placeholder="BarÃ¨me â€” niveau faible">${escapeHtml(item.faible||"")}</textarea>
-      <textarea id="ref-${item.id}-moyen" data-field="moyen" placeholder="BarÃ¨me â€” niveau moyen">${escapeHtml(item.moyen||"")}</textarea>
-      <textarea id="ref-${item.id}-bon" data-field="bon" placeholder="BarÃ¨me â€” niveau bon">${escapeHtml(item.bon||"")}</textarea>`}
+      <textarea id="ref-${item.id}-faible" data-field="faible" placeholder="Barème — niveau faible">${escapeHtml(item.faible||"")}</textarea>
+      <textarea id="ref-${item.id}-moyen" data-field="moyen" placeholder="Barème — niveau moyen">${escapeHtml(item.moyen||"")}</textarea>
+      <textarea id="ref-${item.id}-bon" data-field="bon" placeholder="Barème — niveau bon">${escapeHtml(item.bon||"")}</textarea>`}
     </div>
   </td>`;
   row.querySelectorAll("[data-field]").forEach(el => {
@@ -1215,9 +1215,9 @@ function renderRefRow(tbody, section, item, idx){
       markRefDirty();
     });
   });
-  row.querySelector('[title="DÃ©tails (durÃ©e, description, barÃ¨me)"]').addEventListener("click", () => { detailRow.hidden = !detailRow.hidden; });
+  row.querySelector('[title="Détails (durée, description, barème)"]').addEventListener("click", () => { detailRow.hidden = !detailRow.hidden; });
   row.querySelector('[title="Supprimer"]').addEventListener("click", () => {
-    if(!confirm(`Supprimer le livrable "${item.titre}" ? Les notes dÃ©jÃ  saisies pour ce livrable resteront dans les projets mais ne seront plus affichÃ©es.`)) return;
+    if(!confirm(`Supprimer le livrable "${item.titre}" ? Les notes déjà saisies pour ce livrable resteront dans les projets mais ne seront plus affichées.`)) return;
     section.items = section.items.filter(i => i !== item);
     renderReferentielView();
     saveReferentielDraft();
@@ -1242,8 +1242,8 @@ function saveReferentielDraft(){
       await persistReferentielDraft();
       refDirty = false;
       updateValidateButtonState();
-      showToast("RÃ©fÃ©rentiel enregistrÃ©");
-    }catch(e){ showToast("Ã‰chec de l'enregistrement"); }
+      showToast("Référentiel enregistré");
+    }catch(e){ showToast("Échec de l'enregistrement"); }
     refPendingTimer = null;
   }, 500);
 }
@@ -1256,7 +1256,7 @@ function updateValidateButtonState(){
   if(!btn) return;
   btn.disabled = !refDirty;
   btn.classList.toggle("btn-accent", refDirty);
-  btn.textContent = refDirty ? "âœ“ Valider les modifications" : "âœ“ Modifications enregistrÃ©es";
+  btn.textContent = refDirty ? "✓ Valider les modifications" : "✓ Modifications enregistrées";
 }
 async function validateReferentielDraft(){
   clearTimeout(refPendingTimer);
@@ -1264,8 +1264,8 @@ async function validateReferentielDraft(){
   try{
     await persistReferentielDraft();
     refDirty = false;
-    showToast("Modifications enregistrÃ©es");
-  }catch(e){ showToast("Ã‰chec de l'enregistrement"); }
+    showToast("Modifications enregistrées");
+  }catch(e){ showToast("Échec de l'enregistrement"); }
   updateValidateButtonState();
 }
 
@@ -1340,7 +1340,7 @@ function renderProjectView(){
   const p = projects.get(currentProjectId);
   if(!p){ view="empty"; renderEmpty(); return; }
   if(!adminUnlocked && p.visible_eleves === false && !isMine(p)){ currentProjectId = null; view="empty"; renderEmpty(); return; }
-  if(!referentiel){ main.innerHTML = `<div class="empty-state"><h2>RÃ©fÃ©rentiel non configurÃ©</h2></div>`; return; }
+  if(!referentiel){ main.innerHTML = `<div class="empty-state"><h2>Référentiel non configuré</h2></div>`; return; }
 
   const unlocked = unlockedProjects.get(currentProjectId);
   main.innerHTML = "";
@@ -1353,17 +1353,17 @@ function renderProjectView(){
     ? p.encadrants.map(name => {
         const isMine = unlocked === name;
         const isActive = (p.presence||[]).some(e => e.label === name && (Date.now() - new Date(e.lastSeen).getTime()) < PRESENCE_STALE_MS);
-        return `<button class="encadrant-btn${isMine ? " mine" : ""}" type="button" data-name="${escapeHtml(name)}">${escapeHtml(name)}${isActive ? '<span class="encadrant-dot" title="ConnectÃ© en ce moment"></span>' : ""}</button>`;
+        return `<button class="encadrant-btn${isMine ? " mine" : ""}" type="button" data-name="${escapeHtml(name)}">${escapeHtml(name)}${isActive ? '<span class="encadrant-dot" title="Connecté en ce moment"></span>' : ""}</button>`;
       }).join("")
     : `<span style="color:var(--ink-faint);">aucun</span>`;
   head.innerHTML = `
     <div>
-      <h1>${escapeHtml(p.nom)}${p.archived ? " <span style='color:var(--ink-faint);font-weight:400;font-size:16px;'>(archivÃ©)</span>" : ""}</h1>
+      <h1>${escapeHtml(p.nom)}${p.archived ? " <span style='color:var(--ink-faint);font-weight:400;font-size:16px;'>(archivé)</span>" : ""}</h1>
       ${p.sujet ? `<div style="color:var(--ink-muted); font-size:13.5px;">${escapeHtml(p.sujet)}</div>` : ""}
       <div class="tags">${tags}</div>
       <div class="people">
-        <b>Ã‰tudiants â€”</b> ${p.etudiants && p.etudiants.length ? p.etudiants.map(escapeHtml).join(", ") : "aucun"}<br>
-        <b>Encadrants â€”</b> <span class="encadrant-btns">${encadrantsHtml}</span>
+        <b>Étudiants —</b> ${p.etudiants && p.etudiants.length ? p.etudiants.map(escapeHtml).join(", ") : "aucun"}<br>
+        <b>Encadrants —</b> <span class="encadrant-btns">${encadrantsHtml}</span>
       </div>
     </div>
     <div class="team-head-actions">
@@ -1377,7 +1377,7 @@ function renderProjectView(){
 
   const banner = document.createElement("div");
   banner.className = "lock-banner" + (unlocked ? " rw" : "");
-  banner.innerHTML = unlocked ? "" : `<span class="lock-banner-label">${lockIconSvg(false)} ${(connectedUser ? "Lecture seule : vous n'Ãªtes pas encadrant de ce projet." : "Lecture seule â€” connectez-vous pour saisir les notes et les commentaires.")}</span>`;
+  banner.innerHTML = unlocked ? "" : `<span class="lock-banner-label">${lockIconSvg(false)} ${(connectedUser ? "Lecture seule : vous n'êtes pas encadrant de ce projet." : "Lecture seule — connectez-vous pour saisir les notes et les commentaires.")}</span>`;
   if(!unlocked && !connectedUser){
     const bannerBtn = document.createElement("button");
     bannerBtn.className = "btn btn-sm btn-accent";
@@ -1407,7 +1407,7 @@ function renderProjectView(){
   if(currentVue === "ANNEE"){
     const rappel = document.createElement("div");
     rappel.className = "liv-reminder";
-    rappel.innerHTML = "<b>Vue de synthÃ¨se.</b> Choisissez Semestre 3 ou Semestre 4 pour saisir les notes.";
+    rappel.innerHTML = "<b>Vue de synthèse.</b> Choisissez Semestre 3 ou Semestre 4 pour saisir les notes.";
     main.appendChild(rappel);
     drawFrameTimeline(panel);
     return;
@@ -1429,24 +1429,24 @@ function renderEtuAccessPanel(project){
   const collapsed = sessionStorage.getItem("etu-access-collapsed") === "1";
   wrap.innerHTML = `
     <button class="etu-access-toggle" id="etu-access-toggle" type="button" aria-expanded="${collapsed ? "false" : "true"}">
-      <span>AccÃ¨s Ã©tudiants</span>
-      <span class="etu-access-hint"><span class="etu-access-state">${collapsed ? "DÃ©plier" : "Replier"}</span><span class="etu-access-chevron${collapsed ? " collapsed" : ""}">â–¾</span></span>
+      <span>Accès étudiants</span>
+      <span class="etu-access-hint"><span class="etu-access-state">${collapsed ? "Déplier" : "Replier"}</span><span class="etu-access-chevron${collapsed ? " collapsed" : ""}">▾</span></span>
     </button>
-    ${project.visible_eleves === false ? `<p class="etu-access-hidden"><b>Ce projet n'est pas visible des Ã©tudiants</b> : ils ne peuvent pas y accÃ©der tant qu'il reste masquÃ©. ${adminUnlocked ? "Ce rÃ©glage se change dans Â« Projets Â» (colonne Â« Visible Ã©tudiants Â»)." : "Seul l'administrateur peut modifier ce rÃ©glage."}</p>` : ""}
+    ${project.visible_eleves === false ? `<p class="etu-access-hidden"><b>Ce projet n'est pas visible des étudiants</b> : ils ne peuvent pas y accéder tant qu'il reste masqué. ${adminUnlocked ? "Ce réglage se change dans « Projets » (colonne « Visible étudiants »)." : "Seul l'administrateur peut modifier ce réglage."}</p>` : ""}
     <div class="etu-access-body" id="etu-access-body" ${collapsed ? "hidden" : ""}>
     <ol class="etu-access-steps">
-      <li>Envoyez le lien ci-dessous par mail aux Ã©tudiants du groupe.</li>
+      <li>Envoyez le lien ci-dessous par mail aux étudiants du groupe.</li>
       <li>Demandez-leur le mot de passe qu'ils souhaitent utiliser.</li>
-      <li>Saisissez-le dans Â« Mot de passe du projet Â», puis cliquez sur Enregistrer.</li>
+      <li>Saisissez-le dans « Mot de passe du projet », puis cliquez sur Enregistrer.</li>
     </ol>
     <div class="etu-access-field">
-      <label>Lien d'accÃ¨s Ã©tudiants</label>
+      <label>Lien d'accès étudiants</label>
       <div class="etu-access-row">
         <input type="text" id="etu-link" readonly value="${escapeHtml(etuLinkFor(project.etu_token))}">
         <button class="btn btn-sm" id="etu-link-copy" type="button">Copier</button>
-        <button class="btn btn-sm" id="etu-link-regen" type="button">RÃ©gÃ©nÃ©rer</button>
+        <button class="btn btn-sm" id="etu-link-regen" type="button">Régénérer</button>
       </div>
-      <p class="hint" style="margin:4px 0 0;">Ã€ transmettre Ã  l'Ã©quipe avec le mot de passe. RÃ©gÃ©nÃ©rer invalide aussitÃ´t l'ancien lien.</p>
+      <p class="hint" style="margin:4px 0 0;">À transmettre à l'équipe avec le mot de passe. Régénérer invalide aussitôt l'ancien lien.</p>
     </div>
     <div class="etu-access-field" id="etu-pw-current" hidden>
       <label>Mot de passe actuel</label>
@@ -1462,15 +1462,15 @@ function renderEtuAccessPanel(project){
         <input type="text" id="etu-pw-input" placeholder="Nouveau mot de passe">
         <button class="btn btn-sm btn-accent" id="etu-pw-save" type="button">Enregistrer</button>
       </div>
-      <p class="hint" id="etu-pw-empty-hint" style="margin:4px 0 0;">Chargementâ€¦</p>
+      <p class="hint" id="etu-pw-empty-hint" style="margin:4px 0 0;">Chargement…</p>
     </div>
     <div class="etu-access-field">
-      <label for="etu-desc-input">Descriptif du projet (visible par les Ã©tudiants)</label>
+      <label for="etu-desc-input">Descriptif du projet (visible par les étudiants)</label>
       <div class="etu-access-row">
-        <input type="text" id="etu-desc-input" placeholder="Quelques mots sur le projetâ€¦" value="${escapeHtml(project.sujet || "")}">
+        <input type="text" id="etu-desc-input" placeholder="Quelques mots sur le projet…" value="${escapeHtml(project.sujet || "")}">
         <button class="btn btn-sm" id="etu-desc-save" type="button">Enregistrer</button>
       </div>
-      <p class="hint" style="margin:4px 0 0;">AffichÃ© sur la page de sÃ©lection des projets, Ã  destination des Ã©tudiants.</p>
+      <p class="hint" style="margin:4px 0 0;">Affiché sur la page de sélection des projets, à destination des étudiants.</p>
     </div>
     </div>`;
 
@@ -1481,23 +1481,23 @@ function renderEtuAccessPanel(project){
     const nowCollapsed = !body.hidden;
     body.hidden = nowCollapsed;
     chevron.classList.toggle("collapsed", nowCollapsed);
-    wrap.querySelector(".etu-access-state").textContent = nowCollapsed ? "DÃ©plier" : "Replier";
+    wrap.querySelector(".etu-access-state").textContent = nowCollapsed ? "Déplier" : "Replier";
     toggle.setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
     sessionStorage.setItem("etu-access-collapsed", nowCollapsed ? "1" : "0");
   });
 
   wrap.querySelector("#etu-link-copy").addEventListener("click", () => {
-    try{ navigator.clipboard.writeText(wrap.querySelector("#etu-link").value); showToast("Lien copiÃ©"); }catch(e){}
+    try{ navigator.clipboard.writeText(wrap.querySelector("#etu-link").value); showToast("Lien copié"); }catch(e){}
   });
   wrap.querySelector("#etu-link-regen").addEventListener("click", async () => {
-    if(!confirm("RÃ©gÃ©nÃ©rer le lien d'accÃ¨s Ã©tudiants ? L'ancien cessera aussitÃ´t de fonctionner.")) return;
+    if(!confirm("Régénérer le lien d'accès étudiants ? L'ancien cessera aussitôt de fonctionner.")) return;
     const newToken = randomToken();
     try{
       await pb.collection("sae_projects").update(project.id, { etu_token: newToken });
       project.etu_token = newToken;
       wrap.querySelector("#etu-link").value = etuLinkFor(newToken);
-      showToast("Lien rÃ©gÃ©nÃ©rÃ©");
-    }catch(e){ showToast("Ã‰chec de la rÃ©gÃ©nÃ©ration"); }
+      showToast("Lien régénéré");
+    }catch(e){ showToast("Échec de la régénération"); }
   });
 
   const currentWrap = wrap.querySelector("#etu-pw-current");
@@ -1509,25 +1509,25 @@ function renderEtuAccessPanel(project){
     if(d && d.hasPassword){
       currentWrap.hidden = false;
       currentInput.value = d.password;
-      statusEl.textContent = `DÃ©fini par ${d.author} le ${fmtDate(d.created)}.`;
+      statusEl.textContent = `Défini par ${d.author} le ${fmtDate(d.created)}.`;
       pwLabel.textContent = "Changer le mot de passe";
       emptyHint.textContent = "";
     } else {
       currentWrap.hidden = true;
       pwLabel.textContent = "Mot de passe du projet";
-      emptyHint.textContent = "Aucun mot de passe dÃ©fini pour l'instant â€” les Ã©tudiants ne peuvent pas encore accÃ©der Ã  ce projet.";
+      emptyHint.textContent = "Aucun mot de passe défini pour l'instant — les étudiants ne peuvent pas encore accéder à ce projet.";
     }
   };
   (async () => {
     try{
       const r = await fetch(PB_URL + "/etu/access-info/" + encodeURIComponent(project.slug), { headers:{ Authorization: pb.authStore.token } });
       const d = await r.json();
-      if(r.ok) applyInfo(d); else emptyHint.textContent = "Impossible de vÃ©rifier l'Ã©tat du mot de passe.";
-    }catch(e){ emptyHint.textContent = "Impossible de vÃ©rifier l'Ã©tat du mot de passe."; }
+      if(r.ok) applyInfo(d); else emptyHint.textContent = "Impossible de vérifier l'état du mot de passe.";
+    }catch(e){ emptyHint.textContent = "Impossible de vérifier l'état du mot de passe."; }
   })();
 
   wrap.querySelector("#etu-pw-current-copy").addEventListener("click", () => {
-    try{ navigator.clipboard.writeText(currentInput.value); showToast("Mot de passe copiÃ©"); }catch(e){}
+    try{ navigator.clipboard.writeText(currentInput.value); showToast("Mot de passe copié"); }catch(e){}
   });
 
   wrap.querySelector("#etu-pw-save").addEventListener("click", async () => {
@@ -1540,11 +1540,11 @@ function renderEtuAccessPanel(project){
         body: JSON.stringify({ slug: project.slug, password: value }),
       });
       const d = await r.json();
-      if(!r.ok) throw new Error(d.error || "Ã©chec");
+      if(!r.ok) throw new Error(d.error || "échec");
       input.value = "";
       applyInfo({ hasPassword:true, password:value, author:d.author, created:d.created });
-      showToast("Mot de passe enregistrÃ©");
-    }catch(e){ showToast("Ã‰chec de l'enregistrement"); }
+      showToast("Mot de passe enregistré");
+    }catch(e){ showToast("Échec de l'enregistrement"); }
   });
 
   wrap.querySelector("#etu-desc-save").addEventListener("click", async () => {
@@ -1553,8 +1553,8 @@ function renderEtuAccessPanel(project){
     try{
       await pb.collection("sae_projects").update(project.id, { sujet: value });
       project.sujet = value;
-      showToast("Descriptif enregistrÃ©");
-    }catch(e){ showToast("Ã‰chec de l'enregistrement"); }
+      showToast("Descriptif enregistré");
+    }catch(e){ showToast("Échec de l'enregistrement"); }
   });
 
   return wrap;
@@ -1562,23 +1562,23 @@ function renderEtuAccessPanel(project){
 function renderEncadrantsAdminPanel(project){
   const wrap = document.createElement("div");
   wrap.className = "section-block";
-  wrap.innerHTML = `<div class="section-head"><div class="section-title">Encadrants â€” codes d'accÃ¨s (admin)</div></div>`;
+  wrap.innerHTML = `<div class="section-head"><div class="section-title">Encadrants — codes d'accès (admin)</div></div>`;
   const hint = document.createElement("p");
   hint.style.cssText = "color:var(--ink-muted); font-size:12.5px; margin-bottom:10px;";
-  hint.textContent = `Le code de chaque encadrant est partagÃ© sur tous ses projets. Pour ajouter ou retirer un encadrant de "${escapeHtml(project.nom)}", utilisez "Modifier les infos".`;
+  hint.textContent = `Le code de chaque encadrant est partagé sur tous ses projets. Pour ajouter ou retirer un encadrant de "${escapeHtml(project.nom)}", utilisez "Modifier les infos".`;
   wrap.appendChild(hint);
   const roster = (project.encadrants || []).filter(Boolean);
   if(roster.length === 0){
     const p2 = document.createElement("p");
     p2.style.cssText = "color:var(--ink-muted); font-size:12.5px;";
-    p2.textContent = "Aucun encadrant listÃ© sur ce projet.";
+    p2.textContent = "Aucun encadrant listé sur ce projet.";
     wrap.appendChild(p2);
   } else {
     const tableWrap = document.createElement("div");
     tableWrap.className = "ref-table-wrap";
     const table = document.createElement("table");
     table.className = "ref-table ref-table-encadrants";
-    table.innerHTML = `<thead><tr><th>Nom PrÃ©nom</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
+    table.innerHTML = `<thead><tr><th>Nom Prénom</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
     roster.forEach(nom => renderEncadrantCodeRow(tbody, nom, renderProjectView));
     tableWrap.appendChild(table);
@@ -1588,7 +1588,7 @@ function renderEncadrantsAdminPanel(project){
 }
 /* ---------------- comptes des encadrants (administrateur) ---------------- */
 const findUser = nom => usersAll.find(u => u.login === normName(nom)) || null;
-// crÃ©e le compte ou renouvelle son code : le code provisoire n'existe que dans la rÃ©ponse (jamais stockÃ© en clair)
+// crée le compte ou renouvelle son code : le code provisoire n'existe que dans la réponse (jamais stocké en clair)
 async function provisionAccount(nom){
   const code = randomCode(), h = await sha256Hex(code), u = findUser(nom);
   if(u){
@@ -1601,38 +1601,38 @@ async function provisionAccount(nom){
   return code;
 }
 function showTempCode(nom, code){
-  document.getElementById("tc-hint").textContent = "Code provisoire de " + nom + ". Ã€ transmettre Ã  la personne : elle le remplacera par son propre code Ã  sa premiÃ¨re connexion.";
+  document.getElementById("tc-hint").textContent = "Code provisoire de " + nom + ". À transmettre à la personne : elle le remplacera par son propre code à sa première connexion.";
   document.getElementById("tc-code").textContent = code;
   document.getElementById("modal-tempcode").classList.add("open");
 }
 document.getElementById("tc-close").addEventListener("click", () => { document.getElementById("tc-code").textContent = ""; document.getElementById("modal-tempcode").classList.remove("open"); });
-document.getElementById("tc-copy").addEventListener("click", () => { try{ navigator.clipboard.writeText(document.getElementById("tc-code").textContent); showToast("Code copiÃ©"); }catch(e){} });
+document.getElementById("tc-copy").addEventListener("click", () => { try{ navigator.clipboard.writeText(document.getElementById("tc-code").textContent); showToast("Code copié"); }catch(e){} });
 function renderEncadrantCodeRow(tbody, nom, onChange, projectsList){
   const u = findUser(nom);
   const soi = !!(u && pb.authStore.model && u.id === pb.authStore.model.id);
   const row = document.createElement("tr");
   row.className = "ref-row";
-  const statut = !u ? "Aucun compte" : (u.must_change ? "Code provisoire en attente" : "Actif") + (u.admin ? " Â· admin" : "");
-  const projectsCell = projectsList ? `<td>${escapeHtml(projectsList.join(", ") || "â€”")}</td>` : "";
+  const statut = !u ? "Aucun compte" : (u.must_change ? "Code provisoire en attente" : "Actif") + (u.admin ? " · admin" : "");
+  const projectsCell = projectsList ? `<td>${escapeHtml(projectsList.join(", ") || "—")}</td>` : "";
   row.innerHTML = `
     <td><b>${escapeHtml(nom)}</b></td>
     ${projectsCell}
     <td style="white-space:nowrap; color:var(--ink-faint); font-size:11.5px;">${statut}</td>
-    <td class="ref-row-actions">${soi ? "" : `<button class="btn-ghost btn-sm" type="button" data-action="prov">${u ? "Nouveau code provisoire" : "CrÃ©er le compte"}</button>`}</td>
+    <td class="ref-row-actions">${soi ? "" : `<button class="btn-ghost btn-sm" type="button" data-action="prov">${u ? "Nouveau code provisoire" : "Créer le compte"}</button>`}</td>
     <td class="ref-row-actions"></td>
     ${projectsList ? `<td class="ref-row-actions"><button class="btn-ghost btn-sm btn-danger" type="button" data-action="delete">Supprimer</button></td>` : ""}`;
   const prov = row.querySelector('[data-action="prov"]');
   if(prov) prov.addEventListener("click", async () => {
-    if(u && !confirm(`GÃ©nÃ©rer un nouveau code provisoire pour "${nom}" ? L'ancien code ne fonctionnera plus.`)) return;
+    if(u && !confirm(`Générer un nouveau code provisoire pour "${nom}" ? L'ancien code ne fonctionnera plus.`)) return;
     prov.disabled = true;
     try{ const code = await provisionAccount(nom); showTempCode(nom, code); if(onChange) onChange(); }
-    catch(e){ alert("Ã‰chec : " + (e && e.message ? e.message : "erreur inconnue")); prov.disabled = false; }
+    catch(e){ alert("Échec : " + (e && e.message ? e.message : "erreur inconnue")); prov.disabled = false; }
   });
   const deleteBtn = row.querySelector('[data-action="delete"]');
   if(deleteBtn){
     deleteBtn.addEventListener("click", async () => {
-      const projList = projectsList && projectsList.length ? ` (retirÃ© des projets : ${projectsList.join(", ")})` : "";
-      if(!confirm(`Supprimer "${nom}" ? Son compte sera supprimÃ© et il/elle sera retirÃ©(e) de tous ses projets${projList}.`)) return;
+      const projList = projectsList && projectsList.length ? ` (retiré des projets : ${projectsList.join(", ")})` : "";
+      if(!confirm(`Supprimer "${nom}" ? Son compte sera supprimé et il/elle sera retiré(e) de tous ses projets${projList}.`)) return;
       try{
         for(const p of projects.values()){
           if(rosterHasName(p.encadrants, nom)){
@@ -1643,9 +1643,9 @@ function renderEncadrantCodeRow(tbody, nom, onChange, projectsList){
           }
         }
         if(u){ await pb.collection("sae_users").delete(u.id); usersAll = usersAll.filter(x => x.id !== u.id); }
-        showToast("Encadrant supprimÃ©");
+        showToast("Encadrant supprimé");
         if(onChange) onChange();
-      }catch(e){ alert("Ã‰chec : " + (e && e.message ? e.message : "erreur inconnue")); }
+      }catch(e){ alert("Échec : " + (e && e.message ? e.message : "erreur inconnue")); }
     });
   }
   tbody.appendChild(row);
@@ -1653,7 +1653,7 @@ function renderEncadrantCodeRow(tbody, nom, onChange, projectsList){
 function renderEncadrantsManagementView(){
   const main = document.getElementById("main");
   if(!adminUnlocked){
-    main.innerHTML = `<div class="empty-state"><h2>Gestion des encadrants</h2><p>RÃ©servÃ©e au mode administrateur.</p>
+    main.innerHTML = `<div class="empty-state"><h2>Gestion des encadrants</h2><p>Réservée au mode administrateur.</p>
       <button class="btn btn-accent" id="enc-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
     main.querySelector("#enc-unlock-admin").addEventListener("click", openAdminModal);
     return;
@@ -1667,7 +1667,7 @@ function renderEncadrantsManagementView(){
   const hint = document.createElement("p");
   hint.className = "hint";
   hint.style.marginBottom = "16px";
-  hint.textContent = "Chaque encadrant a un compte et un seul code, valable sur tous ses projets. Un code provisoire est Ã  transmettre Ã  la personne : elle le remplace Ã  sa premiÃ¨re connexion.";
+  hint.textContent = "Chaque encadrant a un compte et un seul code, valable sur tous ses projets. Un code provisoire est à transmettre à la personne : elle le remplace à sa première connexion.";
   main.appendChild(hint);
 
   canonNameCache.clear();
@@ -1694,7 +1694,7 @@ function renderEncadrantsManagementView(){
     tableWrap.className = "ref-table-wrap";
     const table = document.createElement("table");
     table.className = "ref-table ref-table-encadrants";
-    table.innerHTML = `<thead><tr><th>Nom PrÃ©nom</th><th>Projets</th><th>Compte</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
+    table.innerHTML = `<thead><tr><th>Nom Prénom</th><th>Projets</th><th>Compte</th><th></th><th></th><th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
     for(const nom of sorted){
       renderEncadrantCodeRow(tbody, nom, renderEncadrantsManagementView, projectsByName.get(nom) || []);
@@ -1741,23 +1741,23 @@ document.getElementById("ae-save").addEventListener("click", async () => {
       await pb.collection("sae_projects").update(p.id, { encadrants, enc_keys:p.enc_keys });
     }
     document.getElementById("modal-add-encadrant").classList.remove("open");
-    showToast("Encadrant ajoutÃ©");
+    showToast("Encadrant ajouté");
     renderAll();
     showTempCode(nom, code);
-  }catch(e){ errEl.textContent = "Ã‰chec : " + (e && e.message ? e.message : "erreur inconnue"); errEl.hidden = false; }
+  }catch(e){ errEl.textContent = "Échec : " + (e && e.message ? e.message : "erreur inconnue"); errEl.hidden = false; }
 });
 let etuColFilters = { nom:"", projet:"", formation:"", parcours:"", annee:"" };
 let etuSort = { col:"nom", dir:1 };
 const ETU_COLS = [
-  { key:"nom",       label:"Nom PrÃ©nom" },
+  { key:"nom",       label:"Nom Prénom" },
   { key:"projet",    label:"Projet" },
   { key:"formation", label:"Formation" },
   { key:"parcours",  label:"Parcours" },
-  { key:"annee",     label:"AnnÃ©e" },
+  { key:"annee",     label:"Année" },
 ];
-// une entrÃ©e d'individualisation est indexÃ©e par la position de l'Ã©tudiant dans project.etudiants :
-// en retirer un dÃ©cale les entrÃ©es suivantes d'un cran, sous peine d'attribuer la note revue d'un
-// Ã©tudiant Ã  un autre aprÃ¨s suppression ou dÃ©placement.
+// une entrée d'individualisation est indexée par la position de l'étudiant dans project.etudiants :
+// en retirer un décale les entrées suivantes d'un cran, sous peine d'attribuer la note revue d'un
+// étudiant à un autre après suppression ou déplacement.
 function removeEtudiantAt(project, idx){
   const etudiants = (project.etudiants||[]).filter((_,i) => i !== idx);
   const individualisation = deepClone(project.individualisation || {S3:{},S4:{}});
@@ -1806,7 +1806,7 @@ function etuRebuildRows(){
 function renderEtudiantsManagementView(){
   const main = document.getElementById("main");
   if(!adminUnlocked){
-    main.innerHTML = `<div class="empty-state"><h2>Gestion des Ã©tudiants</h2><p>RÃ©servÃ©e au mode administrateur.</p>
+    main.innerHTML = `<div class="empty-state"><h2>Gestion des étudiants</h2><p>Réservée au mode administrateur.</p>
       <button class="btn btn-accent" id="etu-unlock-admin" style="margin-top:12px;">Activer le mode administrateur</button></div>`;
     main.querySelector("#etu-unlock-admin").addEventListener("click", openAdminModal);
     return;
@@ -1814,13 +1814,13 @@ function renderEtudiantsManagementView(){
   main.innerHTML = "";
   const head = document.createElement("div");
   head.className = "team-head";
-  head.innerHTML = `<div><h1>Gestion des Ã©tudiants</h1><div class="tags"><span class="tag">Admin</span></div></div>`;
+  head.innerHTML = `<div><h1>Gestion des étudiants</h1><div class="tags"><span class="tag">Admin</span></div></div>`;
   main.appendChild(head);
 
   const hint = document.createElement("p");
   hint.className = "hint";
   hint.style.marginBottom = "16px";
-  hint.textContent = "Liste agrÃ©gÃ©e depuis tous les projets. Un Ã©tudiant n'est jamais que sur un seul projet. Cliquez un en-tÃªte pour trier, âœŽ pour modifier une valeur â€” Formation / Parcours / AnnÃ©e concernent le projet entier, pas seulement cet Ã©tudiant.";
+  hint.textContent = "Liste agrégée depuis tous les projets. Un étudiant n'est jamais que sur un seul projet. Cliquez un en-tête pour trier, ✎ pour modifier une valeur — Formation / Parcours / Année concernent le projet entier, pas seulement cet étudiant.";
   main.appendChild(hint);
 
   const allRows = etuAllRows();
@@ -1835,9 +1835,9 @@ function renderEtudiantsManagementView(){
   tableWrap.className = "ref-table-wrap";
   const table = document.createElement("table");
   table.className = "ref-table ref-table-etudiants";
-  const headRow = "<tr>" + ETU_COLS.map(c => `<th class="sortable" data-col="${c.key}">${c.label}${etuSort.col===c.key ? (etuSort.dir===1 ? " â–²" : " â–¼") : ""}</th>`).join("") + "<th></th></tr>";
+  const headRow = "<tr>" + ETU_COLS.map(c => `<th class="sortable" data-col="${c.key}">${c.label}${etuSort.col===c.key ? (etuSort.dir===1 ? " ▲" : " ▼") : ""}</th>`).join("") + "<th></th></tr>";
   const filterCell = c => {
-    if(c.key === "nom" || c.key === "projet") return `<th><input type="text" class="ref-filter-input" data-col="${c.key}" value="${escapeHtml(etuColFilters[c.key])}" placeholder="Filtrerâ€¦"></th>`;
+    if(c.key === "nom" || c.key === "projet") return `<th><input type="text" class="ref-filter-input" data-col="${c.key}" value="${escapeHtml(etuColFilters[c.key])}" placeholder="Filtrer…"></th>`;
     const opts = options[c.key];
     return `<th><select class="ref-filter-input" data-col="${c.key}"><option value="">Tous / toutes</option>${opts.map(v => `<option value="${escapeHtml(v)}"${etuColFilters[c.key]===v ? " selected" : ""}>${escapeHtml(v)}</option>`).join("")}</select></th>`;
   };
@@ -1858,7 +1858,7 @@ function renderEtudiantsManagementView(){
   const empty = document.createElement("p");
   empty.id = "etu-empty";
   empty.style.cssText = "color:var(--ink-muted); font-size:12.5px; margin-top:10px;";
-  empty.textContent = "Aucun Ã©tudiant ne correspond.";
+  empty.textContent = "Aucun étudiant ne correspond.";
   empty.hidden = true;
   main.appendChild(empty);
 
@@ -1867,20 +1867,20 @@ function renderEtudiantsManagementView(){
   const addBtn = document.createElement("button");
   addBtn.className = "btn btn-sm";
   addBtn.style.marginTop = "10px";
-  addBtn.textContent = "+ Ajouter un Ã©tudiant";
+  addBtn.textContent = "+ Ajouter un étudiant";
   addBtn.addEventListener("click", openAddEtudiantModal);
   main.appendChild(addBtn);
 }
 function renderEtudiantRow(tbody, nom, p, idx){
   const row = document.createElement("tr");
   row.className = "ref-row";
-  const cell = (field, val) => `<td class="etu-cell">${escapeHtml(val)} <button class="cell-edit" type="button" data-field="${field}" title="Modifier">âœŽ</button></td>`;
+  const cell = (field, val) => `<td class="etu-cell">${escapeHtml(val)} <button class="cell-edit" type="button" data-field="${field}" title="Modifier">✎</button></td>`;
   row.innerHTML =
     cell("nom", nom) +
     cell("projet", p.nom) +
-    cell("formation", p.formation||"â€”") +
-    cell("parcours", p.parcours||"â€”") +
-    cell("annee", p.annee||"â€”") +
+    cell("formation", p.formation||"—") +
+    cell("parcours", p.parcours||"—") +
+    cell("annee", p.annee||"—") +
     `<td class="ref-row-actions"><button class="btn-ghost btn-sm btn-danger" type="button" data-action="delete">Supprimer</button></td>`;
   row.querySelectorAll(".cell-edit").forEach(btn => btn.addEventListener("click", () => editEtudiantField(p, nom, idx, btn.dataset.field)));
   row.querySelector('[data-action="delete"]').addEventListener("click", async () => {
@@ -1890,16 +1890,16 @@ function renderEtudiantRow(tbody, nom, p, idx){
       const { etudiants, individualisation } = removeEtudiantAt(fresh, idx);
       const updated = await pb.collection("sae_projects").update(p.id, { etudiants, individualisation });
       projects.set(updated.slug, updated);
-      showToast("Ã‰tudiant supprimÃ©");
+      showToast("Étudiant supprimé");
       renderEtudiantsManagementView();
-    }catch(e){ alert("Ã‰chec : " + (e && e.message ? e.message : "erreur inconnue")); }
+    }catch(e){ alert("Échec : " + (e && e.message ? e.message : "erreur inconnue")); }
   });
   tbody.appendChild(row);
 }
 async function editEtudiantField(p, nom, idx, field){
   try{
     if(field === "nom"){
-      const next = prompt("Nom PrÃ©nom :", nom);
+      const next = prompt("Nom Prénom :", nom);
       if(next === null) return;
       const trimmed = next.trim();
       if(!trimmed || trimmed === nom) return;
@@ -1908,18 +1908,18 @@ async function editEtudiantField(p, nom, idx, field){
       etudiants[idx] = trimmed;
       const updated = await pb.collection("sae_projects").update(p.id, { etudiants });
       projects.set(updated.slug, updated);
-      showToast("Ã‰tudiant modifiÃ©");
+      showToast("Étudiant modifié");
     } else if(field === "projet"){
       const sorted = Array.from(projects.values()).filter(x => !x.archived).sort((a,b) => a.nom.localeCompare(b.nom, "fr", {sensitivity:"base"}));
       const names = sorted.map(x => x.nom);
-      const chosen = prompt(`DÃ©placer "${nom}" vers quel projet ?\n\n${names.join("\n")}`, p.nom);
+      const chosen = prompt(`Déplacer "${nom}" vers quel projet ?\n\n${names.join("\n")}`, p.nom);
       if(chosen === null) return;
       const trimmed = chosen.trim();
       if(!trimmed || trimmed === p.nom) return;
       const dest = sorted.find(x => x.nom === trimmed);
-      if(!dest){ alert("Ce projet ne correspond Ã  aucun projet actif existant."); return; }
-      if(rosterHasName(dest.etudiants, nom)){ alert(`"${nom}" est dÃ©jÃ  sur le projet "${dest.nom}".`); return; }
-      if(!confirm(`DÃ©placer "${nom}" du projet "${p.nom}" vers "${dest.nom}" ?`)) return;
+      if(!dest){ alert("Ce projet ne correspond à aucun projet actif existant."); return; }
+      if(rosterHasName(dest.etudiants, nom)){ alert(`"${nom}" est déjà sur le projet "${dest.nom}".`); return; }
+      if(!confirm(`Déplacer "${nom}" du projet "${p.nom}" vers "${dest.nom}" ?`)) return;
       const freshSrc = await pb.collection("sae_projects").getOne(p.id);
       const { etudiants: srcEtudiants, individualisation: srcIndiv } = removeEtudiantAt(freshSrc, idx);
       const updatedSrc = await pb.collection("sae_projects").update(p.id, { etudiants:srcEtudiants, individualisation:srcIndiv });
@@ -1928,22 +1928,22 @@ async function editEtudiantField(p, nom, idx, field){
       const destEtudiants = (freshDest.etudiants||[]).concat([nom]);
       const updatedDest = await pb.collection("sae_projects").update(dest.id, { etudiants:destEtudiants });
       projects.set(updatedDest.slug, updatedDest);
-      showToast("Ã‰tudiant dÃ©placÃ©");
+      showToast("Étudiant déplacé");
     } else {
-      const labels = { formation:"Formation", parcours:"Parcours", annee:"AnnÃ©e" };
+      const labels = { formation:"Formation", parcours:"Parcours", annee:"Année" };
       const current = p[field] || "";
       const next = prompt(`${labels[field]} du projet "${p.nom}" :`, current);
       if(next === null) return;
       const trimmed = next.trim();
       if(trimmed === current) return;
       const n = (p.etudiants||[]).length;
-      if(!confirm(`Ce champ concerne le projet "${p.nom}" entier (${n} Ã©tudiant${n>1?"s":""}), pas seulement "${nom}". Continuer ?`)) return;
+      if(!confirm(`Ce champ concerne le projet "${p.nom}" entier (${n} étudiant${n>1?"s":""}), pas seulement "${nom}". Continuer ?`)) return;
       const updated = await pb.collection("sae_projects").update(p.id, { [field]: trimmed });
       projects.set(updated.slug, updated);
-      showToast("Projet modifiÃ©");
+      showToast("Projet modifié");
     }
     renderEtudiantsManagementView();
-  }catch(e){ alert("Ã‰chec : " + (e && e.message ? e.message : "erreur inconnue")); }
+  }catch(e){ alert("Échec : " + (e && e.message ? e.message : "erreur inconnue")); }
 }
 function openAddEtudiantModal(){
   document.getElementById("aet-nom").value = "";
@@ -1968,14 +1968,14 @@ document.getElementById("aet-save").addEventListener("click", async () => {
   if(!p){ errEl.textContent = "Choisissez un projet."; errEl.hidden = false; return; }
   try{
     const fresh = await pb.collection("sae_projects").getOne(p.id);
-    if(rosterHasName(fresh.etudiants, nom)){ errEl.textContent = "Cet Ã©tudiant est dÃ©jÃ  sur ce projet."; errEl.hidden = false; return; }
+    if(rosterHasName(fresh.etudiants, nom)){ errEl.textContent = "Cet étudiant est déjà sur ce projet."; errEl.hidden = false; return; }
     const etudiants = (fresh.etudiants||[]).concat([nom]);
     const updated = await pb.collection("sae_projects").update(p.id, { etudiants });
     projects.set(updated.slug, updated);
     document.getElementById("modal-add-etudiant").classList.remove("open");
-    showToast("Ã‰tudiant ajoutÃ©");
+    showToast("Étudiant ajouté");
     renderEtudiantsManagementView();
-  }catch(e){ errEl.textContent = "Ã‰chec : " + (e && e.message ? e.message : "erreur inconnue"); errEl.hidden = false; }
+  }catch(e){ errEl.textContent = "Échec : " + (e && e.message ? e.message : "erreur inconnue"); errEl.hidden = false; }
 });
 function renderScorecard(project, semestres, titre){
   const scores = computeScores(project, semestres);
@@ -1987,18 +1987,18 @@ function renderScorecard(project, semestres, titre){
     const v = scores[c];
     const pct = v === null ? 0 : Math.min(100, (v/20)*100);
     rows += `<div class="score-row">
-      <div class="score-label">${c} Â· ${info.nom}</div>
+      <div class="score-label">${c} · ${info.nom}</div>
       <div class="score-track"><div class="score-gradient"></div><div class="score-mask" style="width:${100-pct}%"></div></div>
-      <div class="score-value ${v===null?'na':''}">${v===null ? "â€”" : v.toFixed(2)}</div>
+      <div class="score-value ${v===null?'na':''}">${v===null ? "—" : v.toFixed(2)}</div>
     </div>`;
   }
   card.innerHTML = `<div class="scorecard-title">${titre}</div>${rows}`;
   return card;
 }
 const VUE_DEFS = {
-  S3:    { sems:["S3"],      titreNotes:"Notes â€” semestre 3" },
-  S4:    { sems:["S4"],      titreNotes:"Notes â€” semestre 4" },
-  ANNEE: { sems:["S3","S4"], titreNotes:"Notes â€” cumul annuel (S3 + S4)" },
+  S3:    { sems:["S3"],      titreNotes:"Notes — semestre 3" },
+  S4:    { sems:["S4"],      titreNotes:"Notes — semestre 4" },
+  ANNEE: { sems:["S3","S4"], titreNotes:"Notes — cumul annuel (S3 + S4)" },
 };
 const AFFICHAGE_KEY = "affichage-projet";
 const affichage = (() => {
@@ -2030,8 +2030,8 @@ function renderVueBar(){
   toggles.className = "vue-toggles";
   toggles.innerHTML = `
     <label class="sw">Frise <button type="button" role="switch" data-t="frise" aria-checked="${affichage.frise}" aria-label="Afficher la frise"></button></label>
-    <label class="sw">Notes <button type="button" role="switch" data-t="notes" aria-checked="${affichage.notes}" aria-label="Afficher les notes par compÃ©tence"></button></label>
-    <label class="sw">BarÃ¨mes <button type="button" role="switch" data-t="bareme" aria-checked="${baremeVisible}" aria-label="Afficher les barÃ¨mes"></button></label>`;
+    <label class="sw">Notes <button type="button" role="switch" data-t="notes" aria-checked="${affichage.notes}" aria-label="Afficher les notes par compétence"></button></label>
+    <label class="sw">Barèmes <button type="button" role="switch" data-t="bareme" aria-checked="${baremeVisible}" aria-label="Afficher les barèmes"></button></label>`;
   toggles.addEventListener("click", e => {
     const btn = e.target.closest("button[data-t]");
     if(!btn) return;
@@ -2047,7 +2047,7 @@ function renderVueBar(){
   return bar;
 }
 function goToLivrable(itemId, sem){
-  // la vue AnnÃ©e n'affiche pas (encadrants) ou pas toujours (Ã©tudiants) les cases du bon semestre : on bascule sur le semestre du livrable
+  // la vue Année n'affiche pas (encadrants) ou pas toujours (étudiants) les cases du bon semestre : on bascule sur le semestre du livrable
   if(sem && (sem !== currentSemestre || currentVue === "ANNEE")){
     currentSemestre = sem;
     currentVue = sem;
@@ -2066,7 +2066,7 @@ function renderPanel(project){
   body.appendChild(renderScorecard(project, def.sems, def.titreNotes));
   const vide = document.createElement("div");
   vide.className = "panel-empty";
-  vide.textContent = "Frise et notes masquÃ©es : utilisez les interrupteurs ci-dessus.";
+  vide.textContent = "Frise et notes masquées : utilisez les interrupteurs ci-dessus.";
   body.appendChild(vide);
   panel.appendChild(body);
   new ResizeObserver(() => {
@@ -2078,7 +2078,7 @@ function renderPanel(project){
 function renderSection(section, project, readOnly){
   const totalCoef = {};
   for(const item of section.items) for(const c of Object.keys(item.coef||{})) totalCoef[c] = (totalCoef[c]||0) + item.coef[c];
-  const coefLabel = Object.keys(totalCoef).map(c => `${c}Â·${totalCoef[c]}`).join("  ");
+  const coefLabel = Object.keys(totalCoef).map(c => `${c}·${totalCoef[c]}`).join("  ");
   const wrap = document.createElement("div");
   wrap.className = "section-block";
   wrap.innerHTML = `<div class="section-head"><div class="section-title">${escapeHtml(section.titre)}</div><div class="section-meta">${coefLabel}</div></div>
@@ -2092,7 +2092,7 @@ function renderItem(item, idx, project, readOnly){
   const card = document.createElement("div");
   card.className = "livrable-card";
   card.dataset.item = item.id;
-  const chips = Object.keys(item.coef||{}).map(c => `<span class="chip" style="background:${COMPETENCES[c].couleur}">${c}Â·${item.coef[c]}</span>`).join("");
+  const chips = Object.keys(item.coef||{}).map(c => `<span class="chip" style="background:${COMPETENCES[c].couleur}">${c}·${item.coef[c]}</span>`).join("");
   const hasBareme = !item.editable;
   const showBareme = hasBareme && baremeVisible;
   const tooltip = (hasBareme && !baremeVisible)
@@ -2107,7 +2107,7 @@ function renderItem(item, idx, project, readOnly){
     ${showBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
     <div class="livrable-foot">
       <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}><div class="note-stamp">${escapeHtml(noteStampText(project, currentSemestre, item.id))}</div></div>
-      <div class="livrable-field"><label for="date-${item.id}">Date d'Ã©valuation prÃ©vue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
+      <div class="livrable-field"><label for="date-${item.id}">Date d'évaluation prévue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
     </div>
     ${threadShellHTML(item.id)}`;
   card.querySelector('input[type=number]').addEventListener("change", e => updateEval(item.id, "note", e.target.value));
@@ -2115,7 +2115,7 @@ function renderItem(item, idx, project, readOnly){
   initThread(card, item.id, readOnly);
   return card;
 }
-/* ---------------- fil de commentaires (cÃ´tÃ© encadrants) ---------------- */
+/* ---------------- fil de commentaires (côté encadrants) ---------------- */
 const commentDrafts = new Map();
 function initThread(card, itemId, readOnly){
   const th = card.querySelector(".cm-thread");
@@ -2135,15 +2135,15 @@ function initThread(card, itemId, readOnly){
     const box = th.querySelector("[data-composer]");
     const who = me();
     if(!who){
-      box.innerHTML = `<p class="cm-hint">Saisissez votre code pour commenter ou rÃ©pondre.</p>`;
+      box.innerHTML = `<p class="cm-hint">Saisissez votre code pour commenter ou répondre.</p>`;
       return;
     }
     const target = st.reply ? (commentsAll.find(c => c.id === st.reply) || (st.reply === "legacy" ? { author:"Ancien commentaire" } : null)) : null;
     box.innerHTML = `<div class="cm-composer">
-      ${target ? `<div class="cm-ctx">RÃ©ponse Ã  <b>${escapeHtml(authorShort(target.author))}</b> <button data-do="cancelReply" type="button">annuler</button></div>` : ""}
-      <textarea data-new placeholder="${target ? "Votre rÃ©ponseâ€¦" : "Ajouter un commentaireâ€¦"}" aria-label="${target ? "Votre rÃ©ponse" : "Nouveau commentaire"}"></textarea>
-      <div class="cm-btns"><button class="btn btn-accent btn-sm" data-do="publish" type="button" disabled>${target ? "RÃ©pondre" : "Publier"}</button>
-        <span class="cm-hint">PubliÃ© sous le nom de <b>${escapeHtml(who)}</b> Â· Ctrl + EntrÃ©e</span></div></div>`;
+      ${target ? `<div class="cm-ctx">Réponse à <b>${escapeHtml(authorShort(target.author))}</b> <button data-do="cancelReply" type="button">annuler</button></div>` : ""}
+      <textarea data-new placeholder="${target ? "Votre réponse…" : "Ajouter un commentaire…"}" aria-label="${target ? "Votre réponse" : "Nouveau commentaire"}"></textarea>
+      <div class="cm-btns"><button class="btn btn-accent btn-sm" data-do="publish" type="button" disabled>${target ? "Répondre" : "Publier"}</button>
+        <span class="cm-hint">Publié sous le nom de <b>${escapeHtml(who)}</b> · Ctrl + Entrée</span></div></div>`;
     const ta = box.querySelector("[data-new]"), pub = box.querySelector("[data-do=publish]");
     ta.value = commentDrafts.get(draftKey()) || "";
     pub.disabled = !ta.value.trim();
@@ -2173,8 +2173,8 @@ function initThread(card, itemId, readOnly){
         commentDrafts.delete(draftKey());
         st.reply = null;
         drawList(); drawComposer();
-        showToast("Message publiÃ©");
-      }catch(err){ showToast("Ã‰chec de l'envoi"); b.disabled = false; }
+        showToast("Message publié");
+      }catch(err){ showToast("Échec de l'envoi"); b.disabled = false; }
     }
     else if(a === "saveEdit"){
       const text = th.querySelector("[data-edit]").value.trim();
@@ -2182,16 +2182,16 @@ function initThread(card, itemId, readOnly){
       try{
         upsertComment(await pb.collection("sae_comments").update(id, { text }));
         st.editing = null; drawList();
-        showToast("Message modifiÃ©");
-      }catch(err){ showToast("Ã‰chec de l'enregistrement"); }
+        showToast("Message modifié");
+      }catch(err){ showToast("Échec de l'enregistrement"); }
     }
     else if(a === "del"){
-      if(!confirm("Supprimer ce message ? Il disparaÃ®t ; s'il a des rÃ©ponses, il est remplacÃ© par Â« Message supprimÃ© Â».")) return;
+      if(!confirm("Supprimer ce message ? Il disparaît ; s'il a des réponses, il est remplacé par « Message supprimé ».")) return;
       try{
-        upsertComment(await pb.collection("sae_comments").update(id, { deleted_by: who, text: "â€”" }));
+        upsertComment(await pb.collection("sae_comments").update(id, { deleted_by: who, text: "—" }));
         drawList();
-        showToast("Message supprimÃ©");
-      }catch(err){ showToast("Ã‰chec de la suppression"); }
+        showToast("Message supprimé");
+      }catch(err){ showToast("Échec de la suppression"); }
     }
   });
   drawList();
@@ -2221,10 +2221,10 @@ function refreshScoresOnly(){
   const ip = main.querySelector(".indiv-panel");
   if(ip && ip._refresh) ip._refresh();
 }
-/* fusion des saisies concurrentes : on n'enregistre que le diff (item/Ã©tudiant + champ modifiÃ©s),
-   fusionnÃ© sur la derniÃ¨re version serveur au moment de l'envoi, au lieu de rÃ©Ã©crire tout
-   evals/individualisation depuis la copie locale â€” Ã©vite d'Ã©craser la saisie d'un autre
-   encadrant qui aurait modifiÃ© un autre livrable du mÃªme projet entre-temps. */
+/* fusion des saisies concurrentes : on n'enregistre que le diff (item/étudiant + champ modifiés),
+   fusionné sur la dernière version serveur au moment de l'envoi, au lieu de réécrire tout
+   evals/individualisation depuis la copie locale — évite d'écraser la saisie d'un autre
+   encadrant qui aurait modifié un autre livrable du même projet entre-temps. */
 function mergeSparse(base, diff){
   const out = deepClone(base || {});
   for(const sem of Object.keys(diff)){
@@ -2260,17 +2260,17 @@ async function flushProjectPatch(slug){
     projects.set(updated.slug, updated);
     journalRecord(slug, fresh, evalDiff, indivDiff);
     if(currentProjectId === slug && view === "project") softRender();
-    showToast("EnregistrÃ©");
+    showToast("Enregistré");
   }catch(e){
     if(e && [400, 401, 403, 404].includes(e.status)){
-      showToast("Ã‰criture refusÃ©e : reconnectez-vous (session expirÃ©e ?)");
+      showToast("Écriture refusée : reconnectez-vous (session expirée ?)");
       if(!pb.authStore.isValid && connectedUser) disconnect("expire");
       return;
     }
     const retry = queuePendingSave(slug, recordId);
     retry.evalDiff = mergeSparse(evalDiff, retry.evalDiff);
     retry.indivDiff = mergeSparse(indivDiff, retry.indivDiff);
-    showToast("Ã‰chec de l'enregistrement");
+    showToast("Échec de l'enregistrement");
     scheduleFlush(slug);
   }
 }
@@ -2300,9 +2300,9 @@ function updateIndiv(etuIdx, comp, value){
 function selectProject(id){ currentProjectId = id; view = "project"; renderAll(); }
 
 /* ---------------- connexion unique de l'encadrant (comptes PocketBase) ---------------- */
-// Un encadrant se connecte une fois (nom + code) : le serveur lui dÃ©livre un jeton, valable pour tous les projets
-// oÃ¹ il est inscrit. Le jeton ne vit que le temps de l'onglet et la session se verrouille seule aprÃ¨s 20 minutes
-// d'inactivitÃ©. Le code n'est jamais envoyÃ© en clair : seul son SHA-256 sert de mot de passe.
+// Un encadrant se connecte une fois (nom + code) : le serveur lui délivre un jeton, valable pour tous les projets
+// où il est inscrit. Le jeton ne vit que le temps de l'onglet et la session se verrouille seule après 20 minutes
+// d'inactivité. Le code n'est jamais envoyé en clair : seul son SHA-256 sert de mot de passe.
 const IDLE_LOCK_MS = 20 * 60 * 1000;
 const MIN_CODE_LEN = 6;
 let lastActivity = Date.now();
@@ -2354,7 +2354,7 @@ function renderConnectBody(){
   if(connectStep.mode === "newcode"){
     who.disabled = true;
     document.getElementById("connect-title").textContent = "Choisissez votre code";
-    document.getElementById("connect-hint").textContent = "Votre code provisoire est reconnu. Choisissez maintenant votre code personnel (" + MIN_CODE_LEN + " caractÃ¨res au minimum) : il remplace le provisoire, pour tous vos projets.";
+    document.getElementById("connect-hint").textContent = "Votre code provisoire est reconnu. Choisissez maintenant votre code personnel (" + MIN_CODE_LEN + " caractères au minimum) : il remplace le provisoire, pour tous vos projets.";
     document.getElementById("connect-submit").textContent = "Enregistrer mon code";
     body.innerHTML = `
       <div class="field-full"><label for="connect-new-code">Nouveau code</label><input type="password" id="connect-new-code" autocomplete="new-password"></div>
@@ -2369,10 +2369,10 @@ function renderConnectBody(){
     <div class="field-full"><label for="connect-code">Code</label><input type="password" id="connect-code" autocomplete="off"></div>
     <button class="modal-link" id="connect-toggle-change" type="button">Changer mon code</button>
     <div id="connect-change-fields" hidden>
-      <div class="field-full"><label for="connect-new-code">Nouveau code (${MIN_CODE_LEN} caractÃ¨res au minimum)</label><input type="password" id="connect-new-code" autocomplete="new-password"></div>
+      <div class="field-full"><label for="connect-new-code">Nouveau code (${MIN_CODE_LEN} caractères au minimum)</label><input type="password" id="connect-new-code" autocomplete="new-password"></div>
       <div class="field-full"><label for="connect-new-code-confirm">Confirmer le nouveau code</label><input type="password" id="connect-new-code-confirm" autocomplete="new-password"></div>
     </div>
-    <p class="hint" style="margin-top:8px;">Un seul code pour tous vos projets. Code oubliÃ© ou premiÃ¨re connexion : demandez un code provisoire Ã  l'administrateur.</p>`;
+    <p class="hint" style="margin-top:8px;">Un seul code pour tous vos projets. Code oublié ou première connexion : demandez un code provisoire à l'administrateur.</p>`;
   body.querySelector("#connect-toggle-change").addEventListener("click", () => { const w = body.querySelector("#connect-change-fields"); w.hidden = !w.hidden; });
   body.querySelector("#connect-code").focus();
 }
@@ -2390,15 +2390,15 @@ async function openConnectModal(preset, opts){
   opts = opts || {};
   connectStep = { mode:"login", oldHash:null, wantAdmin:!!opts.admin };
   const sel = document.getElementById("connect-who");
-  sel.innerHTML = `<option value="">Chargementâ€¦</option>`;
-  document.getElementById("connect-title").textContent = opts.idle ? "Session verrouillÃ©e" : "Connexion";
+  sel.innerHTML = `<option value="">Chargement…</option>`;
+  document.getElementById("connect-title").textContent = opts.idle ? "Session verrouillée" : "Connexion";
   document.getElementById("connect-hint").textContent = opts.idle
-    ? "Vous avez Ã©tÃ© dÃ©connectÃ© aprÃ¨s 20 minutes d'inactivitÃ©. Reconnectez-vous pour continuer."
-    : "Choisissez votre nom et saisissez votre code : tous vos projets sont dÃ©bloquÃ©s d'un coup, et le calendrier de vos Ã©valuations est prÃªt.";
+    ? "Vous avez été déconnecté après 20 minutes d'inactivité. Reconnectez-vous pour continuer."
+    : "Choisissez votre nom et saisissez votre code : tous vos projets sont débloqués d'un coup, et le calendrier de vos évaluations est prêt.";
   renderConnectBody();
   document.getElementById("modal-connect").classList.add("open");
   const names = await fetchEncadrantNames();
-  sel.innerHTML = `<option value="">â€” Choisir â€”</option>` + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+  sel.innerHTML = `<option value="">— Choisir —</option>` + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   const pre = preset ? names.find(n => normName(n) === normName(preset)) : "";
   sel.value = pre || "";
 }
@@ -2414,7 +2414,7 @@ function connectAs(){
   loadProjects();
   (adminUnlocked ? loadUsers() : Promise.resolve()).then(() => renderAll());
   const n = myProjects().length;
-  showToast(`ConnectÃ© â€” ${n} projet${n > 1 ? "s" : ""} dÃ©bloquÃ©${n > 1 ? "s" : ""}`);
+  showToast(`Connecté — ${n} projet${n > 1 ? "s" : ""} débloqué${n > 1 ? "s" : ""}`);
 }
 function disconnect(idle){
   const label = view === "project" ? unlockedProjects.get(currentProjectId) : null;
@@ -2429,7 +2429,7 @@ function disconnect(idle){
   loadProjects();
   renderAll();
   if(idle){
-    showToast(idle === "expire" ? "Session expirÃ©e : reconnectez-vous" : "VerrouillÃ© aprÃ¨s 20 minutes d'inactivitÃ©");
+    showToast(idle === "expire" ? "Session expirée : reconnectez-vous" : "Verrouillé après 20 minutes d'inactivité");
     openConnectModal(null, { idle:true });
   }
 }
@@ -2445,14 +2445,14 @@ async function submitConnect(){
   const val = id => (document.getElementById(id) || {}).value || "";
   const checkNew = () => {
     const a = val("connect-new-code"), b = val("connect-new-code-confirm");
-    if(a.length < MIN_CODE_LEN) return "Le nouveau code doit compter au moins " + MIN_CODE_LEN + " caractÃ¨res.";
+    if(a.length < MIN_CODE_LEN) return "Le nouveau code doit compter au moins " + MIN_CODE_LEN + " caractères.";
     if(a !== b) return "Les nouveaux codes ne correspondent pas.";
     return null;
   };
   if(connectStep.mode === "newcode"){
     const bad = checkNew(); if(bad) return fail(bad);
     try{ await changeMyCode(connectStep.oldHash, val("connect-new-code")); }
-    catch(e){ return fail("Changement de code impossible. Reconnectez-vous avec votre code provisoire et rÃ©essayez."); }
+    catch(e){ return fail("Changement de code impossible. Reconnectez-vous avec votre code provisoire et réessayez."); }
     return connectAs();
   }
   const nom = val("connect-who");
@@ -2461,7 +2461,7 @@ async function submitConnect(){
   if(!code) return fail("Code requis.");
   let auth;
   try{ auth = await accountLogin(nom, code); }
-  catch(e){ return fail(e && e.status === 400 ? "Code incorrect, ou compte inexistant : contactez l'administrateur." : "Connexion impossible (rÃ©seau ou serveur). RÃ©essayez."); }
+  catch(e){ return fail(e && e.status === 400 ? "Code incorrect, ou compte inexistant : contactez l'administrateur." : "Connexion impossible (réseau ou serveur). Réessayez."); }
   const oldHash = await sha256Hex(code);
   if(auth.record.must_change){
     connectStep.mode = "newcode"; connectStep.oldHash = oldHash;
@@ -2471,7 +2471,7 @@ async function submitConnect(){
   if(w && !w.hidden){
     const bad = checkNew(); if(bad){ pb.authStore.clear(); return fail(bad); }
     try{ await changeMyCode(oldHash, val("connect-new-code")); }
-    catch(e){ pb.authStore.clear(); return fail("Changement de code impossible. RÃ©essayez."); }
+    catch(e){ pb.authStore.clear(); return fail("Changement de code impossible. Réessayez."); }
   }
   connectAs();
 }
@@ -2479,11 +2479,11 @@ document.getElementById("connect-who").addEventListener("change", renderConnectB
 document.getElementById("connect-submit").addEventListener("click", submitConnect);
 document.getElementById("modal-connect").addEventListener("keydown", e => { if(e.key === "Enter" && e.target.tagName !== "SELECT" && e.target.tagName !== "BUTTON") submitConnect(); });
 document.getElementById("connect-skip").addEventListener("click", () => {
-  if(connectStep.mode === "newcode") pb.authStore.clear();   // code provisoire non remplacÃ© : pas de session
+  if(connectStep.mode === "newcode") pb.authStore.clear();   // code provisoire non remplacé : pas de session
   try{ sessionStorage.setItem("sae-welcome-skip", "1"); }catch(e){}
   closeConnectModal();
 });
-// verrouillage automatique aprÃ¨s 20 minutes sans activitÃ© (jamais pendant un enregistrement en cours)
+// verrouillage automatique après 20 minutes sans activité (jamais pendant un enregistrement en cours)
 ["pointerdown", "pointermove", "keydown", "wheel", "touchstart", "scroll"].forEach(t => document.addEventListener(t, () => { lastActivity = Date.now(); }, { passive:true, capture:true }));
 async function checkIdle(){
   if(!connectedUser) return;
@@ -2498,12 +2498,12 @@ async function checkIdle(){
 setInterval(checkIdle, 15000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) checkIdle(); });
 
-/* ---------------- mode administrateur : rÃ©servÃ© au compte administrateur ---------------- */
+/* ---------------- mode administrateur : réservé au compte administrateur ---------------- */
 function activateAdmin(){
   if(!connectedUser){ openConnectModal(null, { admin:true }); return; }
-  if(!isAdminAccount()){ showToast("RÃ©servÃ© au compte administrateur"); return; }
+  if(!isAdminAccount()){ showToast("Réservé au compte administrateur"); return; }
   adminUnlocked = true; saveSession();
-  showToast("Mode administrateur activÃ©");
+  showToast("Mode administrateur activé");
   loadProjects();
   loadUsers().then(() => renderAll());
   renderAll();
@@ -2557,7 +2557,7 @@ function populateEncadrantDatalist(){
 function addPeRow(container, value, listId){
   const row = document.createElement("div");
   row.className = "student-row";
-  row.innerHTML = `<input type="text" value="${escapeHtml(value||"")}"${listId ? ` list="${listId}"` : ""}><button class="btn-ghost btn-sm" type="button">âœ•</button>`;
+  row.innerHTML = `<input type="text" value="${escapeHtml(value||"")}"${listId ? ` list="${listId}"` : ""}><button class="btn-ghost btn-sm" type="button">✕</button>`;
   row.querySelector("button").addEventListener("click", () => row.remove());
   container.appendChild(row);
 }
@@ -2594,19 +2594,19 @@ document.getElementById("pe-save").addEventListener("click", async () => {
       currentProjectId = slug; view = "project";
     }
     document.getElementById("modal-project-edit").classList.remove("open");
-    showToast("Projet enregistrÃ©");
+    showToast("Projet enregistré");
     renderAll();
-  }catch(e){ alert("Ã‰chec de l'enregistrement : " + (e && e.message ? e.message : "erreur inconnue")); }
+  }catch(e){ alert("Échec de l'enregistrement : " + (e && e.message ? e.message : "erreur inconnue")); }
 });
 /* ---------------- Excel import (admin) ---------------- */
 
-/* ---------------- import Excel : aides (annÃ©e, alertes, personnes dÃ©placÃ©es) ---------------- */
+/* ---------------- import Excel : aides (année, alertes, personnes déplacées) ---------------- */
 let importAnnee = "";
 function defaultImportAnnee(){
   const d = new Date(), y = d.getFullYear();
-  return (d.getMonth() >= 6 ? y : y - 1) + "-" + (d.getMonth() >= 6 ? y + 1 : y); // rentrÃ©e ~ juillet/aoÃ»t
+  return (d.getMonth() >= 6 ? y : y - 1) + "-" + (d.getMonth() >= 6 ? y + 1 : y); // rentrée ~ juillet/août
 }
-// vrai si a et b (dÃ©jÃ  normalisÃ©s) ne diffÃ¨rent que d'un caractÃ¨re (faute de frappe probable)
+// vrai si a et b (déjà normalisés) ne diffèrent que d'un caractère (faute de frappe probable)
 function oneEditAway(a, b){
   if(a === b) return false;
   if(Math.abs(a.length - b.length) > 1) return false;
@@ -2620,7 +2620,7 @@ function oneEditAway(a, b){
   }
   return true;
 }
-// Ã©tudiants rattachÃ©s Ã  plusieurs projets dans le mÃªme fichier (erreur de saisie probable) : non traitÃ©s automatiquement
+// étudiants rattachés à plusieurs projets dans le même fichier (erreur de saisie probable) : non traités automatiquement
 function detectDuplicateAssignments(groups){
   const seen = new Map(); // normName -> Set(id de projet)
   for(const [pid, g] of Object.entries(groups)){
@@ -2639,15 +2639,15 @@ function detectDuplicateAssignments(groups){
   }
   return dups;
 }
-// projets non concernÃ©s par ce fichier mais dont un Ã©tudiant est maintenant rattachÃ© ailleurs : on le retire de
-// cet ancien projet (jamais deux projets Ã  la fois pour un mÃªme Ã©tudiant), sans toucher au reste. Un projet
-// simplement hors du pÃ©rimÃ¨tre de ce fichier â€” cas courant d'un import partiel, une formation Ã  la fois â€” n'est
-// jamais modifiÃ© tant qu'aucun de ses Ã©tudiants ne rÃ©apparaÃ®t ailleurs dans le fichier.
-// Ne s'applique volontairement qu'aux Ã©tudiants : contrairement Ã  un Ã©tudiant (un seul projet Ã  la fois), un
-// encadrant peut lÃ©gitimement suivre des projets absents du fichier importÃ© (import partiel) ; le retirer
-// automatiquement d'un projet non mentionnÃ© romprait Ã  tort ce lien. Un changement d'encadrant sur un projet
-// n'est donc pris en compte que pour les projets prÃ©sents dans le fichier (dÃ©jÃ  visible dans le rÃ©capitulatif
-// dÃ©taillÃ©), et se fait Ã  la main ailleurs, via Â« Modifier les infos Â».
+// projets non concernés par ce fichier mais dont un étudiant est maintenant rattaché ailleurs : on le retire de
+// cet ancien projet (jamais deux projets à la fois pour un même étudiant), sans toucher au reste. Un projet
+// simplement hors du périmètre de ce fichier — cas courant d'un import partiel, une formation à la fois — n'est
+// jamais modifié tant qu'aucun de ses étudiants ne réapparaît ailleurs dans le fichier.
+// Ne s'applique volontairement qu'aux étudiants : contrairement à un étudiant (un seul projet à la fois), un
+// encadrant peut légitimement suivre des projets absents du fichier importé (import partiel) ; le retirer
+// automatiquement d'un projet non mentionné romprait à tort ce lien. Un changement d'encadrant sur un projet
+// n'est donc pris en compte que pour les projets présents dans le fichier (déjà visible dans le récapitulatif
+// détaillé), et se fait à la main ailleurs, via « Modifier les infos ».
 function computeRelocations(groups, dupAssignments){
   const dupSet = new Set((dupAssignments || []).map(d => normName(d.nom)));
   const studentAssign = new Map();  // normName -> {pid, nom du projet}
@@ -2677,10 +2677,10 @@ function computeRelocations(groups, dupAssignments){
 function buildImportAlerts(groups, skippedSheets, dupAssignments){
   const alerts = [];
   if(skippedSheets && skippedSheets.length){
-    alerts.push({ type:"warn", text:`Feuille(s) non reconnue(s), ignorÃ©e(s) : ${skippedSheets.join(", ")}. VÃ©rifiez qu'il s'agit bien du format Â« Gestion Ã©tudiants Â» (en-tÃªtes sur 2 lignes).` });
+    alerts.push({ type:"warn", text:`Feuille(s) non reconnue(s), ignorée(s) : ${skippedSheets.join(", ")}. Vérifiez qu'il s'agit bien du format « Gestion étudiants » (en-têtes sur 2 lignes).` });
   }
   for(const d of (dupAssignments || [])){
-    alerts.push({ type:"error", text:`Â« ${d.nom} Â» apparaÃ®t sur plusieurs projets dans ce fichier : ${d.projets.join(" / ")}. Corrigez le fichier puis rÃ©importez ; cet Ã©tudiant n'a Ã©tÃ© rattachÃ© Ã  aucun des deux pour l'instant.` });
+    alerts.push({ type:"error", text:`« ${d.nom} » apparaît sur plusieurs projets dans ce fichier : ${d.projets.join(" / ")}. Corrigez le fichier puis réimportez ; cet étudiant n'a été rattaché à aucun des deux pour l'instant.` });
   }
   const encSpellings = new Map(); // normName -> Set(orthographes)
   for(const g of Object.values(groups)) for(const e of g.encadrants){
@@ -2689,30 +2689,30 @@ function buildImportAlerts(groups, skippedSheets, dupAssignments){
     encSpellings.get(k).add(e);
   }
   for(const set of encSpellings.values()){
-    if(set.size > 1) alerts.push({ type:"warn", text:`Orthographes diffÃ©rentes pour le mÃªme encadrant dans ce fichier : ${[...set].join(" / ")}.` });
+    if(set.size > 1) alerts.push({ type:"warn", text:`Orthographes différentes pour le même encadrant dans ce fichier : ${[...set].join(" / ")}.` });
   }
   if(usersAll.length){
     const known = new Set(usersAll.map(u => u.login));
     const missing = new Set();
     for(const g of Object.values(groups)) for(const e of g.encadrants) if(!known.has(normName(e))) missing.add(e);
-    if(missing.size) alerts.push({ type:"info", text:`Encore sans compte : ${[...missing].sort((a,b) => a.localeCompare(b, "fr")).join(", ")}. CrÃ©ez leur compte depuis Â« Encadrants Â» pour qu'ils puissent se connecter.` });
+    if(missing.size) alerts.push({ type:"info", text:`Encore sans compte : ${[...missing].sort((a,b) => a.localeCompare(b, "fr")).join(", ")}. Créez leur compte depuis « Encadrants » pour qu'ils puissent se connecter.` });
   }
-  const byRole = { "Ã©tudiant":[], "encadrant":[] };
+  const byRole = { "étudiant":[], "encadrant":[] };
   const seenNorm = new Set();
   const push = (n, role) => { const k = role + "|" + normName(n); if(seenNorm.has(k)) return; seenNorm.add(k); byRole[role].push(n); };
-  for(const g of Object.values(groups)){ for(const e of g.etudiants) push(e, "Ã©tudiant"); for(const e of g.encadrants) push(e, "encadrant"); }
+  for(const g of Object.values(groups)){ for(const e of g.etudiants) push(e, "étudiant"); for(const e of g.encadrants) push(e, "encadrant"); }
   for(const p of projects.values()) for(const e of (p.encadrants || [])) push(e, "encadrant");
   for(const role of Object.keys(byRole)){
     const list = byRole[role].filter(n => normName(n).length >= 6);
     for(let i = 0; i < list.length; i++) for(let j = i + 1; j < list.length; j++){
       if(oneEditAway(normName(list[i]), normName(list[j]))){
-        alerts.push({ type:"warn", text:`Noms trÃ¨s proches (faute de frappe possible) parmi les ${role}s : Â« ${list[i]} Â» et Â« ${list[j]} Â».` });
+        alerts.push({ type:"warn", text:`Noms très proches (faute de frappe possible) parmi les ${role}s : « ${list[i]} » et « ${list[j]} ».` });
       }
     }
   }
   return alerts;
 }
-function normalizeHeader(h){ return String(h||"").normalize("NFD").replace(/[Ì€-Í¯]/g,"").toLowerCase().replace(/[^a-z0-9]/g,""); }
+function normalizeHeader(h){ return String(h||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]/g,""); }
 document.getElementById("import-help-cancel").addEventListener("click", () => document.getElementById("modal-import-help").classList.remove("open"));
 document.getElementById("import-help-continue").addEventListener("click", () => {
   const input = document.getElementById("import-annee");
@@ -2720,7 +2720,7 @@ document.getElementById("import-help-continue").addEventListener("click", () => 
   const v = input.value.trim();
   const m = v.match(/^(\d{4})-(\d{4})$/);
   if(!m || Number(m[2]) !== Number(m[1]) + 1){
-    errEl.textContent = "AnnÃ©e invalide : au format AAAA-AAAA, par exemple 2026-2027.";
+    errEl.textContent = "Année invalide : au format AAAA-AAAA, par exemple 2026-2027.";
     errEl.hidden = false;
     return;
   }
@@ -2742,7 +2742,7 @@ document.getElementById("file-import").addEventListener("change", async e => {
   if(isRoster){
     const parsed = parseRosterWorkbook(wb, rosterSheets);
     groups = parsed.groups; skipped = parsed.skipped; skippedSheets = parsed.skippedSheets;
-    if(Object.keys(groups).length === 0 && skipped === 0){ alert("Aucune ligne exploitable trouvÃ©e dans les onglets " + rosterSheets.join(", ") + "."); return; }
+    if(Object.keys(groups).length === 0 && skipped === 0){ alert("Aucune ligne exploitable trouvée dans les onglets " + rosterSheets.join(", ") + "."); return; }
   } else {
     groups = parseFlatWorkbook(wb);
     if(groups === null) return;
@@ -2787,8 +2787,8 @@ function parseFlatWorkbook(wb){
   return groups;
 }
 function parseRosterWorkbook(wb, sheetNames){
-  // Fichier type "Gestion Ã©tudiants" : un onglet par formation (BUT 2, BUT 3â€¦), en-tÃªte sur 2 lignes
-  // (ligne 1 : Nom/PrÃ©nom/Parcours/Formation/â€¦/Nom du projet/Encadrant 1-4 ; ligne 2 : libellÃ©s dÃ©taillÃ©s).
+  // Fichier type "Gestion étudiants" : un onglet par formation (BUT 2, BUT 3…), en-tête sur 2 lignes
+  // (ligne 1 : Nom/Prénom/Parcours/Formation/…/Nom du projet/Encadrant 1-4 ; ligne 2 : libellés détaillés).
   const groups = {};
   let skipped = 0;
   const skippedSheets = [];
@@ -2807,7 +2807,7 @@ function parseRosterWorkbook(wb, sheetNames){
       const nomProjet = String(r[10]||"").trim();
       if(!nomProjet){ skipped++; continue; }
       const key = slugify(`${sheetName} ${nomProjet}`);
-      if(!groups[key]) groups[key] = { nom: nomProjet, formation: [sheetName, formationCol].filter(Boolean).join(" Â· "), parcours, annee: importAnnee, etudiants: [], encadrants: [] };
+      if(!groups[key]) groups[key] = { nom: nomProjet, formation: [sheetName, formationCol].filter(Boolean).join(" · "), parcours, annee: importAnnee, etudiants: [], encadrants: [] };
       const g = groups[key];
       const nomPrenom = `${nom} ${prenom}`.trim();
       if(nomPrenom && !g.etudiants.includes(nomPrenom)) g.etudiants.push(nomPrenom);
@@ -2846,7 +2846,7 @@ function computeImportDiff(groups, opts){
 function fmtNames(arr){ return arr.map(escapeHtml).join(", "); }
 function importDiffDetail(g){
   const existing = projects.get(g.id);
-  if(!existing) return g.etudiants.length || g.encadrants.length ? `<div class="diff-detail">${g.etudiants.length ? `<span class="add">+ ${fmtNames(g.etudiants)}</span>` : ""}${g.encadrants.length ? ` Â· <span class="add">encadrant ${fmtNames(g.encadrants)}</span>` : ""}</div>` : "";
+  if(!existing) return g.etudiants.length || g.encadrants.length ? `<div class="diff-detail">${g.etudiants.length ? `<span class="add">+ ${fmtNames(g.etudiants)}</span>` : ""}${g.encadrants.length ? ` · <span class="add">encadrant ${fmtNames(g.encadrants)}</span>` : ""}</div>` : "";
   const sameName = (a,b) => normName(a) === normName(b);
   const oldEtu = existing.etudiants || [], oldEnc = existing.encadrants || [];
   const addedEtu = g.etudiants.filter(n => !oldEtu.some(o => sameName(o,n)));
@@ -2855,10 +2855,10 @@ function importDiffDetail(g){
   const removedEnc = oldEnc.filter(n => !g.encadrants.some(o => sameName(o,n)));
   const bits = [];
   if(addedEtu.length) bits.push(`<span class="add">+ ${fmtNames(addedEtu)}</span>`);
-  if(removedEtu.length) bits.push(`<span class="rem">âˆ’ ${fmtNames(removedEtu)}</span>`);
+  if(removedEtu.length) bits.push(`<span class="rem">− ${fmtNames(removedEtu)}</span>`);
   if(addedEnc.length) bits.push(`<span class="add">+ encadrant ${fmtNames(addedEnc)}</span>`);
-  if(removedEnc.length) bits.push(`<span class="rem">âˆ’ encadrant ${fmtNames(removedEnc)}</span>`);
-  return bits.length ? `<div class="diff-detail">${bits.join(" Â· ")}</div>` : "";
+  if(removedEnc.length) bits.push(`<span class="rem">− encadrant ${fmtNames(removedEnc)}</span>`);
+  return bits.length ? `<div class="diff-detail">${bits.join(" · ")}</div>` : "";
 }
 function renderImportDiff(){
   const alertsEl = document.getElementById("diff-alerts");
@@ -2867,9 +2867,9 @@ function renderImportDiff(){
   const el = document.getElementById("diff-summary");
   const rows = [
     ["Nouveaux projets", importDiff.toCreate, true],
-    ["Projets mis Ã  jour", importDiff.toUpdate, true],
-    ["Projets rÃ©activÃ©s (revenus dans l'Excel)", importDiff.toReactivate, false],
-    ["Projets absents du fichier â†’ archivÃ©s (notes conservÃ©es)", importDiff.toArchive, false],
+    ["Projets mis à jour", importDiff.toUpdate, true],
+    ["Projets réactivés (revenus dans l'Excel)", importDiff.toReactivate, false],
+    ["Projets absents du fichier → archivés (notes conservées)", importDiff.toArchive, false],
   ];
   el.innerHTML = rows.map(([label,list,detailed]) => `
     <div class="diff-row">
@@ -2882,15 +2882,15 @@ function renderImportDiff(){
   const rel = document.getElementById("diff-relocate");
   const toRelocate = importDiff.toRelocate || [];
   rel.innerHTML = !toRelocate.length ? "" : `<div class="diff-row" style="flex-direction:column; align-items:stretch;">
-    <div style="display:flex; justify-content:space-between;"><b>Ã‰tudiants dÃ©placÃ©s vers un autre projet, retirÃ©s d'ici</b><b>${toRelocate.length}</b></div>
+    <div style="display:flex; justify-content:space-between;"><b>Étudiants déplacés vers un autre projet, retirés d'ici</b><b>${toRelocate.length}</b></div>
     ${toRelocate.map(r => `<div class="diff-proj"><b>${escapeHtml(r.nom)}</b><div class="diff-detail">
-      ${r.removedEtu.map(x => `<span class="rem">âˆ’ ${escapeHtml(x.nom)} â†’ ${escapeHtml(x.vers)}</span>`).join(" ")}
+      ${r.removedEtu.map(x => `<span class="rem">− ${escapeHtml(x.nom)} → ${escapeHtml(x.vers)}</span>`).join(" ")}
     </div></div>`).join("")}
   </div>`;
 
   const skippedHint = document.getElementById("diff-skipped-hint");
   if(importDiff.skipped){
-    skippedHint.textContent = `${importDiff.skipped} Ã©tudiant(s) pas encore affectÃ©(s) Ã  un projet dans le fichier (colonne "Nom du projet" vide) â€” ignorÃ©(s) pour cet import.`;
+    skippedHint.textContent = `${importDiff.skipped} étudiant(s) pas encore affecté(s) à un projet dans le fichier (colonne "Nom du projet" vide) — ignoré(s) pour cet import.`;
     skippedHint.hidden = false;
   } else {
     skippedHint.hidden = true;
@@ -2899,7 +2899,7 @@ function renderImportDiff(){
 document.getElementById("diff-cancel").addEventListener("click", () => document.getElementById("modal-import-diff").classList.remove("open"));
 document.getElementById("diff-confirm").addEventListener("click", async () => {
   if((importDiff.alerts || []).some(a => a.type === "error")){
-    alert("Corrigez d'abord le fichier : au moins une alerte bloquante est affichÃ©e en haut (en rouge).");
+    alert("Corrigez d'abord le fichier : au moins une alerte bloquante est affichée en haut (en rouge).");
     return;
   }
   try{
@@ -2926,9 +2926,9 @@ document.getElementById("diff-confirm").addEventListener("click", async () => {
       await pb.collection("sae_projects").update(existing.id, r.patch);
     }
     document.getElementById("modal-import-diff").classList.remove("open");
-    showToast("Import terminÃ©");
+    showToast("Import terminé");
     renderAll();
-  }catch(e){ alert("Ã‰chec de l'import : " + (e && e.message ? e.message : "erreur inconnue")); }
+  }catch(e){ alert("Échec de l'import : " + (e && e.message ? e.message : "erreur inconnue")); }
 });
 
 /* ---------------- export backup ---------------- */
@@ -2937,7 +2937,7 @@ function exportNotesExcel(){
   const compKeys = Object.keys(COMPETENCES);
   const wb = XLSX.utils.book_new();
   for(const sem of ["S3","S4"]){
-    const header = ["Nom PrÃ©nom","Formation","Parcours","AnnÃ©e",
+    const header = ["Nom Prénom","Formation","Parcours","Année",
       ...allItems.map((item,i) => `${i+1}. ${item.titre}`),
       ...compKeys];
     const rows = [header];
