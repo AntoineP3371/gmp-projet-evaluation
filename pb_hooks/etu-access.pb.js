@@ -6,6 +6,25 @@
 // déclarées une fois en haut du fichier, car PocketBase ne les rend pas visibles depuis
 // l'intérieur des callbacks sinon (constaté empiriquement, cf. ics.pb.js).
 
+// -------- jeton d'accès étudiants : garanti pour tout projet --------
+// Sans jeton, un projet n'apparaît ni dans la liste étudiante ni via son lien : on en pose un
+// à la création (import Excel, ajout manuel, tableau de bord) et, au démarrage du service,
+// pour les projets déjà créés sans. Écriture SQL directe : ne modifie pas `updated`.
+onRecordCreateRequest((e) => {
+  if (!e.record.get("etu_token")) e.record.set("etu_token", $security.randomStringWithAlphabet(48, "0123456789abcdef"));
+  e.next();
+}, "sae_projects");
+
+onBootstrap((e) => {
+  e.next();
+  try {
+    for (const p of $app.findRecordsByFilter("sae_projects", "etu_token = ''", "", 0, 0)) {
+      $app.db().newQuery("UPDATE sae_projects SET etu_token = {:t} WHERE id = {:id}")
+        .bind({ t: $security.randomStringWithAlphabet(48, "0123456789abcdef"), id: p.id }).execute();
+    }
+  } catch (err) { console.log("jetons etudiants : rattrapage impossible", err); }
+});
+
 // -------- liste des projets (nom + jeton) pour la page d'accueil étudiants --------
 // Expose volontairement les noms de projets (pas leur contenu) : permet de proposer un bouton
 // par projet plutôt que d'obliger à distribuer un lien unique par équipe. Le mot de passe reste
