@@ -181,7 +181,7 @@ main.etu-main{ max-width:none; margin:0 auto; }
 .etu-access-row{ display:flex; gap:8px; flex-wrap:wrap; }
 .etu-access-row input{ flex:1 1 260px; min-width:0; font-family:var(--font-mono); font-size:12.5px; padding:7px 10px; border:1px solid var(--rule-strong); border-radius:var(--radius); background:var(--surface); color:var(--ink); }
 .etu-access-row input#etu-pw-input{ font-family:inherit; }
-.etu-project-groups{ max-width:900px; margin:20px auto 0; text-align:left; }
+.etu-project-groups{ max-width:1040px; margin:20px auto 0; text-align:left; }
 .etu-project-group{ margin-bottom:26px; }
 .etu-project-group-title{ font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 10px; }
 .etu-project-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:14px; }
