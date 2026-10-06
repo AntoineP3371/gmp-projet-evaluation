@@ -19,11 +19,11 @@
 <link rel="apple-touch-icon" href="evaluation/evaluation-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.80">
+<link rel="stylesheet" href="style.css?v=0.81">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.80"></script>
+<script src="app-common.js?v=0.81"></script>
 </head>
 <body>
 
@@ -33,7 +33,7 @@
   <button class="etu-brand" id="brand-home" type="button">
     <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
     <span class="etu-brand-text">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.80</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.81</span></span>
       <span class="brand-title">Fiches d'évaluation des projets</span>
     </span>
   </button>
@@ -315,7 +315,7 @@ function renderItem(item, idx, project){
     ${hasBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
     <div class="livrable-foot">
       <div class="livrable-field"><label>Note /20</label><input type="number" value="${ev.note ?? ""}" disabled><div class="note-stamp">${escapeHtml(noteStampText(project, currentSemestre, item.id))}</div></div>
-      <div class="livrable-field"><label>Date d'évaluation prévue</label><input type="date" value="${ev.date||""}" disabled></div>
+      <div class="livrable-field"><label>Date d'évaluation prévue</label><input type="date" value="${ev.date||""}" disabled><div class="date-stamp">${escapeHtml(dateStampText(project, currentSemestre, item.id))}</div></div>
     </div>
     ${threadShellHTML(item.id)}`;
   drawThreadList(card.querySelector(".cm-thread"), project, currentSemestre, item.id, { readOnly:true });

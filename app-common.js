@@ -538,12 +538,14 @@ function fmtNoteStamp(created){
   return isNaN(d) ? "" : d.toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
 }
 // « NOM Prénom · 21/09/2026 14:32 » : dernier auteur de la note (auteur et heure fournis par le serveur)
-function noteStampText(project, sem, itemId){
-  const e = journalLastByKey().get(`${project.slug}|${sem}|item:${itemId}:note`);
+function noteStampText(project, sem, itemId, field){
+  const e = journalLastByKey().get(`${project.slug}|${sem}|item:${itemId}:${field || "note"}`);
   if(!e || String(e.apres || "").trim() === "") return "";
   if(/^(Point de référence|Validé par)/.test(e.author)) return "";
   return e.author + " · " + fmtNoteStamp(e.created);
 }
+// même signature pour la date d'évaluation prévue (dernier auteur de la date et heure de la modification)
+function dateStampText(project, sem, itemId){ return noteStampText(project, sem, itemId, "date"); }
 // historique d'une note : toutes les lignes du journal d'une même clé, dans l'ordre
 let _jHistIdx = null, _jHistLen = -1;
 function journalHistoryByKey(){
@@ -557,8 +559,8 @@ function journalHistoryByKey(){
   _jHistIdx = m; _jHistLen = journalAll.length;
   return m;
 }
-// Ligne « NOM Prénom · 20/09/2026 09:10 ........ Avant : 12 » : auteur et date de la valeur précédente à gauche,
-// valeur avant la dernière modification à droite (l'auteur est omis pour une valeur de référence non signée)
+// Ligne « Avant : 12 · NOM Prénom · 20/09/2026 09:10 » : valeur avant la dernière modification, puis son auteur
+// et sa date (l'auteur est omis pour une valeur de référence non signée)
 function notePrevParts(project, sem, itemId){
   const hist = journalHistoryByKey().get(`${project.slug}|${sem}|item:${itemId}:note`);
   if(!hist || !hist.length) return null;
@@ -572,12 +574,14 @@ function notePrevParts(project, sem, itemId){
 }
 function notePrevHtml(project, sem, itemId){
   const p = notePrevParts(project, sem, itemId);
-  return p ? `<span class="np-when">${escapeHtml(p.when)}</span><span class="np-val">${escapeHtml(p.value)}</span>` : "";
+  return p ? `<span class="np-val">${escapeHtml(p.value)}</span>${p.when ? `<span class="np-when"> · ${escapeHtml(p.when)}</span>` : ""}` : "";
 }
 function refreshNoteStamps(project, sem){
   document.querySelectorAll(".livrable-card[data-item]").forEach(card => {
     const el = card.querySelector(".note-stamp");
-    if(el) el.textContent = noteStampText(project, sem, card.dataset.item);
+    if(el){ const t = noteStampText(project, sem, card.dataset.item); el.textContent = t ? (el.dataset.prefix || "") + t : ""; }
+    const dt = card.querySelector(".date-stamp");
+    if(dt) dt.textContent = dateStampText(project, sem, card.dataset.item);
     const pv = card.querySelector(".note-prev");
     if(pv) pv.innerHTML = notePrevHtml(project, sem, card.dataset.item);
   });

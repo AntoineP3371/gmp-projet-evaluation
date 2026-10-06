@@ -276,7 +276,7 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .livrable-bareme div.g{ border-color:var(--good); }
 .livrable-bareme b{ display:block; font-size:10.5px; color:var(--ink); margin-bottom:2px; }
 @media (max-width:640px){ .livrable-bareme{ grid-template-columns:1fr; } }
-.livrable-foot{ display:grid; grid-template-columns:290px 156px; gap:14px; align-items:start; border-top:1px solid var(--rule); padding-top:12px; }
+.livrable-foot{ display:grid; grid-template-columns:290px 210px; gap:14px; align-items:start; border-top:1px solid var(--rule); padding-top:12px; }
 .livrable-foot .livrable-field:first-child input[type=number]{ width:84px; }
 @media(max-width:640px){ .livrable-foot{ grid-template-columns:1fr; } }
 .livrable-field label{ display:block; font-size:10px; color:var(--ink-faint); font-weight:600; margin-bottom:3px; }
@@ -300,8 +300,9 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .indiv-table input.on{ border-color:var(--accent); font-weight:700; }
 .indiv-default{ color:var(--ink-muted); font-size:12px; line-height:1.5; max-width:110ch; margin:10px 0 0; }
 .note-stamp{ margin-top:4px; font-size:11px; line-height:1.3; color:var(--ink-faint); white-space:nowrap; min-height:14px; }
-.note-prev{ display:flex; justify-content:space-between; gap:12px; margin-top:2px; font-size:11px; line-height:1.3; color:var(--ink-faint); font-style:italic; white-space:nowrap; }
-.note-prev .np-val{ margin-left:auto; font-style:normal; font-weight:600; color:var(--ink-muted); }
+.date-stamp{ margin-top:4px; font-size:11px; line-height:1.3; color:var(--ink-faint); white-space:nowrap; min-height:14px; }
+.note-prev{ margin-top:2px; font-size:11px; line-height:1.3; color:var(--ink-faint); font-style:italic; white-space:nowrap; }
+.note-prev .np-val{ font-style:normal; font-weight:600; color:var(--ink-muted); }
 .note-prev:empty{ display:none; }
 
 .disclosure{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; padding:10px 0; border-top:1px solid var(--rule-strong); margin-top:8px; }
