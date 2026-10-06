@@ -503,3 +503,12 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .diff-detail{ margin-top:2px; color:var(--ink-muted); }
 .diff-detail .add{ color:var(--good); }
 .diff-detail .rem{ color:var(--danger); }
+
+/* bilan du référentiel (gestion des livrables, admin) */
+.ref-bilan{ margin-bottom:18px; }
+.bilan-table caption{ caption-side:top; text-align:left; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-faint); padding:10px 10px 4px; }
+.bilan-table th[scope="row"]{ text-align:left; font-weight:600; font-size:12.5px; color:var(--ink); white-space:nowrap; background:transparent; }
+.bilan-table thead th{ text-align:center; }
+.bilan-table .bilan-num{ text-align:center; font-variant-numeric:tabular-nums; min-width:44px; }
+.bilan-table td.bilan-num{ font-size:13px; }
+.bilan-table .bilan-sem-start{ border-left:1px solid var(--rule-strong); }

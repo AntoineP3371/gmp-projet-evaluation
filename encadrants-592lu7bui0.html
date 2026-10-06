@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.86">
+<link rel="stylesheet" href="style.css?v=0.87">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.86</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.87</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -1087,6 +1087,11 @@ function renderReferentielView(){
   </div>`;
   document.getElementById("ref-validate-btn").addEventListener("click", validateReferentielDraft);
   updateValidateButtonState();
+  const bilanWrap = document.createElement("div");
+  bilanWrap.id = "ref-bilan";
+  bilanWrap.className = "ref-table-wrap ref-bilan";
+  main.appendChild(bilanWrap);
+  renderRefBilan();
   const knownParcours = new Set();
   for(const p of projects.values()) if(p.parcours) knownParcours.add(p.parcours);
   for(const section of refDraft.sections){
@@ -1307,8 +1312,53 @@ function saveReferentielDraft(){
     refPendingTimer = null;
   }, 500);
 }
+/* Bilan du référentiel en cours d'édition : nombre de livrables et somme des coefficients, par semestre et par
+   compétence. Un livrable compte pour une compétence quand son coefficient est > 0, et pour chaque semestre où il
+   est évalué par défaut (S3, S4 ou les deux). Les sections propres à un parcours donnent une ligne par parcours
+   (tronc commun + sections de ce parcours), comme ce que voit un projet de ce parcours. */
+function renderRefBilan(){
+  const wrap = document.getElementById("ref-bilan");
+  if(!wrap || !refDraft) return;
+  const comps = Object.keys(COMPETENCES);
+  const hasParcours = s => Object.prototype.hasOwnProperty.call(s, "parcours");
+  const common = refDraft.sections.filter(s => !hasParcours(s));
+  const parcoursNames = [...new Set(refDraft.sections.filter(hasParcours).map(s => s.parcours))];
+  const groups = parcoursNames.length
+    ? parcoursNames.map(n => ({ label: n, sections: common.concat(refDraft.sections.filter(s => hasParcours(s) && s.parcours === n)) }))
+    : [{ label: "", sections: common }];
+  const fmt = v => v ? String(Math.round(v * 100) / 100).replace(".", ",") : "–";
+  const stats = sections => {
+    const out = { S3: {}, S4: {} };
+    for(const sem of ["S3", "S4"]) for(const c of comps) out[sem][c] = { n: 0, sum: 0 };
+    for(const s of sections) for(const item of s.items){
+      const d = itemDefaultSem(item);
+      for(const sem of ["S3", "S4"]){
+        if(d !== "both" && d !== sem) continue;
+        for(const c of comps){
+          const v = parseFloat(item.coef && item.coef[c]);
+          if(v > 0){ out[sem][c].n++; out[sem][c].sum += v; }
+        }
+      }
+    }
+    return out;
+  };
+  const cells = (st, key) => ["S3", "S4"].map(sem => comps.map((c, i) => `<td class="bilan-num${i === 0 ? " bilan-sem-start" : ""}">${fmt(st[sem][c][key])}</td>`).join("")).join("");
+  const rows = groups.map(g => {
+    const st = stats(g.sections);
+    const tag = g.label ? ` <span class="tag">${escapeHtml(g.label)}</span>` : "";
+    return `<tr><th scope="row">Livrables${tag}</th>${cells(st, "n")}</tr>
+      <tr><th scope="row">Somme des coefficients${tag}</th>${cells(st, "sum")}</tr>`;
+  }).join("");
+  const semHead = ["S3", "S4"].map(sem => `<th colspan="${comps.length}" class="bilan-sem-start">${sem}</th>`).join("");
+  const compHead = ["S3", "S4"].map(() => comps.map((c, i) => `<th class="bilan-num${i === 0 ? " bilan-sem-start" : ""}" title="${escapeHtml(COMPETENCES[c].nom)}">${c}</th>`).join("")).join("");
+  wrap.innerHTML = `<table class="ref-table bilan-table">
+    <caption>Bilan du référentiel</caption>
+    <thead><tr><th rowspan="2"></th>${semHead}</tr><tr>${compHead}</tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
 function markRefDirty(){
   refDirty = true;
+  renderRefBilan();
   updateValidateButtonState();
 }
 function updateValidateButtonState(){
