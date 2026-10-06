@@ -304,10 +304,10 @@ input:disabled, textarea:disabled{ background:var(--surface-2); color:var(--ink-
 .note-stamp{ margin-top:4px; font-size:11px; line-height:1.3; color:var(--ink-faint); font-style:italic; white-space:nowrap; min-height:14px; }
 .date-stamp{ margin-top:4px; font-size:11px; line-height:1.3; color:var(--ink-faint); font-style:italic; white-space:nowrap; min-height:14px; }
 .date-prev{ margin-top:2px; font-size:11px; line-height:1.3; color:var(--ink-faint); font-style:italic; }
-.date-prev .np-val{ font-style:normal; font-weight:600; color:var(--ink-muted); }
+.date-prev .np-val{ font-style:italic; font-weight:400; }
 .date-prev:empty{ display:none; }
 .note-prev{ margin-top:2px; font-size:11px; line-height:1.3; color:var(--ink-faint); font-style:italic; white-space:nowrap; }
-.note-prev .np-val{ font-style:normal; font-weight:600; color:var(--ink-muted); }
+.note-prev .np-val{ font-style:italic; font-weight:400; }
 .note-prev:empty{ display:none; }
 
 .disclosure{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; padding:10px 0; border-top:1px solid var(--rule-strong); margin-top:8px; }
