@@ -55,10 +55,12 @@ routerAdd("POST", "/etu/unlock", (e) => {
     return v == null ? fallback : v;
   };
 
-  const body = new DynamicModel({ token: "", password: "" });
+  // v : version des données déjà affichées ; si rien n'a changé, la réponse est minuscule (actualisation toutes les 10 s)
+  const body = new DynamicModel({ token: "", password: "", v: "" });
   try { e.bindBody(body); } catch (err) { return e.json(400, { error: "requête invalide" }); }
   const token = String(body.token || "");
   const password = String(body.password || "");
+  const knownV = String(body.v || "");
   if (!token || !password) return e.json(400, { error: "requête invalide" });
 
   let p;
@@ -67,11 +69,23 @@ routerAdd("POST", "/etu/unlock", (e) => {
   if (!p || p.get("archived") || p.get("visible_eleves") === false) return e.json(404, { error: "Lien inconnu ou projet indisponible." });
 
   const slug = p.get("slug");
+
+  // essais de mot de passe : 10 échecs en 10 minutes pour un même couple (adresse, projet) bloquent ce couple 10 minutes
+  const failKey = "etu-fail:" + e.realIP() + ":" + token;
+  const fk = $app.store().get(failKey) || { n: 0, first: 0, until: 0 };
+  if (fk.until > Date.now()) return e.json(429, { error: "Trop d'essais. Réessayez dans quelques minutes." });
+
   let pw;
   try { pw = $app.findFirstRecordByFilter("sae_project_pw", "project = {:s}", { s: slug }); }
   catch (err) { pw = null; }
   if (!pw) return e.json(403, { error: "Aucun mot de passe défini pour ce projet. Contactez votre encadrant." });
-  if (pw.get("password") !== password) return e.json(403, { error: "Mot de passe incorrect." });
+  if (pw.get("password") !== password) {
+    const now = Date.now();
+    const n = (fk.first && now - fk.first < 600000 ? fk.n : 0) + 1;
+    $app.store().set(failKey, n >= 10 ? { n: 0, first: 0, until: now + 600000 } : { n: n, first: (fk.first && now - fk.first < 600000 ? fk.first : now), until: 0 });
+    return e.json(403, { error: "Mot de passe incorrect." });
+  }
+  $app.store().remove(failKey);
 
   // le fil "_prive" est réservé aux encadrants : jamais transmis aux étudiants
   const comments = $app.findRecordsByFilter("sae_comments", "project = {:s} && item != '_prive'", "", 0, 0, { s: slug });
@@ -79,7 +93,17 @@ routerAdd("POST", "/etu/unlock", (e) => {
   const myEvents = events.filter((ev) => jsonField(ev, "projets", []).includes(slug));
   const journal = $app.findRecordsByFilter("sae_journal", "project = {:s}", "", 0, 0, { s: slug });
 
-  return e.json(200, { project: p, comments: comments, events: myEvents, journal: journal });
+  // version des données visibles (la présence des encadrants, qui bouge toutes les 12 s, n'en fait pas partie)
+  const lastUpd = (arr) => arr.reduce((m, r) => { const u = String(r.get("updated") || ""); return u > m ? u : m; }, "");
+  const core = JSON.stringify([p.get("nom"), p.get("sujet"), p.get("parcours"), p.get("formation"), p.get("annee"), p.get("etudiants"), p.get("evals"), p.get("individualisation")]);
+  const v = $security.md5(core + "|" + comments.length + lastUpd(comments) + "|" + myEvents.length + lastUpd(myEvents) + "|" + journal.length + lastUpd(journal));
+
+  // lien d'abonnement au calendrier du projet : signé avec le secret du serveur et le mot de passe (changer le mot de passe le révoque)
+  const secret = $os.getenv("SAE_SYNC_SECRET");
+  const ics = secret ? "/etu/ics/" + token + "." + $security.hs256("ics|" + slug + "|" + password, secret) + ".ics" : "";
+
+  if (knownV && knownV === v) return e.json(200, { unchanged: true, v: v, ics: ics });
+  return e.json(200, { project: p, comments: comments, events: myEvents, journal: journal, v: v, ics: ics });
 });
 
 // -------- aide pour l'encadrant : qui/quand le mot de passe a été défini --------

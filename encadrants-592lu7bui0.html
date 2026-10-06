@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.84">
+<link rel="stylesheet" href="style.css?v=0.85">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.84</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.85</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -395,6 +395,34 @@ function onProjectEvent(e){
     return;
   }
   softRender();
+}
+/* Les règles du serveur filtrent tout par encadrant : à chaque changement de connexion il faut recharger
+   projets, commentaires, événements et journal, et refaire les abonnements en direct (un abonnement garde
+   l'identité qu'il avait au moment où il a été demandé, donc reste « anonyme » après une première connexion). */
+async function reloadAllData(){
+  await Promise.all([loadProjects(), loadComments(), loadEvents(), loadJournal()]);
+  renderAll();
+  try{ await pb.realtime.unsubscribe(); }catch(e){}
+  subscribeRealtime();
+}
+// filet de sécurité si un message en direct se perd (coupure réseau, veille) : compare le serveur à l'écran
+const sigList = l => l.map(r => r.id + "|" + (r.updated || "")).sort().join(",");
+async function syncDataIfChanged(){
+  if(!connectedUser || !pb.authStore.isValid || document.hidden) return;
+  try{
+    const [pl, cl, el, jl] = await Promise.all([
+      pb.collection("sae_projects").getFullList({ sort:"nom" }),
+      pb.collection("sae_comments").getFullList({ sort:"created" }),
+      pb.collection("sae_events").getFullList({ sort:"date" }),
+      pb.collection("sae_journal").getFullList({ sort:"created", batch:500 }),
+    ]);
+    const projSig = l => l.map(sansPresence).sort().join("");
+    const changed = projSig(pl) !== projSig([...projects.values()]) || sigList(cl) !== sigList(commentsAll) || sigList(el) !== sigList(eventsAll) || jl.length !== journalAll.length;
+    if(!changed) return;
+    projects.clear(); for(const r of pl) projects.set(r.slug, r);
+    commentsAll = cl; eventsAll = el; journalAll = jl;
+    softRender();
+  }catch(e){}
 }
 function subscribeRealtime(){
   pb.collection("sae_projects").subscribe("*", onProjectEvent).catch(()=>{});
@@ -2474,7 +2502,7 @@ function connectAs(){
   closeConnectModal();
   if(connectStep.wantAdmin && isAdminAccount()) adminUnlocked = true;
   saveSession();
-  loadProjects();
+  reloadAllData();
   (adminUnlocked ? loadUsers() : Promise.resolve()).then(() => renderAll());
   const n = myProjects().length;
   showToast(`Connecté — ${n} projet${n > 1 ? "s" : ""} débloqué${n > 1 ? "s" : ""}`);
@@ -2489,7 +2517,7 @@ function disconnect(idle){
   agendaMonth = null;
   unlockedProjects = new Map();
   saveSession();
-  loadProjects();
+  reloadAllData();
   renderAll();
   if(idle){
     showToast(idle === "expire" ? "Session expirée : reconnectez-vous" : "Verrouillé après 20 minutes d'inactivité");
@@ -3043,6 +3071,7 @@ async function init(){
   await Promise.all([loadReferentiel(), loadProjects(), loadComments(), loadEvents(), loadJournal(), loadUsers()]);
   renderAll();
   subscribeRealtime();
+  setInterval(syncDataIfChanged, 20000);
   let ignore = false;
   try{ ignore = sessionStorage.getItem("sae-welcome-skip") === "1"; }catch(e){}
   if(!connectedUser && !ignore) openConnectModal();
