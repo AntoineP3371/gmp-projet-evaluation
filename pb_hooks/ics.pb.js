@@ -61,10 +61,14 @@ routerAdd("GET", "/ics/{token}", (e) => {
   const myKey = norm(user.get("name"));
 
   let itemTitres = {};
+  let itemSemDefaut = {};
   try {
     const ref = $app.findFirstRecordByFilter("sae_config", "key = 'referentiel'");
     const val = jsonField(ref, "value", {});
-    for (const sec of val.sections || []) for (const it of sec.items || []) itemTitres[it.id] = it.titre;
+    for (const sec of val.sections || []) for (const it of sec.items || []) {
+      itemTitres[it.id] = it.titre;
+      itemSemDefaut[it.id] = it.sem === "S3" || it.sem === "S4" ? it.sem : "both";
+    }
   } catch (err) {}
 
   const projects = $app.findRecordsByFilter("sae_projects", "archived = false && visible_eleves = true", "", 0, 0);
@@ -93,6 +97,9 @@ routerAdd("GET", "/ics/{token}", (e) => {
       for (const itemId of Object.keys(semEvals)) {
         const ev = semEvals[itemId];
         if (!ev || !ev.date) continue;
+        // livrable affecté à l'autre semestre : réglage du projet (ev.on) sinon valeur par défaut du référentiel
+        const defaut = itemSemDefaut[itemId] || "both";
+        if (typeof ev.on === "boolean" ? !ev.on : (defaut !== "both" && defaut !== sem)) continue;
         const titre = itemTitres[itemId] || itemId;
         const noteTxt = ev.note !== undefined && ev.note !== null && ev.note !== "" ? "Note : " + ev.note + "/20" : "Pas encore noté";
         push("BEGIN:VEVENT");

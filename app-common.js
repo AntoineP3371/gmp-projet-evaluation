@@ -26,12 +26,28 @@ function allItemsFromReferentiel(ref){
   if(!ref || !ref.sections) return [];
   return ref.sections.flatMap(s => s.items.map(it => ({...it, sectionId: s.id})));
 }
+/* Affectation d'un livrable à un semestre : valeur par défaut dans le référentiel (item.sem : "S3", "S4" ou
+   "both"), modifiable projet par projet par les encadrants (evals[sem][item].on : true / false).
+   Sans réglage, un livrable est évalué aux deux semestres. */
+function itemDefaultSem(item){ return item && (item.sem === "S3" || item.sem === "S4") ? item.sem : "both"; }
+function itemInSem(item, project, sem){
+  const ev = project && project.evals && project.evals[sem] && project.evals[sem][item.id];
+  if(ev && typeof ev.on === "boolean") return ev.on;
+  const d = itemDefaultSem(item);
+  return d === "both" || d === sem;
+}
+function itemSemChoice(item, project){
+  const a = itemInSem(item, project, "S3"), b = itemInSem(item, project, "S4");
+  return a && !b ? "S3" : !a && b ? "S4" : "both";
+}
+const SEM_CHOICE_LABELS = { S3:"S3", S4:"S4", both:"S3 + S4" };
 function getOverdueItemNumbers(project){
   if(!allItems.length) return [];
   const today = new Date().toISOString().slice(0,10);
   const nums = [];
   allItems.forEach((item, idx) => {
     for(const sem of ["S3","S4"]){
+      if(!itemInSem(item, project, sem)) continue;
       const ev = project.evals && project.evals[sem] && project.evals[sem][item.id];
       if(ev && ev.date && ev.date <= today && (ev.note === undefined || ev.note === null || ev.note === "")){
         nums.push(idx+1);
@@ -63,6 +79,7 @@ function computeScores(project, semestres){
   for(const sem of semestres){
     const evals = (project.evals && project.evals[sem]) || {};
     for(const item of allItems){
+      if(!itemInSem(item, project, sem)) continue;
       const ev = evals[item.id];
       if(!ev || ev.note === undefined || ev.note === null || ev.note === "") continue;
       const note = parseFloat(ev.note);
@@ -138,6 +155,7 @@ function collectTimelineItems(project, sems){
   for(const sem of sems){
     const evals = (project.evals && project.evals[sem]) || {};
     for(const item of allItems){
+      if(!itemInSem(item, project, sem)) continue;
       const ev = evals[item.id];
       if(!ev || !ev.date) continue;
       out.push({ id: item.id, sem, titre: item.titre, date: ev.date, note: ev.note, status: timelineItemStatus(ev, today) });

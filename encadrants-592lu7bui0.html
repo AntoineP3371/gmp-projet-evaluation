@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.76">
+<link rel="stylesheet" href="style.css?v=0.77">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.62"></script>
+<script src="app-common.js?v=0.77"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.76</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.77</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -607,6 +607,7 @@ function agendaEvents(){
     for(const sem of ["S3", "S4"]){
       const evals = (p.evals && p.evals[sem]) || {};
       for(const item of allItems){
+        if(!itemInSem(item, p, sem)) continue;
         const ev = evals[item.id];
         if(!ev || !ev.date) continue;
         const day = String(ev.date).slice(0, 10);
@@ -1078,7 +1079,7 @@ function renderReferentielView(){
     tableWrap.className = "ref-table-wrap";
     const table = document.createElement("table");
     table.className = "ref-table";
-    table.innerHTML = `<thead><tr><th></th><th>#</th><th>Livrable</th>${Object.keys(COMPETENCES).map(c=>`<th>${c}</th>`).join("")}<th></th></tr></thead><tbody></tbody>`;
+    table.innerHTML = `<thead><tr><th></th><th>#</th><th>Livrable</th><th title="Semestre(s) où le livrable est évalué par défaut ; chaque encadrant peut l'ajuster pour son projet">Semestre</th>${Object.keys(COMPETENCES).map(c=>`<th>${c}</th>`).join("")}<th></th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
     section.items.forEach((item,i) => renderRefRow(tbody, section, item, i+1));
     tbody.addEventListener("dragover", e => {
@@ -1166,6 +1167,7 @@ function renderRefRow(tbody, section, item, idx){
     <td class="ref-drag-handle" title="Glisser pour réordonner">⠿</td>
     <td class="ref-idx">${idx}.</td>
     <td><input id="ref-${item.id}-titre" class="ref-titre-input" type="text" data-field="titre" value="${escapeHtml(item.titre)}" placeholder="Titre du livrable"></td>
+    <td><select id="ref-${item.id}-sem" class="ref-sem-select" data-field="sem" aria-label="Semestre par défaut du livrable ${escapeHtml(item.titre)}">${["S3", "S4", "both"].map(v => `<option value="${v}"${itemDefaultSem(item) === v ? " selected" : ""}>${SEM_CHOICE_LABELS[v]}</option>`).join("")}</select></td>
     ${coefCells}
     <td class="ref-row-actions">
       <button class="btn-ghost btn-sm" type="button" title="Détails (durée, description, barème)">✎</button>
@@ -1191,7 +1193,7 @@ function renderRefRow(tbody, section, item, idx){
   const detailRow = document.createElement("tr");
   detailRow.className = "ref-detail-row";
   detailRow.hidden = true;
-  detailRow.innerHTML = `<td colspan="${3 + Object.keys(COMPETENCES).length + 1}">
+  detailRow.innerHTML = `<td colspan="${4 + Object.keys(COMPETENCES).length + 1}">
     <div class="ref-detail-body">
       ${item.editable ? "" : `<input id="ref-${item.id}-duree" type="text" data-field="duree" value="${escapeHtml(item.duree||"")}" placeholder="Durée (optionnel)">`}
       <textarea id="ref-${item.id}-desc" data-field="desc" placeholder="Description">${escapeHtml(item.desc||"")}</textarea>
@@ -2076,14 +2078,16 @@ function renderPanel(project){
   return panel;
 }
 function renderSection(section, project, readOnly){
+  const shown = section.items.filter(item => itemInSem(item, project, currentSemestre));
+  if(shown.length === 0) return document.createDocumentFragment();
   const totalCoef = {};
-  for(const item of section.items) for(const c of Object.keys(item.coef||{})) totalCoef[c] = (totalCoef[c]||0) + item.coef[c];
+  for(const item of shown) for(const c of Object.keys(item.coef||{})) totalCoef[c] = (totalCoef[c]||0) + item.coef[c];
   const coefLabel = Object.keys(totalCoef).map(c => `${c}·${totalCoef[c]}`).join("  ");
   const wrap = document.createElement("div");
   wrap.className = "section-block";
   wrap.innerHTML = `<div class="section-head"><div class="section-title">${escapeHtml(section.titre)}</div><div class="section-meta">${coefLabel}</div></div>
     ${section.sousTitre ? `<div class="section-sub">${escapeHtml(section.sousTitre)}</div>` : ""}`;
-  section.items.forEach((item,i) => wrap.appendChild(renderItem(item, i+1, project, readOnly)));
+  section.items.forEach((item,i) => { if(itemInSem(item, project, currentSemestre)) wrap.appendChild(renderItem(item, i+1, project, readOnly)); });
   return wrap;
 }
 function renderItem(item, idx, project, readOnly){
@@ -2101,7 +2105,7 @@ function renderItem(item, idx, project, readOnly){
   card.innerHTML = `
     <div class="livrable-head">
       <span class="livrable-title"${tooltip ? ` title="${tooltip}"` : ""}>${idx}. ${escapeHtml(item.titre)}${item.duree ? `<span class="livrable-duration">${escapeHtml(item.duree)}</span>` : ""}</span>
-      <div class="item-chips">${chips}</div>
+      <div class="item-chips">${chips}${semSelectHtml(item, project, readOnly)}</div>
     </div>
     ${item.desc ? `<div class="livrable-desc">${escapeHtml(item.desc)}</div>` : ""}
     ${showBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
@@ -2110,6 +2114,8 @@ function renderItem(item, idx, project, readOnly){
       <div class="livrable-field"><label for="date-${item.id}">Date d'évaluation prévue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}></div>
     </div>
     ${threadShellHTML(item.id)}`;
+  const semSel = card.querySelector(".sem-sel");
+  if(semSel) semSel.addEventListener("change", e => setItemSem(item, e.target.value));
   card.querySelector('input[type=number]').addEventListener("change", e => updateEval(item.id, "note", e.target.value));
   card.querySelector('input[type=date]').addEventListener("change", e => updateEval(item.id, "date", e.target.value));
   initThread(card, item.id, readOnly);
@@ -2274,17 +2280,39 @@ async function flushProjectPatch(slug){
     scheduleFlush(slug);
   }
 }
-function updateEval(itemId, field, value){
+function updateEval(itemId, field, value, sem, skipRefresh){
+  sem = sem || currentSemestre;
   const slug = currentProjectId;
   const p = projects.get(slug);
   if(!p.evals) p.evals = {S3:{},S4:{}};
-  if(!p.evals[currentSemestre][itemId]) p.evals[currentSemestre][itemId] = {};
-  p.evals[currentSemestre][itemId][field] = value;
+  if(!p.evals[sem]) p.evals[sem] = {};
+  if(!p.evals[sem][itemId]) p.evals[sem][itemId] = {};
+  p.evals[sem][itemId][field] = value;
   const entry = queuePendingSave(slug, p.id);
-  if(!entry.evalDiff[currentSemestre]) entry.evalDiff[currentSemestre] = {};
-  entry.evalDiff[currentSemestre][itemId] = {...(entry.evalDiff[currentSemestre][itemId]||{}), [field]: value};
-  refreshScoresOnly();
+  if(!entry.evalDiff[sem]) entry.evalDiff[sem] = {};
+  entry.evalDiff[sem][itemId] = {...(entry.evalDiff[sem][itemId]||{}), [field]: value};
+  if(!skipRefresh) refreshScoresOnly();
   scheduleFlush(slug);
+}
+/* affectation d'un livrable à S3, S4 ou aux deux, pour ce projet (la valeur par défaut vient du référentiel) */
+function semSelectHtml(item, project, readOnly){
+  const cur = itemSemChoice(item, project);
+  const opts = ["S3", "S4", "both"].map(v => `<option value="${v}"${v === cur ? " selected" : ""}>${SEM_CHOICE_LABELS[v]}</option>`).join("");
+  return `<select class="sem-sel" aria-label="Semestre d'évaluation du livrable"${readOnly ? " disabled" : ""} title="Semestre(s) où ce livrable est évalué">${opts}</select>`;
+}
+function setItemSem(item, choice){
+  const p = projects.get(currentProjectId);
+  if(!p || !["S3", "S4", "both"].includes(choice)) return;
+  const want = { S3: choice !== "S4", S4: choice !== "S3" };
+  const lost = ["S3", "S4"].filter(sem => itemInSem(item, p, sem) && !want[sem]);
+  const withData = lost.filter(sem => { const ev = p.evals && p.evals[sem] && p.evals[sem][item.id]; return ev && ((ev.note !== undefined && ev.note !== null && ev.note !== "") || ev.date); });
+  if(withData.length && !confirm(`« ${item.titre} » a déjà une note ou une date en ${withData.join(" et ")}. Elle est conservée mais ne sera plus comptée ni affichée tant que ce livrable n'est pas réaffecté à ce semestre. Continuer ?`)){
+    renderProjectView();
+    return;
+  }
+  for(const sem of ["S3", "S4"]) updateEval(item.id, "on", want[sem], sem, true);
+  showToast(choice === "both" ? "Livrable évalué en S3 et S4" : `Livrable affecté à ${choice}`);
+  renderProjectView();
 }
 function updateIndiv(etuIdx, comp, value){
   const slug = currentProjectId;
@@ -2947,7 +2975,7 @@ function exportNotesExcel(){
       for(let i=0; i<etudiants.length; i++){
         const livrableVals = allItems.map(item => {
           const ev = (p.evals && p.evals[sem] && p.evals[sem][item.id]) || {};
-          return ev.note ?? "";
+          return itemInSem(item, p, sem) ? (ev.note ?? "") : "";
         });
         const indiv = (p.individualisation && p.individualisation[sem] && p.individualisation[sem][i]) || {};
         const compVals = compKeys.map(c => {
