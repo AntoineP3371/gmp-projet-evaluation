@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="evaluation/evaluation-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.84">
+<link rel="stylesheet" href="style.css?v=0.85">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="config.js"></script>
@@ -33,7 +33,7 @@
   <button class="etu-brand" id="brand-home" type="button">
     <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
     <span class="etu-brand-text">
-      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.84</span></span>
+      <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.85</span></span>
       <span class="brand-title">Fiches d'évaluation des projets</span>
     </span>
   </button>
@@ -85,23 +85,68 @@ async function loadReferentiel(){
   }catch(e){ referentiel = null; allItems = []; showConnError(true); }
 }
 function pwKey(){ return "etu-pw-" + currentToken; }
-async function tryUnlock(password){
+let dataVersion = "", icsPath = "", refreshTicks = 0, refreshBusy = false, refreshListenerSet = false;
+// silent = actualisation automatique : on envoie la version déjà affichée, le serveur répond « inchangé » s'il n'y a rien de nouveau
+async function tryUnlock(password, silent){
   try{
     const r = await fetch(PB_URL + "/etu/unlock", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ token: currentToken, password }),
+      body: JSON.stringify({ token: currentToken, password, v: silent ? dataVersion : "" }),
     });
     const d = await r.json();
-    if(!r.ok) return { ok:false, error: d.error || "Échec de la connexion." };
+    if(!r.ok){
+      // mot de passe changé par l'encadrant, ou projet masqué : retour à la saisie ; les autres erreurs (réseau, trop d'essais) sont ignorées jusqu'au prochain tour
+      if(silent && (r.status === 403 || r.status === 404)) backToPassword("Le mot de passe du projet a changé ou le projet n'est plus disponible. Saisissez le mot de passe à nouveau.");
+      return { ok:false, error: d.error || "Échec de la connexion." };
+    }
+    if(d.ics !== undefined) icsPath = d.ics || "";
+    dataVersion = d.v || "";
+    if(d.unchanged) return { ok:true, unchanged:true };
+    const y = window.scrollY;
     projects.clear(); projects.set(d.project.slug, d.project);
     commentsAll = d.comments || []; eventsAll = d.events || []; journalAll = d.journal || [];
     currentProjectId = d.project.slug;
     unlocked = true;
     try{ sessionStorage.setItem(pwKey(), password); }catch(e){}
     renderAll();
-    if(!autoRefreshTimer) autoRefreshTimer = setInterval(() => tryUnlock(password), 3 * 60 * 1000);
+    if(silent) window.scrollTo(0, y);
+    startAutoRefresh();
     return { ok:true };
   }catch(e){ return { ok:false, error:"Connexion au serveur impossible." }; }
+}
+function backToPassword(message){
+  unlocked = false;
+  try{ sessionStorage.removeItem(pwKey()); }catch(e){}
+  if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  renderSideLock();
+  renderPasswordScreen(message);
+}
+// actualisation toutes les 10 secondes, sans jamais déconnecter ni redessiner la page quand rien n'a changé
+function startAutoRefresh(){
+  if(!autoRefreshTimer) autoRefreshTimer = setInterval(refreshTick, 10000);
+  if(!refreshListenerSet){
+    refreshListenerSet = true;
+    document.addEventListener("visibilitychange", () => { if(!document.hidden) refreshTick(); });
+  }
+}
+async function refreshTick(){
+  if(!unlocked || document.hidden || refreshBusy) return;
+  let pw = null;
+  try{ pw = sessionStorage.getItem(pwKey()); }catch(e){}
+  if(!pw) return;
+  refreshBusy = true;
+  try{
+    await tryUnlock(pw, true);
+    if(++refreshTicks % 6 === 0) await refreshReferentiel();   // le référentiel (livrables) est revérifié chaque minute
+  } finally { refreshBusy = false; }
+}
+async function refreshReferentiel(){
+  try{
+    const rec = await pb.collection("sae_config").getFirstListItem('key="referentiel"');
+    if(JSON.stringify(rec.value) === JSON.stringify(referentiel)) return;
+    referentiel = rec.value; allItems = allItemsFromReferentiel(referentiel);
+    const y = window.scrollY; renderAll(); window.scrollTo(0, y);
+  }catch(e){}
 }
 function lockAgain(){
   unlocked = false;
@@ -212,6 +257,38 @@ function renderPasswordScreen(error){
   input.addEventListener("keydown", e => { if(e.key === "Enter") submit(); });
   input.focus();
 }
+/* ---------------- abonnement au calendrier du projet ---------------- */
+const ICS_BASE_URL_ETU = "https://agenda.gmpbordeaux.fr";   // nom d'hôte sans tiret bas : exigé par Zimbra, Google Agenda et iOS
+function openIcsModal(){
+  const url = ICS_BASE_URL_ETU + icsPath;
+  const back = document.createElement("div");
+  back.className = "modal-backdrop open";
+  back.innerHTML = `<div class="modal" role="dialog" aria-labelledby="ics-title">
+    <h2 id="ics-title">Calendrier du projet</h2>
+    <p class="hint">Ce lien regroupe les dates d'évaluation de votre projet et ses événements (jamais les notes). Ajoutez-le une fois dans votre agenda : il se met ensuite à jour tout seul (l'application de calendrier revient le consulter, environ toutes les 12 heures selon l'application).</p>
+    <div class="field-full"><label for="ics-url-etu">Lien du calendrier</label><input type="text" id="ics-url-etu" readonly></div>
+    <div class="modal-actions" style="justify-content:flex-start; gap:8px;"><button class="btn btn-accent" id="ics-copy-etu" type="button">Copier le lien</button></div>
+    <div class="help" style="margin-top:14px;"><h3>Ajouter ce calendrier</h3><ul>
+      <li><b>Google Agenda</b> : Autres agendas (+) → À partir de l'URL → coller le lien.</li>
+      <li><b>Outlook</b> : Ajouter un calendrier → À partir d'Internet → coller le lien.</li>
+      <li><b>Apple Calendrier</b> : Fichier → Nouvel abonnement au calendrier → coller le lien.</li>
+      <li><b>Zimbra</b> : Calendrier → roue dentée → Ajouter un calendrier externe → type iCal → coller le lien.</li>
+    </ul></div>
+    <p class="hint" style="margin-top:10px;">Si l'encadrant change le mot de passe du projet, ce lien cesse de fonctionner : reprenez-en un nouveau ici.</p>
+    <div class="modal-actions"><button class="btn btn-accent" id="ics-close-etu" type="button">Fermer</button></div>
+  </div>`;
+  document.body.appendChild(back);
+  const field = back.querySelector("#ics-url-etu");
+  field.value = url;
+  const close = () => back.remove();
+  back.querySelector("#ics-close-etu").addEventListener("click", close);
+  back.addEventListener("click", e => { if(e.target === back) close(); });
+  back.querySelector("#ics-copy-etu").addEventListener("click", async () => {
+    try{ await navigator.clipboard.writeText(url); showToast("Lien copié"); }
+    catch(e){ field.select(); showToast("Sélectionné : copiez avec Ctrl + C"); }
+  });
+  field.addEventListener("focus", () => field.select());
+}
 function renderProjectView(){
   const main = document.getElementById("main");
   const p = projects.get(currentProjectId);
@@ -232,8 +309,10 @@ function renderProjectView(){
   main.appendChild(head);
 
   const banner = document.createElement("div");
-  banner.className = "banner-info";
-  banner.textContent = "Consultation en lecture seule. Seuls les encadrants peuvent modifier les notes.";
+  banner.className = "banner-info has-action";
+  banner.innerHTML = `<span>Consultation en lecture seule. Seuls les encadrants peuvent modifier les notes.</span>${icsPath ? `<button class="btn btn-sm" id="btn-ics" type="button">📅 S'abonner au calendrier</button>` : ""}`;
+  const icsBtn = banner.querySelector("#btn-ics");
+  if(icsBtn) icsBtn.addEventListener("click", openIcsModal);
   main.appendChild(banner);
 
   main.appendChild(renderVueSelector(currentVue, v => {
