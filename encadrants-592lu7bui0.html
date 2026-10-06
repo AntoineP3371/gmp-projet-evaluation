@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.85">
+<link rel="stylesheet" href="style.css?v=0.86">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.85</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.86</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -1232,7 +1232,11 @@ function renderRefRow(tbody, section, item, idx){
     </div>
   </td>`;
   row.querySelectorAll("[data-field]").forEach(el => {
-    el.addEventListener("change", () => { item[el.dataset.field] = el.value; markRefDirty(); });
+    el.addEventListener("change", () => {
+      item[el.dataset.field] = el.value;
+      markRefDirty();
+      if(el.dataset.field === "sem") offerForceItemSem(item);
+    });
   });
   detailRow.querySelectorAll("[data-field]").forEach(el => {
     el.addEventListener("change", () => { item[el.dataset.field] = el.value; markRefDirty(); });
@@ -1254,6 +1258,32 @@ function renderRefRow(tbody, section, item, idx){
   });
   tbody.appendChild(row);
   tbody.appendChild(detailRow);
+}
+/* Quand l'admin change le semestre par défaut d'un livrable, les projets dont l'encadrant avait réglé l'affectation
+   à la main gardent leur choix. On propose de les aligner sur la nouvelle valeur (le réglage du projet est effacé :
+   « on » repasse à null, le livrable suit alors le référentiel). Notes et dates déjà saisies sont conservées. */
+function offerForceItemSem(item){
+  const dflt = itemDefaultSem(item);
+  const hasOverride = p => ["S3", "S4"].some(sem => { const ev = p.evals && p.evals[sem] && p.evals[sem][item.id]; return ev && typeof ev.on === "boolean"; });
+  const wantsSem = (p, sem) => dflt === "both" || dflt === sem;
+  const withOverride = [...projects.values()].filter(hasOverride);
+  const differing = withOverride.filter(p => ["S3", "S4"].some(sem => itemInSem(item, p, sem) !== wantsSem(p, sem)));
+  if(!differing.length) return;
+  const noms = differing.slice(0, 8).map(p => "• " + p.nom).join("\n") + (differing.length > 8 ? `\n… et ${differing.length - 8} autre(s)` : "");
+  const ok = confirm(`« ${item.titre} » : ${differing.length} projet(s) ont une affectation de semestre réglée par leur encadrant, différente du nouveau réglage (${SEM_CHOICE_LABELS[dflt]}) :\n\n${noms}\n\nOK = forcer ${SEM_CHOICE_LABELS[dflt]} sur ces projets (notes et dates conservées).\nAnnuler = leur laisser leur réglage actuel.`);
+  if(!ok){ showToast("Réglages des projets conservés"); return; }
+  for(const p of withOverride){
+    const entry = queuePendingSave(p.slug, p.id);
+    for(const sem of ["S3", "S4"]){
+      const ev = p.evals && p.evals[sem] && p.evals[sem][item.id];
+      if(!ev || typeof ev.on !== "boolean") continue;
+      ev.on = null;
+      if(!entry.evalDiff[sem]) entry.evalDiff[sem] = {};
+      entry.evalDiff[sem][item.id] = {...(entry.evalDiff[sem][item.id] || {}), on: null};
+    }
+    scheduleFlush(p.slug);
+  }
+  showToast(`${SEM_CHOICE_LABELS[dflt]} appliqué à ${differing.length} projet(s)`);
 }
 async function persistReferentielDraft(){
   if(referentielRecordId){
