@@ -557,24 +557,29 @@ function journalHistoryByKey(){
   _jHistIdx = m; _jHistLen = journalAll.length;
   return m;
 }
-// « Avant : 12 · NOM Prénom · 20/09/2026 09:10 » : valeur avant la dernière modification, avec son auteur et sa date
-function notePrevText(project, sem, itemId){
+// Ligne « NOM Prénom · 20/09/2026 09:10 ........ Avant : 12 » : auteur et date de la valeur précédente à gauche,
+// valeur avant la dernière modification à droite (l'auteur est omis pour une valeur de référence non signée)
+function notePrevParts(project, sem, itemId){
   const hist = journalHistoryByKey().get(`${project.slug}|${sem}|item:${itemId}:note`);
-  if(!hist || !hist.length) return "";
+  if(!hist || !hist.length) return null;
   const last = hist[hist.length - 1];
-  if(String(last.apres || "").trim() === "" || /^(Point de référence|Validé par)/.test(last.author)) return "";
+  if(String(last.apres || "").trim() === "" || /^(Point de référence|Validé par)/.test(last.author)) return null;
   const before = String(last.avant ?? "").trim();
-  if(before === "") return "";
+  if(before === "") return null;
   const src = hist.length >= 2 ? hist[hist.length - 2] : null;
   const known = src && String(src.apres ?? "").trim() === before && !/^(Point de référence|Validé par)/.test(src.author);
-  return "Avant : " + before + (known ? " · " + src.author + " · " + fmtNoteStamp(src.created) : "");
+  return { when: known ? src.author + " · " + fmtNoteStamp(src.created) : "", value: "Avant : " + before };
+}
+function notePrevHtml(project, sem, itemId){
+  const p = notePrevParts(project, sem, itemId);
+  return p ? `<span class="np-when">${escapeHtml(p.when)}</span><span class="np-val">${escapeHtml(p.value)}</span>` : "";
 }
 function refreshNoteStamps(project, sem){
   document.querySelectorAll(".livrable-card[data-item]").forEach(card => {
     const el = card.querySelector(".note-stamp");
     if(el) el.textContent = noteStampText(project, sem, card.dataset.item);
     const pv = card.querySelector(".note-prev");
-    if(pv) pv.textContent = notePrevText(project, sem, card.dataset.item);
+    if(pv) pv.innerHTML = notePrevHtml(project, sem, card.dataset.item);
   });
 }
 
