@@ -41,6 +41,9 @@ body{ background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-s
 ::selection{ background:var(--accent); color:var(--accent-ink); }
 button, input, textarea, select{ font-family:inherit; font-size:inherit; color:inherit; }
 :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+/* pas de flèches +/- dans les cases numériques (notes, coefficients) : on saisit au clavier */
+input[type=number]{ -moz-appearance:textfield; appearance:textfield; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
 @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 h1,h2,h3{ text-wrap:balance; }
 
