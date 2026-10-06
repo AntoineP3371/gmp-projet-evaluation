@@ -544,10 +544,37 @@ function noteStampText(project, sem, itemId){
   if(/^(Point de référence|Validé par)/.test(e.author)) return "";
   return e.author + " · " + fmtNoteStamp(e.created);
 }
+// historique d'une note : toutes les lignes du journal d'une même clé, dans l'ordre
+let _jHistIdx = null, _jHistLen = -1;
+function journalHistoryByKey(){
+  if(_jHistIdx && _jHistLen === journalAll.length) return _jHistIdx;
+  const m = new Map();
+  for(const e of journalAll){
+    const k = `${e.project}|${e.sem}|${e.cle}`;
+    if(!m.has(k)) m.set(k, []);
+    m.get(k).push(e);
+  }
+  _jHistIdx = m; _jHistLen = journalAll.length;
+  return m;
+}
+// « Avant : 12 · NOM Prénom · 20/09/2026 09:10 » : valeur avant la dernière modification, avec son auteur et sa date
+function notePrevText(project, sem, itemId){
+  const hist = journalHistoryByKey().get(`${project.slug}|${sem}|item:${itemId}:note`);
+  if(!hist || !hist.length) return "";
+  const last = hist[hist.length - 1];
+  if(String(last.apres || "").trim() === "" || /^(Point de référence|Validé par)/.test(last.author)) return "";
+  const before = String(last.avant ?? "").trim();
+  if(before === "") return "";
+  const src = hist.length >= 2 ? hist[hist.length - 2] : null;
+  const known = src && String(src.apres ?? "").trim() === before && !/^(Point de référence|Validé par)/.test(src.author);
+  return "Avant : " + before + (known ? " · " + src.author + " · " + fmtNoteStamp(src.created) : "");
+}
 function refreshNoteStamps(project, sem){
   document.querySelectorAll(".livrable-card[data-item]").forEach(card => {
     const el = card.querySelector(".note-stamp");
     if(el) el.textContent = noteStampText(project, sem, card.dataset.item);
+    const pv = card.querySelector(".note-prev");
+    if(pv) pv.textContent = notePrevText(project, sem, card.dataset.item);
   });
 }
 
