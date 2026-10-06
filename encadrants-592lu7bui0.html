@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.81">
+<link rel="stylesheet" href="style.css?v=0.82">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.81"></script>
+<script src="app-common.js?v=0.82"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.81</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.82</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -1392,6 +1392,7 @@ function renderProjectView(){
   }
   if(!banner.childNodes.length) banner.hidden = true;
   main.appendChild(banner);
+  if(unlocked) main.appendChild(renderPrivateNotesPanel(p));
 
   const activeEditors = getActiveEditors(p, unlocked || null);
   if(activeEditors.length){
@@ -1559,6 +1560,39 @@ function renderEtuAccessPanel(project){
     }catch(e){ showToast("Échec de l'enregistrement"); }
   });
 
+  return wrap;
+}
+/* commentaires entre encadrants, jamais transmis aux étudiants : mêmes messages que ceux des livrables
+   (sae_comments), rattachés à un fil réservé (item PRIVATE_ITEM, semestre PRIVATE_SEM) que le serveur
+   exclut de ce que reçoit la page étudiants */
+const PRIVATE_ITEM = "_prive", PRIVATE_SEM = "P";
+function renderPrivateNotesPanel(project){
+  const wrap = document.createElement("section");
+  wrap.className = "private-notes";
+  const collapsed = sessionStorage.getItem("private-notes-collapsed") === "1";
+  wrap.innerHTML = `
+    <button class="etu-access-toggle" id="private-notes-toggle" type="button" aria-expanded="${collapsed ? "false" : "true"}">
+      <span>Commentaires non visibles par les étudiants <span class="cm-n" data-pcount>0</span></span>
+      <span class="etu-access-hint"><span class="etu-access-state">${collapsed ? "Déplier" : "Replier"}</span><span class="etu-access-chevron${collapsed ? " collapsed" : ""}">▾</span></span>
+    </button>
+    <div class="private-notes-body" ${collapsed ? "hidden" : ""}>
+      <p class="hint" style="margin:8px 0 6px;">Échanges réservés aux encadrants du projet : les étudiants ne les voient jamais.</p>
+      ${threadShellHTML(PRIVATE_ITEM)}
+    </div>`;
+  wrap.querySelector("#private-notes-toggle").addEventListener("click", () => {
+    const body = wrap.querySelector(".private-notes-body");
+    const nowCollapsed = !body.hidden;
+    body.hidden = nowCollapsed;
+    wrap.querySelector(".etu-access-chevron").classList.toggle("collapsed", nowCollapsed);
+    wrap.querySelector(".etu-access-state").textContent = nowCollapsed ? "Déplier" : "Replier";
+    wrap.querySelector("#private-notes-toggle").setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
+    sessionStorage.setItem("private-notes-collapsed", nowCollapsed ? "1" : "0");
+  });
+  initThread(wrap, PRIVATE_ITEM, false, PRIVATE_SEM);
+  const nEl = wrap.querySelector(".cm-thread [data-n]"), cEl = wrap.querySelector("[data-pcount]");
+  const sync = () => { cEl.textContent = nEl.textContent; };
+  new MutationObserver(sync).observe(nEl, { childList:true, characterData:true, subtree:true });
+  sync();
   return wrap;
 }
 function renderEncadrantsAdminPanel(project){
@@ -2110,8 +2144,8 @@ function renderItem(item, idx, project, readOnly){
     ${item.desc ? `<div class="livrable-desc">${escapeHtml(item.desc)}</div>` : ""}
     ${showBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
     <div class="livrable-foot">
-      <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}><div class="note-stamp" data-prefix="Actuel : ">${(() => { const t = noteStampText(project, currentSemestre, item.id); return t ? "Actuel : " + escapeHtml(t) : ""; })()}</div><div class="note-prev">${notePrevHtml(project, currentSemestre, item.id)}</div></div>
-      <div class="livrable-field"><label for="date-${item.id}">Date d'évaluation prévue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}><div class="date-stamp">${escapeHtml(dateStampText(project, currentSemestre, item.id))}</div></div>
+      <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}><div class="note-stamp" data-prefix="Actuelle : ">${(() => { const t = noteStampText(project, currentSemestre, item.id); return t ? "Actuelle : " + escapeHtml(t) : ""; })()}</div><div class="note-prev">${notePrevHtml(project, currentSemestre, item.id)}</div></div>
+      <div class="livrable-field"><label for="date-${item.id}">Date d'évaluation prévue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}><div class="date-stamp" data-prefix="Actuelle : ">${(() => { const t = dateStampText(project, currentSemestre, item.id); return t ? "Actuelle : " + escapeHtml(t) : ""; })()}</div><div class="date-prev">${notePrevHtml(project, currentSemestre, item.id, "date")}</div></div>
     </div>
     ${threadShellHTML(item.id)}`;
   const semSel = card.querySelector(".sem-sel");
@@ -2123,18 +2157,19 @@ function renderItem(item, idx, project, readOnly){
 }
 /* ---------------- fil de commentaires (côté encadrants) ---------------- */
 const commentDrafts = new Map();
-function initThread(card, itemId, readOnly){
+function initThread(card, itemId, readOnly, fixedSem){
   const th = card.querySelector(".cm-thread");
   const st = { reply:null, editing:null };
   th._st = st;
+  const semNow = () => fixedSem || currentSemestre;
   const cur = () => projects.get(currentProjectId);
   const me = () => (readOnly ? null : (unlockedProjects.get(currentProjectId) || null));
-  const draftKey = () => `${currentProjectId}|${currentSemestre}|${itemId}`;
+  const draftKey = () => `${currentProjectId}|${semNow()}|${itemId}`;
 
   function drawList(){
     const p = cur();
     if(!p) return;
-    drawThreadList(th, p, currentSemestre, itemId, { me: me(), readOnly, editingId: st.editing });
+    drawThreadList(th, p, semNow(), itemId, { me: me(), readOnly, editingId: st.editing });
     if(st.editing){ const ta = th.querySelector("[data-edit]"); if(ta && document.activeElement !== ta) ta.focus(); }
   }
   function drawComposer(){
@@ -2174,7 +2209,7 @@ function initThread(card, itemId, readOnly){
       if(!text) return;
       b.disabled = true;
       try{
-        const rec = await pb.collection("sae_comments").create({ project:p.slug, sem:currentSemestre, item:itemId, author:who, text, parent: st.reply || "" });
+        const rec = await pb.collection("sae_comments").create({ project:p.slug, sem:semNow(), item:itemId, author:who, text, parent: st.reply || "" });
         upsertComment(rec);
         commentDrafts.delete(draftKey());
         st.reply = null;
@@ -2206,7 +2241,7 @@ function initThread(card, itemId, readOnly){
 function onCommentEvent(e){
   if(e.action === "delete") commentsAll = commentsAll.filter(c => c.id !== e.record.id);
   else upsertComment(e.record);
-  if(view !== "project" || e.record.project !== currentProjectId || e.record.sem !== currentSemestre) return;
+  if(view !== "project" || e.record.project !== currentProjectId || (e.record.sem !== currentSemestre && e.record.item !== PRIVATE_ITEM)) return;
   const th = document.querySelector(`.cm-thread[data-item="${CSS.escape(e.record.item)}"]`);
   if(th && th._draw && !th._st.editing) th._draw();
 }

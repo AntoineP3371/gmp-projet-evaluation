@@ -561,8 +561,14 @@ function journalHistoryByKey(){
 }
 // Ligne « Avant : 12 · NOM Prénom · 20/09/2026 09:10 » : valeur avant la dernière modification, puis son auteur
 // et sa date (l'auteur est omis pour une valeur de référence non signée)
-function notePrevParts(project, sem, itemId){
-  const hist = journalHistoryByKey().get(`${project.slug}|${sem}|item:${itemId}:note`);
+// (même principe pour la date d'évaluation prévue : la valeur est alors affichée au format jj/mm/aaaa)
+function fmtIsoDay(s){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(s);
+}
+function notePrevParts(project, sem, itemId, field){
+  field = field || "note";
+  const hist = journalHistoryByKey().get(`${project.slug}|${sem}|item:${itemId}:${field}`);
   if(!hist || !hist.length) return null;
   const last = hist[hist.length - 1];
   if(String(last.apres || "").trim() === "" || /^(Point de référence|Validé par)/.test(last.author)) return null;
@@ -570,10 +576,10 @@ function notePrevParts(project, sem, itemId){
   if(before === "") return null;
   const src = hist.length >= 2 ? hist[hist.length - 2] : null;
   const known = src && String(src.apres ?? "").trim() === before && !/^(Point de référence|Validé par)/.test(src.author);
-  return { when: known ? src.author + " · " + fmtNoteStamp(src.created) : "", value: "Avant : " + before };
+  return { when: known ? src.author + " · " + fmtNoteStamp(src.created) : "", value: "Avant : " + (field === "date" ? fmtIsoDay(before) : before) };
 }
-function notePrevHtml(project, sem, itemId){
-  const p = notePrevParts(project, sem, itemId);
+function notePrevHtml(project, sem, itemId, field){
+  const p = notePrevParts(project, sem, itemId, field);
   return p ? `<span class="np-val">${escapeHtml(p.value)}</span>${p.when ? `<span class="np-when"> · ${escapeHtml(p.when)}</span>` : ""}` : "";
 }
 function refreshNoteStamps(project, sem){
@@ -581,9 +587,11 @@ function refreshNoteStamps(project, sem){
     const el = card.querySelector(".note-stamp");
     if(el){ const t = noteStampText(project, sem, card.dataset.item); el.textContent = t ? (el.dataset.prefix || "") + t : ""; }
     const dt = card.querySelector(".date-stamp");
-    if(dt) dt.textContent = dateStampText(project, sem, card.dataset.item);
+    if(dt){ const t = dateStampText(project, sem, card.dataset.item); dt.textContent = t ? (dt.dataset.prefix || "") + t : ""; }
     const pv = card.querySelector(".note-prev");
     if(pv) pv.innerHTML = notePrevHtml(project, sem, card.dataset.item);
+    const dpv = card.querySelector(".date-prev");
+    if(dpv) dpv.innerHTML = notePrevHtml(project, sem, card.dataset.item, "date");
   });
 }
 

@@ -73,7 +73,8 @@ routerAdd("POST", "/etu/unlock", (e) => {
   if (!pw) return e.json(403, { error: "Aucun mot de passe défini pour ce projet. Contactez votre encadrant." });
   if (pw.get("password") !== password) return e.json(403, { error: "Mot de passe incorrect." });
 
-  const comments = $app.findRecordsByFilter("sae_comments", "project = {:s}", "", 0, 0, { s: slug });
+  // le fil "_prive" est réservé aux encadrants : jamais transmis aux étudiants
+  const comments = $app.findRecordsByFilter("sae_comments", "project = {:s} && item != '_prive'", "", 0, 0, { s: slug });
   const events = $app.findRecordsByFilter("sae_events", "deleted_by = ''", "", 0, 0);
   const myEvents = events.filter((ev) => jsonField(ev, "projets", []).includes(slug));
   const journal = $app.findRecordsByFilter("sae_journal", "project = {:s}", "", 0, 0, { s: slug });
