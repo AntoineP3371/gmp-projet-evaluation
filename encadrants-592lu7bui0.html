@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.87">
+<link rel="stylesheet" href="style.css?v=0.88">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.83"></script>
+<script src="app-common.js?v=0.88"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.87</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.88</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -1477,12 +1477,15 @@ function renderProjectView(){
       </div>
     </div>
     <div class="team-head-actions">
+      ${(unlocked || adminUnlocked) ? `<button class="btn btn-sm" id="btn-export-csv" type="button" title="Télécharge une archive de CSV : projet, livrables (notes et dates), commentaires, journal">Exporter (CSV)</button>` : ""}
       ${adminUnlocked ? `<button class="btn btn-sm" id="btn-edit-project">Modifier les infos</button>` : ""}
     </div>`;
   main.appendChild(head);
   if(adminUnlocked){
     head.querySelector("#btn-edit-project").addEventListener("click", () => openProjectEditModal(currentProjectId));
   }
+  const csvBtn = head.querySelector("#btn-export-csv");
+  if(csvBtn) csvBtn.addEventListener("click", () => exportProjectCsv(p));
   head.querySelectorAll(".encadrant-btn").forEach(b => b.addEventListener("click", () => { if(!connectedUser) openConnectModal(b.dataset.name); }));
 
   const banner = document.createElement("div");
@@ -1620,7 +1623,10 @@ function renderEtuAccessPanel(project){
     if(d && d.hasPassword){
       currentWrap.hidden = false;
       currentInput.value = d.password;
-      statusEl.textContent = `Défini par ${d.author} le ${fmtDate(d.created)}.`;
+      // jamais changé : « Défini par … » (date de création) ; changé depuis : « Modifié par … » (date du dernier changement)
+      const t0 = new Date(String(d.created || "").replace(" ", "T")).getTime(), t1 = new Date(String(d.updated || "").replace(" ", "T")).getTime();
+      const changed = !isNaN(t0) && !isNaN(t1) && t1 - t0 > 2000;
+      statusEl.textContent = changed ? `Modifié par ${d.author} le ${fmtDate(d.updated)}.` : `Défini par ${d.author} le ${fmtDate(d.created)}.`;
       pwLabel.textContent = "Changer le mot de passe";
       emptyHint.textContent = "";
     } else {
@@ -1653,7 +1659,7 @@ function renderEtuAccessPanel(project){
       const d = await r.json();
       if(!r.ok) throw new Error(d.error || "échec");
       input.value = "";
-      applyInfo({ hasPassword:true, password:value, author:d.author, created:d.created });
+      applyInfo({ hasPassword:true, password:value, author:d.author, created:d.created, updated:d.updated });
       showToast("Mot de passe enregistré");
     }catch(e){ showToast("Échec de l'enregistrement"); }
   });
@@ -2252,8 +2258,8 @@ function renderItem(item, idx, project, readOnly){
     ${item.desc ? `<div class="livrable-desc">${escapeHtml(item.desc)}</div>` : ""}
     ${showBareme ? `<div class="livrable-bareme"><div class="f"><b>Faible</b>${escapeHtml(item.faible||"")}</div><div class="m"><b>Moyen</b>${escapeHtml(item.moyen||"")}</div><div class="g"><b>Bon</b>${escapeHtml(item.bon||"")}</div></div>` : ""}
     <div class="livrable-foot">
-      <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}><div class="note-stamp" data-prefix="Actuelle : ">${(() => { const t = noteStampText(project, currentSemestre, item.id); return t ? "Actuelle : " + escapeHtml(t) : ""; })()}</div><div class="note-prev">${notePrevHtml(project, currentSemestre, item.id)}</div></div>
-      <div class="livrable-field"><label for="date-${item.id}">Date d'évaluation prévue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}><div class="date-stamp" data-prefix="Actuelle : ">${(() => { const t = dateStampText(project, currentSemestre, item.id); return t ? "Actuelle : " + escapeHtml(t) : ""; })()}</div><div class="date-prev">${notePrevHtml(project, currentSemestre, item.id, "date")}</div></div>
+      <div class="livrable-field"><label for="note-${item.id}">Note /20</label><input id="note-${item.id}" type="number" min="0" max="20" step="0.5" value="${ev.note ?? ""}" ${readOnly?"disabled":""}><div class="note-stamp">${escapeHtml(stampLineText(project, currentSemestre, item.id, "note"))}</div><div class="note-prev">${notePrevHtml(project, currentSemestre, item.id)}</div></div>
+      <div class="livrable-field"><label for="date-${item.id}">Date d'évaluation prévue</label><input id="date-${item.id}" type="date" value="${ev.date||""}" ${readOnly?"disabled":""}><div class="date-stamp">${escapeHtml(stampLineText(project, currentSemestre, item.id, "date"))}</div><div class="date-prev">${notePrevHtml(project, currentSemestre, item.id, "date")}</div></div>
     </div>
     ${threadShellHTML(item.id)}`;
   const semSel = card.querySelector(".sem-sel");
@@ -3132,6 +3138,121 @@ function exportNotesExcel(){
     XLSX.utils.book_append_sheet(wb, ws, sem === "S3" ? "Semestre 3" : "Semestre 4");
   }
   XLSX.writeFile(wb, `carnet-sae-notes-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+/* ---------------- export CSV d'un projet (encadrants du projet, administrateur) ---------------- */
+// Archive .zip de quatre CSV (projet, livrables, commentaires, journal), construite dans le navigateur à partir des
+// données déjà chargées (un encadrant ne reçoit que ses projets). CSV pour Excel en français : séparateur « ; », UTF-8 avec BOM.
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(bytes){
+  let c = 0xFFFFFFFF;
+  for(let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+// archive zip sans compression (suffisant pour quelques CSV), noms de fichiers en UTF-8
+function makeZip(files){
+  const enc = new TextEncoder();
+  const now = new Date();
+  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  const parts = [], central = [];
+  let offset = 0;
+  for(const f of files){
+    const name = enc.encode(f.name), data = f.data, crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+    ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    offset += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((n, a) => n + a.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: "application/zip" });
+}
+function csvCell(v){
+  const s = v === null || v === undefined ? "" : String(v);
+  return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function csvBytes(rows){
+  return new TextEncoder().encode("﻿" + rows.map(r => r.map(csvCell).join(";")).join("\r\n") + "\r\n");
+}
+function projectCsvFiles(p){
+  const compKeys = Object.keys(COMPETENCES);
+  const num = v => (v === null || v === undefined || v === "") ? "" : String(v).replace(".", ",");
+  const jlast = journalLastByKey();
+  const stamp = (sem, id, f) => {
+    const e = jlast.get(`${p.slug}|${sem}|item:${id}:${f}`);
+    return !e || /^(Point de référence|Validé par)/.test(e.author) ? ["", ""] : [e.author, fmtNoteStamp(e.created)];
+  };
+
+  const projet = [
+    ["Projet", "Formation", "Parcours", "Année", "Descriptif", "Étudiants", "Encadrants", "Archivé", "Visible des étudiants"],
+    [p.nom, p.formation || "", p.parcours || "", p.annee || "", p.sujet || "", (p.etudiants || []).join(" ; "), (p.encadrants || []).join(" ; "),
+      p.archived ? "oui" : "non", p.visible_eleves === false ? "non" : "oui"],
+  ];
+
+  const livrables = [["Semestre", "Section", "Livrable", "Évalué ce semestre", ...compKeys.map(c => "Coef " + c),
+    "Note /20", "Note : auteur", "Note : date de saisie", "Date d'évaluation prévue", "Date : auteur", "Date : date de saisie"]];
+  for(const sem of ["S3", "S4"]){
+    for(const section of referentiel.sections){
+      if(section.parcours && section.parcours !== p.parcours) continue;
+      for(const item of section.items){
+        const ev = (p.evals && p.evals[sem] && p.evals[sem][item.id]) || {};
+        const [na, nd] = stamp(sem, item.id, "note"), [da, dd] = stamp(sem, item.id, "date");
+        livrables.push([sem, section.titre, item.titre, itemInSem(item, p, sem) ? "oui" : "non",
+          ...compKeys.map(c => num(item.coef && item.coef[c])),
+          num(ev.note), na, nd, ev.date ? fmtIsoDay(ev.date) : "", da, dd]);
+      }
+    }
+  }
+
+  const titreItem = id => id === PRIVATE_ITEM ? "Commentaires encadrants" : ((allItems.find(i => i.id === id) || {}).titre || id);
+  const mine = commentsAll.filter(c => c.project === p.slug).sort((a, b) => String(a.created).localeCompare(String(b.created)));
+  const byId = new Map(mine.map(c => [c.id, c]));
+  const commentaires = [["Semestre", "Livrable", "Visible des étudiants", "Auteur", "Date", "Texte", "En réponse à", "Supprimé par"]];
+  for(const c of mine){
+    const prive = c.item === PRIVATE_ITEM;
+    const parent = c.parent ? byId.get(c.parent) : null;
+    commentaires.push([prive ? "" : c.sem, titreItem(c.item), prive ? "non" : "oui", c.author, fmtNoteStamp(c.created),
+      c.deleted_by ? "" : c.text, parent ? parent.author : "", c.deleted_by || ""]);
+  }
+  for(const sem of ["S3", "S4"]) for(const item of allItems){
+    const old = legacyComment(p, sem, item.id);
+    if(old) commentaires.push([sem, item.titre, "oui", "(ancien commentaire)", "", old, "", ""]);
+  }
+
+  const jv = (cle, v) => { const t = journalFmt(cle, jNorm(v)); return /^\d+\.\d+$/.test(t) ? t.replace(".", ",") : t; };
+  const journal = [["Date", "Auteur", "Semestre", "Donnée", "Avant", "Après"]];
+  for(const e of journalAll.filter(x => x.project === p.slug)){
+    journal.push([fmtNoteStamp(e.created), e.author, e.sem, journalLabel(p, e.cle), jv(e.cle, e.avant), jv(e.cle, e.apres)]);
+  }
+
+  return [
+    { name: "projet.csv", data: csvBytes(projet) },
+    { name: "livrables.csv", data: csvBytes(livrables) },
+    { name: "commentaires.csv", data: csvBytes(commentaires) },
+    { name: "journal.csv", data: csvBytes(journal) },
+  ];
+}
+function exportProjectCsv(p){
+  const url = URL.createObjectURL(makeZip(projectCsvFiles(p)));
+  const a = document.createElement("a");
+  a.href = url; a.download = `carnet-sae-${p.slug}-${new Date().toISOString().slice(0, 10)}.zip`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast("Export CSV téléchargé");
 }
 function exportJsonBackup(){
   const bundle = { referentiel, projects: Object.fromEntries(projects), commentaires: commentsAll, evenements: eventsAll, journal: journalAll };

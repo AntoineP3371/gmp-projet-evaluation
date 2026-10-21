@@ -140,7 +140,7 @@ routerAdd("GET", "/etu/access-info/{slug}", (e) => {
   let pw;
   try { pw = $app.findFirstRecordByFilter("sae_project_pw", "project = {:s}", { s: slug }); } catch (err) { pw = null; }
   if (!pw) return e.json(200, { hasPassword: false });
-  return e.json(200, { hasPassword: true, password: pw.get("password"), author: pw.get("author"), created: pw.get("created") });
+  return e.json(200, { hasPassword: true, password: pw.get("password"), author: pw.get("author"), created: pw.get("created"), updated: pw.get("updated") });
 });
 
 // -------- définir / changer le mot de passe du projet (encadrant du projet) --------
@@ -185,11 +185,11 @@ routerAdd("POST", "/etu/set-password", (e) => {
   if (pw) {
     pw.set("password", password); pw.set("author", author);
     $app.save(pw);
-    return e.json(200, { ok: true, author, created: pw.get("created") });
+    return e.json(200, { ok: true, author, created: pw.get("created"), updated: pw.get("updated") });
   }
   const collection = $app.findCollectionByNameOrId("sae_project_pw");
   const rec = new Record(collection);
   rec.set("project", slug); rec.set("password", password); rec.set("author", author);
   $app.save(rec);
-  return e.json(200, { ok: true, author, created: rec.get("created") });
+  return e.json(200, { ok: true, author, created: rec.get("created"), updated: rec.get("updated") });
 });

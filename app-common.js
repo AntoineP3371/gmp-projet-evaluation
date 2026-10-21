@@ -546,6 +546,21 @@ function noteStampText(project, sem, itemId, field){
 }
 // même signature pour la date d'évaluation prévue (dernier auteur de la date et heure de la modification)
 function dateStampText(project, sem, itemId){ return noteStampText(project, sem, itemId, "date"); }
+// valeur effacée : « NOM Prénom · 21/10/2026 14:32 » du dernier effacement (la valeur est alors vide, l'ancienne
+// valeur est rappelée par la ligne « Avant : … »)
+function deletedStampText(project, sem, itemId, field){
+  const e = journalLastByKey().get(`${project.slug}|${sem}|item:${itemId}:${field || "note"}`);
+  if(!e || String(e.apres || "").trim() !== "" || String(e.avant || "").trim() === "") return "";
+  if(/^(Point de référence|Validé par)/.test(e.author)) return "";
+  return e.author + " · " + fmtNoteStamp(e.created);
+}
+// ligne de signature complète sous la note ou la date : « Actuelle : … » ou, si la valeur a été effacée, « Supprimée : … »
+function stampLineText(project, sem, itemId, field){
+  const t = noteStampText(project, sem, itemId, field);
+  if(t) return "Actuelle : " + t;
+  const d = deletedStampText(project, sem, itemId, field);
+  return d ? "Supprimée : " + d : "";
+}
 // historique d'une note : toutes les lignes du journal d'une même clé, dans l'ordre
 let _jHistIdx = null, _jHistLen = -1;
 function journalHistoryByKey(){
@@ -571,7 +586,7 @@ function notePrevParts(project, sem, itemId, field){
   const hist = journalHistoryByKey().get(`${project.slug}|${sem}|item:${itemId}:${field}`);
   if(!hist || !hist.length) return null;
   const last = hist[hist.length - 1];
-  if(String(last.apres || "").trim() === "" || /^(Point de référence|Validé par)/.test(last.author)) return null;
+  if(/^(Point de référence|Validé par)/.test(last.author)) return null;
   const before = String(last.avant ?? "").trim();
   if(before === "") return null;
   const src = hist.length >= 2 ? hist[hist.length - 2] : null;
@@ -585,9 +600,9 @@ function notePrevHtml(project, sem, itemId, field){
 function refreshNoteStamps(project, sem){
   document.querySelectorAll(".livrable-card[data-item]").forEach(card => {
     const el = card.querySelector(".note-stamp");
-    if(el){ const t = noteStampText(project, sem, card.dataset.item); el.textContent = t ? (el.dataset.prefix || "") + t : ""; }
+    if(el) el.textContent = stampLineText(project, sem, card.dataset.item, "note");
     const dt = card.querySelector(".date-stamp");
-    if(dt){ const t = dateStampText(project, sem, card.dataset.item); dt.textContent = t ? (dt.dataset.prefix || "") + t : ""; }
+    if(dt) dt.textContent = stampLineText(project, sem, card.dataset.item, "date");
     const pv = card.querySelector(".note-prev");
     if(pv) pv.innerHTML = notePrevHtml(project, sem, card.dataset.item);
     const dpv = card.querySelector(".date-prev");
