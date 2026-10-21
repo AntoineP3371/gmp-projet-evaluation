@@ -84,7 +84,7 @@ h1,h2,h3{ text-wrap:balance; }
 .team-item-lock.none{ color:var(--danger); }
 .team-item-lock.one{ color:var(--good); }
 .team-item-lock.many{ color:var(--warn); }
-.overdue-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:15px; padding:0 4px; border-radius:99px; background:var(--danger); color:#fff; font-size:9.5px; font-weight:700; font-family:var(--font-mono); vertical-align:middle; animation:overdue-blink 1.1s step-start infinite; }
+.overdue-badge{ display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; min-width:16px; height:15px; padding:0 4px; border-radius:99px; background:var(--danger); color:#fff; font-size:9.5px; font-weight:700; font-family:var(--font-mono); vertical-align:middle; animation:overdue-blink 1.1s step-start infinite; }
 @keyframes overdue-blink{ 50%{ opacity:.2; } }
 
 .admin-nav{ display:flex; flex-direction:column; gap:2px; border:1px solid var(--rule-strong); border-radius:8px; padding:10px; background:var(--surface); }

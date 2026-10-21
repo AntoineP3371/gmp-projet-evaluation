@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="encadrant/encadrant-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.88">
+<link rel="stylesheet" href="style.css?v=0.89">
 <script>try{var __t=localStorage.getItem("theme"); if(__t==="light"||__t==="dark") document.documentElement.setAttribute("data-theme", __t);}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
-<script src="app-common.js?v=0.88"></script>
+<script src="app-common.js?v=0.89"></script>
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <aside class="sidebar">
     <button class="brand" id="brand-home" type="button">
       <div class="brand-tag-row">
-        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.88</span></span>
+        <span class="brand-tag">SAE · BUT GMP <span class="version-tag">v0.89</span></span>
         <img class="brand-logo" src="logo-gmp.png" alt="GMP / IUT de Bordeaux">
       </div>
       <span class="brand-title">Fiches d'évaluation des projets</span>
@@ -582,12 +582,12 @@ function renderSidebar(){
       const li = document.createElement("li");
       const btn = document.createElement("button");
       const lockState = connectionState(p);
-      const overdue = getOverdueItemNumbers(p);
+      const overdue = getOverdueItems(p);
       btn.className = "team-item" + (view==="project" && currentProjectId===id ? " active" : "") + (p.archived ? " is-archived" : "");
       btn.innerHTML = `<span class="team-item-lock ${lockState}" title="${lockState==="none"?"Aucun encadrant connecté":lockState==="one"?"Un encadrant connecté":"Plusieurs encadrants connectés"}">${lockIconSvg(lockState!=="none")}</span>
         <div class="team-item-main">
           <div class="team-item-top-row">
-            <span class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="Livrables en retard de notation : ${overdue.join(', ')}">${overdue.join(',')}</span>` : ""}${p.archived ? " (archivé)" : ""}${p.visible_eleves === false ? ` <span class="hidden-badge" title="Ce projet n'est pas visible des étudiants">masqué</span>` : ""}</span>
+            <span class="team-item-name">${escapeHtml(p.nom)}${overdue.length ? ` <span class="overdue-badge" title="${escapeHtml(overdueBadgeTitle(overdue))}">${escapeHtml(overdueBadgeText(overdue))}</span>` : ""}${p.archived ? " (archivé)" : ""}${p.visible_eleves === false ? ` <span class="hidden-badge" title="Ce projet n'est pas visible des étudiants">masqué</span>` : ""}</span>
             <span class="team-item-sujet">${escapeHtml([p.formation, p.parcours].filter(Boolean).join(" · ") || p.sujet || "—")}</span>
           </div>
           <div class="team-item-students">${p.etudiants && p.etudiants.length ? escapeHtml(p.etudiants.join(", ")) : ""}</div>

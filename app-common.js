@@ -41,21 +41,58 @@ function itemSemChoice(item, project){
   return a && !b ? "S3" : !a && b ? "S4" : "both";
 }
 const SEM_CHOICE_LABELS = { S3:"S3", S4:"S4", both:"S3 + S4" };
-function getOverdueItemNumbers(project){
-  if(!allItems.length) return [];
+// initiale de chaque section (M pour Management, C pour Conception…) ; on allonge à deux lettres, etc., seulement
+// si deux sections commencent par la même lettre
+function sectionInitials(sections){
+  const clean = s => String(s.titre || "?").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]/g, "").toUpperCase() || "?";
+  const names = sections.map(clean);
+  const lens = names.map(() => 1);
+  for(let pass = 0; pass < 8; pass++){
+    const keys = names.map((n, i) => n.slice(0, lens[i]));
+    let again = false;
+    keys.forEach((k, i) => {
+      if(keys.some((k2, j) => j !== i && k2 === k) && lens[i] < names[i].length){ lens[i]++; again = true; }
+    });
+    if(!again) break;
+  }
+  const out = new Map();
+  sections.forEach((s, i) => out.set(s, names[i].slice(0, lens[i])));
+  return out;
+}
+// Livrables dont la date d'évaluation est passée et sans note, dans l'un des semestres où ils sont évalués.
+// Chaque livrable est repéré comme sur sa carte : initiale de sa section + rang dans cette section (M2, C5…).
+function getOverdueItems(project){
+  if(typeof referentiel === "undefined" || !referentiel || !referentiel.sections) return [];
   const today = new Date().toISOString().slice(0,10);
-  const nums = [];
-  allItems.forEach((item, idx) => {
-    for(const sem of ["S3","S4"]){
-      if(!itemInSem(item, project, sem)) continue;
-      const ev = project.evals && project.evals[sem] && project.evals[sem][item.id];
-      if(ev && ev.date && ev.date <= today && (ev.note === undefined || ev.note === null || ev.note === "")){
-        nums.push(idx+1);
-        break;
+  const sections = referentiel.sections.filter(s => !(s.parcours && s.parcours !== project.parcours));
+  const initials = sectionInitials(referentiel.sections);
+  const out = [];
+  for(const section of sections){
+    section.items.forEach((item, i) => {
+      for(const sem of ["S3","S4"]){
+        if(!itemInSem(item, project, sem)) continue;
+        const ev = project.evals && project.evals[sem] && project.evals[sem][item.id];
+        if(ev && ev.date && ev.date <= today && (ev.note === undefined || ev.note === null || ev.note === "")){
+          out.push({ initial: initials.get(section), section: section.titre, n: i + 1, titre: item.titre });
+          break;
+        }
       }
-    }
-  });
-  return nums;
+    });
+  }
+  return out;
+}
+// info-bulle de la pastille : un livrable par ligne (« M2 — Objectifs SMART »)
+function overdueBadgeTitle(items){
+  return "Livrables à évaluer (date passée, sans note) :\n" + items.map(o => `${o.initial}${o.n} — ${o.titre}`).join("\n");
+}
+// texte de la pastille : « M2,3 C5 »(initiale de la section suivie des numéros de ses livrables en retard)
+function overdueBadgeText(items){
+  const groups = new Map();
+  for(const it of items){
+    if(!groups.has(it.initial)) groups.set(it.initial, []);
+    groups.get(it.initial).push(it.n);
+  }
+  return [...groups].map(([ini, nums]) => ini + nums.join(",")).join(" ");
 }
 const PRESENCE_STALE_MS = 45000;
 function getActiveEditors(project, excludeLabel){
